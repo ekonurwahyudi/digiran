@@ -8,7 +8,7 @@ const onest = Onest({
 })
 
 export const metadata = {
-  title: 'Kartu Kendali Anggaran',
+  title: 'Digiran - Digitalisasi Anggaran',
   description: 'Aplikasi Pencatatan Kartu Kendali Anggaran',
   icons: {
     icon: '/favicon.png',

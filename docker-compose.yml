@@ -3,11 +3,11 @@ version: '3.8'
 services:
   db:
     image: postgres:16-alpine
-    container_name: kka-postgres
+    container_name: digiran-postgres
     environment:
-      POSTGRES_USER: kka_user
-      POSTGRES_PASSWORD: kka_password
-      POSTGRES_DB: kka_db
+      POSTGRES_USER: digiran_user
+      POSTGRES_PASSWORD: digiran_password
+      POSTGRES_DB: digiran_db
     ports:
       - "5432:5432"
     volumes:
@@ -15,11 +15,11 @@ services:
 
   app:
     build: .
-    container_name: kka-app
+    container_name: digiran-app
     ports:
       - "3000:3000"
     environment:
-      DATABASE_URL: postgresql://kka_user:kka_password@db:5432/kka_db
+      DATABASE_URL: postgresql://digiran_user:digiran_password@db:5432/digiran_db
       NEXTAUTH_SECRET: your-secret-key-change-in-production
       NEXTAUTH_URL: http://localhost:3000
     depends_on:

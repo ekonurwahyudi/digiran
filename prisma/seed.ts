@@ -1,7 +1,12 @@
 import { PrismaClient } from '@prisma/client'
+import { PrismaPg } from '@prisma/adapter-pg'
+import { Pool } from 'pg'
 import bcrypt from 'bcryptjs'
+import 'dotenv/config'
 
-const prisma = new PrismaClient()
+const pool = new Pool({ connectionString: process.env.DATABASE_URL })
+const adapter = new PrismaPg(pool)
+const prisma = new PrismaClient({ adapter })
 
 const glAccounts = [
   { code: '51341002', description: 'BODP BBM Genset', keterangan: 'Pembelian BBM CADA' },
@@ -27,18 +32,29 @@ const regionals = [
 ]
 
 async function main() {
-  // Create admin user
+  console.log('Starting seed...')
+  console.log('DATABASE_URL:', process.env.DATABASE_URL ? 'Found' : 'Not found')
+  
+  // Update old email if exists
+  const updateResult = await prisma.user.updateMany({
+    where: { email: 'admin@kka.com' },
+    data: { email: 'admin@digiran.com' }
+  })
+  console.log(`Updated ${updateResult.count} user(s) email`)
+
+  // Create admin user if not exists
   const hashedPassword = await bcrypt.hash('admin123', 10)
   await prisma.user.upsert({
-    where: { email: 'admin@kka.com' },
+    where: { email: 'admin@digiran.com' },
     update: {},
     create: {
-      email: 'admin@kka.com',
+      email: 'admin@digiran.com',
       password: hashedPassword,
       name: 'Administrator',
       role: 'admin',
     },
   })
+  console.log('Admin user ready')
 
   // Create GL Accounts
   for (const gl of glAccounts) {
@@ -48,6 +64,7 @@ async function main() {
       create: gl,
     })
   }
+  console.log('GL Accounts ready')
 
   // Create Regionals
   for (const reg of regionals) {
@@ -57,6 +74,7 @@ async function main() {
       create: reg,
     })
   }
+  console.log('Regionals ready')
 
   console.log('Seed completed!')
 }
@@ -68,4 +86,5 @@ main()
   })
   .finally(async () => {
     await prisma.$disconnect()
+    await pool.end()
   })

@@ -2,10 +2,11 @@
 import { signIn } from 'next-auth/react'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardDescription, CardHeader } from '@/components/ui/card'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -37,7 +38,16 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200">
       <Card className="w-[400px] shadow-lg">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl">Kartu Kendali Anggaran</CardTitle>
+          <div className="flex justify-center mb-2">
+            <Image 
+              src="/logo.png" 
+              alt="Digiran" 
+              width={180} 
+              height={60} 
+              priority
+              className="h-12 w-auto"
+            />
+          </div>
           <CardDescription>Masuk ke sistem untuk melanjutkan</CardDescription>
         </CardHeader>
         <CardContent>
@@ -52,7 +62,7 @@ export default function LoginPage() {
               <Input
                 id="email"
                 type="email"
-                placeholder="admin@kka.com"
+                placeholder="admin@digiran.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -74,7 +84,7 @@ export default function LoginPage() {
             </Button>
           </form>
           <p className="text-xs text-muted-foreground mt-4 text-center">
-            Default: admin@kka.com / admin123
+            Default: admin@digiran.com / admin123
           </p>
         </CardContent>
       </Card>

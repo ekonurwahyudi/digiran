@@ -1,4 +1,4 @@
-# Aplikasi Kartu Kendali Anggaran (KKA)
+# Aplikasi Digiran
 
 Aplikasi pencatatan Kartu Kendali Anggaran dengan Next.js, PostgreSQL, dan Docker.
 
@@ -29,7 +29,7 @@ npm run dev
 ```
 
 ## Login Default
-- Email: admin@kka.com
+- Email: admin@digiran.com
 - Password: admin123
 
 ## Fitur
