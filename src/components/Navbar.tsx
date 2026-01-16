@@ -10,7 +10,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { LayoutDashboard, Wallet, FileText, BarChart3, LogOut, Database, ChevronDown, Building2, FileCode, Bell, Settings, ChevronUp } from 'lucide-react'
+import { LayoutDashboard, Wallet, FileText, BarChart3, LogOut, Database, ChevronDown, Building2, FileCode, Bell, Settings, FolderOpen, Users } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 export default function Navbar() {
@@ -19,14 +19,14 @@ export default function Navbar() {
 
   const navItems = [
     { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { href: '/dashboard/budget', label: 'Anggaran', icon: FileText },
+    { href: '/dashboard/budget', label: 'Anggaran', icon: FolderOpen },
     { href: '/dashboard/transaction', label: 'Pencatatan', icon: Wallet },
     { href: '/dashboard/report', label: 'Laporan', icon: BarChart3 },
   ]
 
   return (
-    <nav className="bg-white border-b">
-      <div className="container mx-auto px-4">
+    <nav className="bg-white border-b shadow-sm">
+      <div className="px-[120px]">
         {/* Top Header */}
         <div className="flex justify-between items-center h-14 border-b">
           <Link href="/dashboard" className="text-xl font-bold flex items-center gap-2 text-green-600">
@@ -72,8 +72,9 @@ export default function Navbar() {
           </div>
         </div>
         
-        {/* Navigation Tabs */}
-        <div className="flex items-center gap-1 h-12">
+        {/* Navigation Tabs - Style seperti gambar */}
+        <div className="flex items-center gap-1 py-3">
+          <div className="flex items-center gap-1 bg-gray-100 rounded-full p-1">
           {navItems.map((item) => {
             const isActive = pathname === item.href
             return (
@@ -81,10 +82,10 @@ export default function Navbar() {
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  "flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors",
+                  "flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-full transition-all",
                   isActive 
-                    ? "bg-gray-100 text-gray-900" 
-                    : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                    ? "bg-white text-gray-900 shadow-sm" 
+                    : "text-gray-500 hover:text-gray-700"
                 )}
               >
                 <item.icon className="h-4 w-4" />
@@ -93,20 +94,21 @@ export default function Navbar() {
             )
           })}
           
+          {/* Master Data Dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button className={cn(
-                "flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors",
+                "flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-full transition-all",
                 pathname.startsWith('/dashboard/master')
-                  ? "bg-gray-100 text-gray-900"
-                  : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                  ? "bg-white text-gray-900 shadow-sm"
+                  : "text-gray-500 hover:text-gray-700"
               )}>
                 <Database className="h-4 w-4" />
                 Master Data
-                <ChevronDown className="h-4 w-4" />
+                <ChevronDown className="h-3 w-3" />
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="start">
+            <DropdownMenuContent align="start" className="w-48">
               <DropdownMenuItem asChild>
                 <Link href="/dashboard/master/gl-account" className="flex items-center gap-2 cursor-pointer">
                   <FileCode className="h-4 w-4" />
@@ -121,12 +123,14 @@ export default function Navbar() {
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
                 <Link href="/dashboard/master/vendor" className="flex items-center gap-2 cursor-pointer">
-                  <Building2 className="h-4 w-4" />
+                  <Users className="h-4 w-4" />
                   Vendor
                 </Link>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+
+          </div>
         </div>
       </div>
     </nav>
