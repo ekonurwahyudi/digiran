@@ -1,0 +1,28 @@
+Bantu saya buatkan aplikasi untuk pencatatan Kartu Kendali Anggara mengunakna Next jS,postgree dan docker.
+
+aplikasi ini pencatatan Kartu Kendali Anggaran, dimana ntik admin bisa input anggaran tahunan berdsarkan GL Account kemudian dan bisa di bagi ke 4 kuartal (Q1-Q4)tapi bisa ada tombol otomatis misal 12juta /4 kuartal tapi bisa disesuaikan lagi kuartalnya edit manual, kemuain kuartal tersebut bisa dibagi menjadi 7 Regional, bisa sekali klik langsung kebagi tapi bisa disesuaikn manual
+
+kemudian ada halaman input pencatatannya
+misal input
+pilih GL Account, kemudian pilih Q1 saat itu, terus bisa pilih regional, ntik muncul sisa peregional berapa disamping inputanny/dibawah kemudian kegiatan, Regional pengguna, tanggal kegiatan (manual), Nilainya (Rp) dan klik simpan
+
+data ini bisa di cek dan di filter sisa anggara peregional sisa berapa gl accountnya berapa per kuartal
+
+list GL Account
+Gl Account, Deskrispi, Keterangan
+51341002,	BODP BBM Genset,	 Pembelian BBM CADA 
+51341001	BODP Catu Daya	 Pemeliharaan Catu Daya Lokasi STO (Relokasi, Re-engginering, dan Regrouping) 
+51341001	BODP Catu Daya	 Pemeliharaan Catu Data Lokasi Non-STO (Re-engginering dan Regrouping)  
+51344001	BODP Alat Perbaikan Instalasi/Perangkat	 Perbaikan Alker Catu Daya IM dan Sertifikasi Kalibrasi 
+51506002	Printing and copy	 Pembayaran Sewa FC dan Lain-lain 
+51346003	O&M office equipment	 Perbaikan Sarana Kerja dan Pembelian Sarker 
+51335006	O&M of fiber optic and submarine cable	 Perbaikan Modul DWDM 
+51346002	BODP PC (Stand Alone) & Printer	 Perbaikan FC, Printer dan Lain-lain 
+51512005	Meeting expenses	 Support meeting expenses 
+51351001	Domestic travelling for O&M	 SPPD Rapat, Rekonsiliasi, Bantek dan Lain-lain 
+51501001	Domestic travelling for general administration	 SPPD Rapat, BC, dan Administrasi Lainnya 
+
+List Regional
+Regional 1-7
+
+dibuat bisa login juga
