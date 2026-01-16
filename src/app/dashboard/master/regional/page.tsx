@@ -131,7 +131,7 @@ export default function RegionalPage() {
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
             <CardTitle>Daftar Regional</CardTitle>
-            <CardDescription>Total: {regionals.length} data</CardDescription>
+            <CardDescription>Kelola data regional untuk alokasi anggaran</CardDescription>
           </div>
           <Button onClick={() => openDialog()}>
             <Plus className="h-4 w-4 mr-2" />

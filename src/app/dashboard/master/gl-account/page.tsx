@@ -136,7 +136,7 @@ export default function GlAccountPage() {
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
             <CardTitle>Daftar GL Account</CardTitle>
-            <CardDescription>Total: {glAccounts.length} data</CardDescription>
+            <CardDescription>Kelola data GL Account untuk anggaran</CardDescription>
           </div>
           <Button onClick={() => openDialog()}>
             <Plus className="h-4 w-4 mr-2" />

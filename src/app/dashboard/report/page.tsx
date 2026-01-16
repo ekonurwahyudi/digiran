@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react'
 import { ColumnDef } from '@tanstack/react-table'
 import { format } from 'date-fns'
 import { id } from 'date-fns/locale'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { DataTable } from '@/components/ui/data-table'
@@ -109,7 +109,10 @@ export default function ReportPage() {
       </div>
 
       <Card className="border">
-        <CardHeader><CardTitle>Filter</CardTitle></CardHeader>
+        <CardHeader>
+          <CardTitle>Filter</CardTitle>
+          <CardDescription>Pilih kriteria untuk menampilkan laporan</CardDescription>
+        </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-2">
@@ -147,12 +150,18 @@ export default function ReportPage() {
       </Card>
 
       <Card className="border">
-        <CardHeader><CardTitle>Ringkasan Sisa Anggaran</CardTitle></CardHeader>
+        <CardHeader>
+          <CardTitle>Ringkasan Sisa Anggaran</CardTitle>
+          <CardDescription>Rekapitulasi alokasi dan penggunaan anggaran per GL Account</CardDescription>
+        </CardHeader>
         <CardContent><DataTable columns={summaryColumns} data={summaryData()} searchKey="glCode" searchPlaceholder="Cari GL Account..." /></CardContent>
       </Card>
 
       <Card className="border">
-        <CardHeader><CardTitle>Daftar Transaksi</CardTitle></CardHeader>
+        <CardHeader>
+          <CardTitle>Daftar Transaksi</CardTitle>
+          <CardDescription>Riwayat pencatatan anggaran berdasarkan filter</CardDescription>
+        </CardHeader>
         <CardContent><DataTable columns={transactionColumns} data={transactions} searchKey="kegiatan" searchPlaceholder="Cari kegiatan..." /></CardContent>
       </Card>
     </div>

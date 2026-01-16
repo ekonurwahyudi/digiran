@@ -6,7 +6,7 @@ export async function POST(req: NextRequest) {
   
   // Upsert allocations for each regional
   const allocations = await Promise.all(
-    data.allocations.map((alloc: { budgetId: string; regionalCode: string; quarter: number; amount: number }) =>
+    data.allocations.map((alloc: { budgetId: string; regionalCode: string; quarter: number; amount: number; percentage: number }) =>
       prisma.regionalAllocation.upsert({
         where: {
           budgetId_regionalCode_quarter: {
@@ -15,12 +15,13 @@ export async function POST(req: NextRequest) {
             quarter: alloc.quarter,
           },
         },
-        update: { amount: alloc.amount },
+        update: { amount: alloc.amount, percentage: alloc.percentage || 0 },
         create: {
           budgetId: alloc.budgetId,
           regionalCode: alloc.regionalCode,
           quarter: alloc.quarter,
           amount: alloc.amount,
+          percentage: alloc.percentage || 0,
         },
       })
     )

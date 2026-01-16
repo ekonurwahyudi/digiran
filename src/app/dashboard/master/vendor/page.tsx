@@ -146,7 +146,7 @@ export default function VendorPage() {
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
             <CardTitle>Daftar Vendor</CardTitle>
-            <CardDescription>Total: {vendors.length} data</CardDescription>
+            <CardDescription>Kelola data vendor untuk transaksi pengadaan</CardDescription>
           </div>
           <Button onClick={() => openDialog()}>
             <Plus className="h-4 w-4 mr-2" />

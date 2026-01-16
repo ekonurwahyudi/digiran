@@ -74,6 +74,7 @@ model RegionalAllocation {
   regionalCode String
   quarter      Int
   amount       Float
+  percentage   Float    @default(0)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 

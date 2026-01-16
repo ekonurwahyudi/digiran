@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Label } from '@/components/ui/label'
@@ -175,6 +175,7 @@ export default function DashboardPage() {
       <Card className="border">
         <CardHeader>
           <CardTitle>Ringkasan Anggaran per GL Account</CardTitle>
+          <CardDescription>Detail penggunaan anggaran per kuartal tahun {year}</CardDescription>
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="q1">
