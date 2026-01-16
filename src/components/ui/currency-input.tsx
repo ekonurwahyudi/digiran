@@ -1,6 +1,5 @@
 'use client'
 import * as React from 'react'
-import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
 
 interface CurrencyInputProps {
@@ -35,12 +34,16 @@ export function CurrencyInput({ value, onChange, className, placeholder = '0', d
   }
 
   return (
-    <Input
-      value={displayValue}
-      onChange={handleChange}
-      className={cn(className)}
-      placeholder={placeholder}
-      disabled={disabled}
-    />
+    <div className={cn("flex h-10 w-full rounded-md border border-input bg-background text-sm ring-offset-background focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2", disabled && "opacity-50 cursor-not-allowed", className)}>
+      <span className="flex items-center px-3 text-muted-foreground bg-muted border-r border-input rounded-l-md text-sm">Rp</span>
+      <input
+        type="text"
+        value={displayValue}
+        onChange={handleChange}
+        className="flex-1 px-3 py-2 bg-transparent outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed"
+        placeholder={placeholder}
+        disabled={disabled}
+      />
+    </div>
   )
 }

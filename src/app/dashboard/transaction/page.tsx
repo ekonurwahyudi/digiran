@@ -299,59 +299,162 @@ export default function TransactionPage() {
 
       {/* View Dialog */}
       <Dialog open={showViewDialog} onOpenChange={setShowViewDialog}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader><DialogTitle>Detail Transaksi</DialogTitle></DialogHeader>
+        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto p-0">
+          <DialogHeader className="p-6 pb-0">
+            <div className="flex justify-between items-center">
+              <DialogTitle>Detail Transaksi</DialogTitle>
+              <StatusBadge status={viewingTransaction?.status || ''} />
+            </div>
+          </DialogHeader>
           {viewingTransaction && (
-            <div className="space-y-6">
-              <div className="flex justify-between items-start">
-                <div><p className="text-sm text-muted-foreground">GL Account</p><p className="font-medium">{viewingTransaction.glAccount.code} - {viewingTransaction.glAccount.description}</p></div>
-                <StatusBadge status={viewingTransaction.status} />
-              </div>
-              <div className="grid grid-cols-3 gap-4">
-                <div><p className="text-sm text-muted-foreground">Kuartal</p><p className="font-medium">Q{viewingTransaction.quarter}</p></div>
-                <div><p className="text-sm text-muted-foreground">Regional</p><p className="font-medium">{regionals.find(r => r.code === viewingTransaction.regionalCode)?.name}</p></div>
-                <div><p className="text-sm text-muted-foreground">Regional Pengguna</p><p className="font-medium">{viewingTransaction.regionalPengguna}</p></div>
-              </div>
-              <div><p className="text-sm text-muted-foreground">Kegiatan</p><p className="font-medium">{viewingTransaction.kegiatan}</p></div>
-              <div className="grid grid-cols-3 gap-4">
-                <div><p className="text-sm text-muted-foreground">Tanggal Kwitansi</p><p className="font-medium">{viewingTransaction.tanggalKwitansi ? format(new Date(viewingTransaction.tanggalKwitansi), 'dd MMMM yyyy', { locale: idLocale }) : '-'}</p></div>
-                <div><p className="text-sm text-muted-foreground">Nilai Kwitansi</p><p className="font-medium text-blue-600">Rp {viewingTransaction.nilaiKwitansi.toLocaleString('id-ID')}</p></div>
-                <div><p className="text-sm text-muted-foreground">Jenis Pajak</p><p className="font-medium">{JENIS_PAJAK.find(p => p.value === viewingTransaction.jenisPajak)?.label || '-'}</p></div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div><p className="text-sm text-muted-foreground">Nilai Tanpa PPN</p><p className="font-medium">Rp {viewingTransaction.nilaiTanpaPPN.toLocaleString('id-ID', { maximumFractionDigits: 0 })}</p></div>
-                <div><p className="text-sm text-muted-foreground">Nilai PPN</p><p className="font-medium">Rp {viewingTransaction.nilaiPPN.toLocaleString('id-ID', { maximumFractionDigits: 0 })}</p></div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div><p className="text-sm text-muted-foreground">Jenis Pengadaan</p><p className="font-medium">{JENIS_PENGADAAN.find(p => p.value === viewingTransaction.jenisPengadaan)?.label || '-'}</p></div>
-                <div><p className="text-sm text-muted-foreground">Vendor</p><p className="font-medium">{viewingTransaction.vendor?.name || '-'}</p></div>
-              </div>
-              {viewingTransaction.keterangan && <div><p className="text-sm text-muted-foreground">Keterangan</p><p className="font-medium">{viewingTransaction.keterangan}</p></div>}
-              <div className="border-t pt-4">
-                <p className="font-medium mb-3">Informasi Finance</p>
-                <div className="grid grid-cols-2 gap-4">
-                  <div><p className="text-sm text-muted-foreground">No. Tiket Mydx</p><p className="font-medium">{viewingTransaction.noTiketMydx || '-'}</p></div>
-                  <div><p className="text-sm text-muted-foreground">Tgl Serah Finance</p><p className="font-medium">{viewingTransaction.tglSerahFinance ? format(new Date(viewingTransaction.tglSerahFinance), 'dd MMM yyyy', { locale: idLocale }) : '-'}</p></div>
-                  <div><p className="text-sm text-muted-foreground">PIC Finance</p><p className="font-medium">{viewingTransaction.picFinance || '-'}</p></div>
-                  <div><p className="text-sm text-muted-foreground">No HP Finance</p><p className="font-medium">{viewingTransaction.noHpFinance || '-'}</p></div>
-                  <div><p className="text-sm text-muted-foreground">Tgl Transfer Vendor</p><p className="font-medium">{viewingTransaction.tglTransferVendor ? format(new Date(viewingTransaction.tglTransferVendor), 'dd MMM yyyy', { locale: idLocale }) : '-'}</p></div>
-                  <div><p className="text-sm text-muted-foreground">Nilai Transfer</p><p className="font-medium">{viewingTransaction.nilaiTransfer ? `Rp ${viewingTransaction.nilaiTransfer.toLocaleString('id-ID')}` : '-'}</p></div>
+            <div className="grid grid-cols-3 gap-0">
+              {/* Left Side - Details */}
+              <div className="col-span-2 p-6 space-y-5 border-r">
+                {/* GL Account */}
+                <div>
+                  <p className="text-sm text-muted-foreground mb-1">GL Account</p>
+                  <p className="font-semibold">{viewingTransaction.glAccount.code} - {viewingTransaction.glAccount.description}</p>
+                </div>
+
+                {/* Basic Info Grid */}
+                <div className="grid grid-cols-3 gap-6">
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-1">Kuartal</p>
+                    <p className="font-semibold">Q{viewingTransaction.quarter}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-1">Regional</p>
+                    <p className="font-semibold">{regionals.find(r => r.code === viewingTransaction.regionalCode)?.name}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-1">Regional Pengguna</p>
+                    <p className="font-semibold">{viewingTransaction.regionalPengguna}</p>
+                  </div>
+                </div>
+
+                {/* Kegiatan */}
+                <div>
+                  <p className="text-sm text-muted-foreground mb-1">Kegiatan</p>
+                  <p className="font-semibold">{viewingTransaction.kegiatan}</p>
+                </div>
+
+                {/* Kwitansi Info */}
+                <div className="grid grid-cols-3 gap-6">
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-1">Tanggal Kwitansi</p>
+                    <p className="font-semibold">{viewingTransaction.tanggalKwitansi ? format(new Date(viewingTransaction.tanggalKwitansi), 'dd MMMM yyyy', { locale: idLocale }) : '-'}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-1">Nilai Kwitansi</p>
+                    <p className="font-semibold text-blue-600">Rp {viewingTransaction.nilaiKwitansi.toLocaleString('id-ID')}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-1">Jenis Pajak</p>
+                    <p className="font-semibold">{JENIS_PAJAK.find(p => p.value === viewingTransaction.jenisPajak)?.label || 'Tanpa PPN'}</p>
+                  </div>
+                </div>
+
+                {/* PPN Info */}
+                <div className="grid grid-cols-2 gap-6">
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-1">Nilai Tanpa PPN</p>
+                    <p className="font-semibold">Rp {viewingTransaction.nilaiTanpaPPN.toLocaleString('id-ID', { maximumFractionDigits: 0 })}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-1">Nilai PPN</p>
+                    <p className="font-semibold">Rp {viewingTransaction.nilaiPPN.toLocaleString('id-ID', { maximumFractionDigits: 0 })}</p>
+                  </div>
+                </div>
+
+                {/* Pengadaan Info */}
+                <div className="grid grid-cols-2 gap-6">
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-1">Jenis Pengadaan</p>
+                    <p className="font-semibold">{JENIS_PENGADAAN.find(p => p.value === viewingTransaction.jenisPengadaan)?.label || '-'}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-1">Vendor</p>
+                    <p className="font-semibold">{viewingTransaction.vendor?.name || '-'}</p>
+                  </div>
+                </div>
+
+                {/* Keterangan */}
+                {viewingTransaction.keterangan && (
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-1">Keterangan</p>
+                    <p className="font-semibold">{viewingTransaction.keterangan}</p>
+                  </div>
+                )}
+
+                {/* Finance Info Section */}
+                <div className="pt-4 border-t">
+                  <p className="font-semibold mb-4">Informasi Finance</p>
+                  <div className="grid grid-cols-2 gap-6">
+                    <div>
+                      <p className="text-sm text-muted-foreground mb-1">No. Tiket Mydx</p>
+                      <p className="font-semibold">{viewingTransaction.noTiketMydx || '-'}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground mb-1">Tgl Serah Finance</p>
+                      <p className="font-semibold">{viewingTransaction.tglSerahFinance ? format(new Date(viewingTransaction.tglSerahFinance), 'dd MMMM yyyy', { locale: idLocale }) : '-'}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground mb-1">PIC Finance</p>
+                      <p className="font-semibold">{viewingTransaction.picFinance || '-'}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground mb-1">No HP Finance</p>
+                      <p className="font-semibold">{viewingTransaction.noHpFinance || '-'}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground mb-1">Tgl Transfer Vendor</p>
+                      <p className="font-semibold">{viewingTransaction.tglTransferVendor ? format(new Date(viewingTransaction.tglTransferVendor), 'dd MMMM yyyy', { locale: idLocale }) : '-'}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground mb-1">Nilai Transfer</p>
+                      <p className="font-semibold">{viewingTransaction.nilaiTransfer ? `Rp ${viewingTransaction.nilaiTransfer.toLocaleString('id-ID')}` : '-'}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div className="flex gap-2 justify-end pt-4 border-t">
+                  <Button variant="outline" onClick={() => setShowViewDialog(false)}>Tutup</Button>
+                  <Button onClick={() => { setShowViewDialog(false); openEditDialog(viewingTransaction) }}>Edit</Button>
                 </div>
               </div>
-              <div className="border-t pt-4">
-                <p className="font-medium mb-3">Task Checklist</p>
-                <div className="grid grid-cols-2 gap-2 text-sm">
-                  <div className="flex items-center gap-2"><Checkbox checked={viewingTransaction.taskPengajuan} disabled /><span>Pengajuan Pengadaan</span></div>
-                  <div className="flex items-center gap-2"><Checkbox checked={viewingTransaction.taskTransferVendor} disabled /><span>Transfer dari Vendor</span></div>
-                  <div className="flex items-center gap-2"><Checkbox checked={viewingTransaction.taskTerimaBerkas} disabled /><span>Terima berkas pengadaan</span></div>
-                  <div className="flex items-center gap-2"><Checkbox checked={viewingTransaction.taskUploadMydx} disabled /><span>Upload ke Mydx</span></div>
-                  <div className="flex items-center gap-2"><Checkbox checked={viewingTransaction.taskSerahFinance} disabled /><span>Serahkan berkas ke Finance</span></div>
-                  <div className="flex items-center gap-2"><Checkbox checked={viewingTransaction.taskVendorDibayar} disabled /><span>Vendor sudah dibayar</span></div>
+
+              {/* Right Side - Task Checklist */}
+              <div className="col-span-1 p-6 bg-muted/30">
+                <div className="space-y-4">
+                  <p className="text-sm font-semibold">Task Checklist</p>
+                  <div className="space-y-3">
+                    <div className={`flex items-center gap-3 p-3 rounded-lg border ${viewingTransaction.taskPengajuan ? 'bg-green-50 border-green-200' : 'bg-white'}`}>
+                      <Checkbox checked={viewingTransaction.taskPengajuan} disabled className="data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500" />
+                      <span className={`text-sm ${viewingTransaction.taskPengajuan ? 'text-green-700' : ''}`}>Pengajuan Pengadaan</span>
+                    </div>
+                    <div className={`flex items-center gap-3 p-3 rounded-lg border ${viewingTransaction.taskTransferVendor ? 'bg-green-50 border-green-200' : 'bg-white'}`}>
+                      <Checkbox checked={viewingTransaction.taskTransferVendor} disabled className="data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500" />
+                      <span className={`text-sm ${viewingTransaction.taskTransferVendor ? 'text-green-700' : ''}`}>Transfer dari Vendor</span>
+                    </div>
+                    <div className={`flex items-center gap-3 p-3 rounded-lg border ${viewingTransaction.taskTerimaBerkas ? 'bg-green-50 border-green-200' : 'bg-white'}`}>
+                      <Checkbox checked={viewingTransaction.taskTerimaBerkas} disabled className="data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500" />
+                      <span className={`text-sm ${viewingTransaction.taskTerimaBerkas ? 'text-green-700' : ''}`}>Terima berkas pengadaan</span>
+                    </div>
+                    <div className={`flex items-center gap-3 p-3 rounded-lg border ${viewingTransaction.taskUploadMydx ? 'bg-green-50 border-green-200' : 'bg-white'}`}>
+                      <Checkbox checked={viewingTransaction.taskUploadMydx} disabled className="data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500" />
+                      <span className={`text-sm ${viewingTransaction.taskUploadMydx ? 'text-green-700' : ''}`}>Upload ke Mydx</span>
+                    </div>
+                    <div className={`flex items-center gap-3 p-3 rounded-lg border ${viewingTransaction.taskSerahFinance ? 'bg-green-50 border-green-200' : 'bg-white'}`}>
+                      <Checkbox checked={viewingTransaction.taskSerahFinance} disabled className="data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500" />
+                      <span className={`text-sm ${viewingTransaction.taskSerahFinance ? 'text-green-700' : ''}`}>Serahkan berkas ke Finance</span>
+                    </div>
+                    <div className={`flex items-center gap-3 p-3 rounded-lg border ${viewingTransaction.taskVendorDibayar ? 'bg-green-50 border-green-200' : 'bg-white'}`}>
+                      <Checkbox checked={viewingTransaction.taskVendorDibayar} disabled className="data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500" />
+                      <span className={`text-sm ${viewingTransaction.taskVendorDibayar ? 'text-green-700' : ''}`}>Vendor sudah dibayar</span>
+                    </div>
+                  </div>
                 </div>
-              </div>
-              <div className="flex gap-2 justify-end">
-                <Button variant="outline" onClick={() => setShowViewDialog(false)}>Tutup</Button>
-                <Button onClick={() => { setShowViewDialog(false); openEditDialog(viewingTransaction) }}>Edit</Button>
               </div>
             </div>
           )}
@@ -360,64 +463,147 @@ export default function TransactionPage() {
 
       {/* Edit Dialog */}
       <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader><DialogTitle>Edit Transaksi</DialogTitle></DialogHeader>
-          <div className="space-y-4">
-            <div className="grid grid-cols-3 gap-4">
-              <div className="space-y-2"><Label>GL Account</Label>
-                <Select value={editGl} onValueChange={setEditGl}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{glAccounts.map(gl => <SelectItem key={gl.id} value={gl.id}>{gl.code} - {gl.description}</SelectItem>)}</SelectContent></Select>
+        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto p-0">
+          <DialogHeader className="p-6 pb-0"><DialogTitle>Edit Transaksi</DialogTitle></DialogHeader>
+          <div className="grid grid-cols-3 gap-0">
+            {/* Left Side - Form */}
+            <div className="col-span-2 p-6 space-y-5 border-r">
+              {/* Basic Info */}
+              <div className="space-y-4">
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">GL Account</Label>
+                    <Select value={editGl} onValueChange={setEditGl}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{glAccounts.map(gl => <SelectItem key={gl.id} value={gl.id}>{gl.code} - {gl.description}</SelectItem>)}</SelectContent></Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Kuartal</Label>
+                    <Select value={editQuarter} onValueChange={setEditQuarter}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{[1,2,3,4].map(q => <SelectItem key={q} value={q.toString()}>Q{q}</SelectItem>)}</SelectContent></Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Regional</Label>
+                    <Select value={editRegional} onValueChange={setEditRegional}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{regionals.map(r => <SelectItem key={r.id} value={r.code}>{r.name}</SelectItem>)}</SelectContent></Select>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Kegiatan</Label>
+                  <Input value={editKegiatan} onChange={e => setEditKegiatan(e.target.value)} />
+                </div>
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Regional Pengguna</Label>
+                    <Input value={editRegionalPengguna} onChange={e => setEditRegionalPengguna(e.target.value)} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Tanggal Kwitansi</Label>
+                    <DatePicker date={editTanggalKwitansi} onSelect={setEditTanggalKwitansi} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Nilai Kwitansi (Rp)</Label>
+                    <CurrencyInput value={editNilaiKwitansi} onChange={setEditNilaiKwitansi} />
+                  </div>
+                </div>
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Jenis Pajak</Label>
+                    <Select value={editJenisPajak} onValueChange={setEditJenisPajak}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{JENIS_PAJAK.map(p => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}</SelectContent></Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Nilai Tanpa PPN</Label>
+                    <Input value={`Rp ${editPpnCalc.nilaiTanpaPPN.toLocaleString('id-ID', { maximumFractionDigits: 0 })}`} disabled className="bg-muted" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Nilai PPN</Label>
+                    <Input value={`Rp ${editPpnCalc.nilaiPPN.toLocaleString('id-ID', { maximumFractionDigits: 0 })}`} disabled className="bg-muted" />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Jenis Pengadaan</Label>
+                    <Select value={editJenisPengadaan} onValueChange={setEditJenisPengadaan}><SelectTrigger><SelectValue placeholder="Pilih jenis pengadaan" /></SelectTrigger><SelectContent>{JENIS_PENGADAAN.map(p => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}</SelectContent></Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Vendor</Label>
+                    <Select value={editVendorId} onValueChange={setEditVendorId}><SelectTrigger><SelectValue placeholder="Pilih vendor" /></SelectTrigger><SelectContent>{vendors.map(v => <SelectItem key={v.id} value={v.id}>{v.name}</SelectItem>)}</SelectContent></Select>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Keterangan</Label>
+                  <Textarea value={editKeterangan} onChange={e => setEditKeterangan(e.target.value)} className="min-h-[80px]" />
+                </div>
               </div>
-              <div className="space-y-2"><Label>Kuartal</Label>
-                <Select value={editQuarter} onValueChange={setEditQuarter}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{[1,2,3,4].map(q => <SelectItem key={q} value={q.toString()}>Q{q}</SelectItem>)}</SelectContent></Select>
+
+              {/* Finance Info */}
+              <div className="space-y-4 pt-4 border-t">
+                <p className="text-sm font-semibold text-muted-foreground">Informasi Finance</p>
+                <div className="grid grid-cols-4 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">No. Tiket Mydx</Label>
+                    <Input value={editNoTiketMydx} onChange={e => setEditNoTiketMydx(e.target.value)} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Tgl Serah Finance</Label>
+                    <DatePicker date={editTglSerahFinance} onSelect={setEditTglSerahFinance} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">PIC Finance</Label>
+                    <Input value={editPicFinance} onChange={e => setEditPicFinance(e.target.value)} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">No HP Finance</Label>
+                    <Input value={editNoHpFinance} onChange={e => setEditNoHpFinance(e.target.value)} />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Tgl Transfer ke Vendor</Label>
+                    <DatePicker date={editTglTransferVendor} onSelect={setEditTglTransferVendor} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Nilai Transfer (Rp)</Label>
+                    <CurrencyInput value={editNilaiTransfer || 0} onChange={v => setEditNilaiTransfer(v || undefined)} />
+                  </div>
+                </div>
               </div>
-              <div className="space-y-2"><Label>Regional</Label>
-                <Select value={editRegional} onValueChange={setEditRegional}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{regionals.map(r => <SelectItem key={r.id} value={r.code}>{r.name}</SelectItem>)}</SelectContent></Select>
+
+              {/* Actions */}
+              <div className="flex gap-2 justify-end pt-4 border-t">
+                <Button variant="outline" onClick={() => setShowEditDialog(false)}>Batal</Button>
+                <Button onClick={handleEdit}>Simpan Perubahan</Button>
               </div>
             </div>
-            <div className="space-y-2"><Label>Kegiatan</Label><Input value={editKegiatan} onChange={e => setEditKegiatan(e.target.value)} /></div>
-            <div className="grid grid-cols-3 gap-4">
-              <div className="space-y-2"><Label>Regional Pengguna</Label><Input value={editRegionalPengguna} onChange={e => setEditRegionalPengguna(e.target.value)} /></div>
-              <div className="space-y-2"><Label>Tanggal Kwitansi</Label><DatePicker date={editTanggalKwitansi} onSelect={setEditTanggalKwitansi} /></div>
-              <div className="space-y-2"><Label>Nilai Kwitansi (Rp)</Label><CurrencyInput value={editNilaiKwitansi} onChange={setEditNilaiKwitansi} /></div>
-            </div>
-            <div className="grid grid-cols-3 gap-4">
-              <div className="space-y-2"><Label>Jenis Pajak</Label>
-                <Select value={editJenisPajak} onValueChange={setEditJenisPajak}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{JENIS_PAJAK.map(p => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}</SelectContent></Select>
-              </div>
-              <div className="space-y-2"><Label>Nilai Tanpa PPN</Label><Input value={`Rp ${editPpnCalc.nilaiTanpaPPN.toLocaleString('id-ID', { maximumFractionDigits: 0 })}`} disabled className="bg-gray-50" /></div>
-              <div className="space-y-2"><Label>Nilai PPN</Label><Input value={`Rp ${editPpnCalc.nilaiPPN.toLocaleString('id-ID', { maximumFractionDigits: 0 })}`} disabled className="bg-gray-50" /></div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2"><Label>Jenis Pengadaan</Label>
-                <Select value={editJenisPengadaan} onValueChange={setEditJenisPengadaan}><SelectTrigger><SelectValue placeholder="Pilih jenis pengadaan" /></SelectTrigger><SelectContent>{JENIS_PENGADAAN.map(p => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}</SelectContent></Select>
-              </div>
-              <div className="space-y-2"><Label>Vendor</Label>
-                <Select value={editVendorId} onValueChange={setEditVendorId}><SelectTrigger><SelectValue placeholder="Pilih vendor" /></SelectTrigger><SelectContent>{vendors.map(v => <SelectItem key={v.id} value={v.id}>{v.name}</SelectItem>)}</SelectContent></Select>
-              </div>
-            </div>
-            <div className="space-y-2"><Label>Keterangan</Label><Textarea value={editKeterangan} onChange={e => setEditKeterangan(e.target.value)} /></div>
-            <div className="grid grid-cols-4 gap-4">
-              <div className="space-y-2"><Label>No. Tiket Mydx</Label><Input value={editNoTiketMydx} onChange={e => setEditNoTiketMydx(e.target.value)} /></div>
-              <div className="space-y-2"><Label>Tgl Serah Finance</Label><DatePicker date={editTglSerahFinance} onSelect={setEditTglSerahFinance} /></div>
-              <div className="space-y-2"><Label>PIC Finance</Label><Input value={editPicFinance} onChange={e => setEditPicFinance(e.target.value)} /></div>
-              <div className="space-y-2"><Label>No HP Finance</Label><Input value={editNoHpFinance} onChange={e => setEditNoHpFinance(e.target.value)} /></div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2"><Label>Tgl Transfer ke Vendor</Label><DatePicker date={editTglTransferVendor} onSelect={setEditTglTransferVendor} /></div>
-              <div className="space-y-2"><Label>Nilai Transfer (Rp)</Label><CurrencyInput value={editNilaiTransfer || 0} onChange={v => setEditNilaiTransfer(v || undefined)} /></div>
-            </div>
-            <div className="space-y-2">
-              <Label>Task Checklist</Label>
-              <div className="grid grid-cols-3 gap-4 text-sm">
-                <div className="flex items-center gap-2"><Checkbox checked disabled /><span>Pengajuan Pengadaan</span></div>
-                <div className="flex items-center gap-2"><Checkbox id="editTaskTransferVendor" checked={editTaskTransferVendor} onCheckedChange={c => setEditTaskTransferVendor(!!c)} /><label htmlFor="editTaskTransferVendor">Transfer dari Vendor</label></div>
-                <div className="flex items-center gap-2"><Checkbox id="editTaskTerimaBerkas" checked={editTaskTerimaBerkas} onCheckedChange={c => setEditTaskTerimaBerkas(!!c)} /><label htmlFor="editTaskTerimaBerkas">Terima berkas pengadaan</label></div>
-                <div className="flex items-center gap-2"><Checkbox checked={!!editNoTiketMydx} disabled /><span>Upload ke Mydx</span></div>
-                <div className="flex items-center gap-2"><Checkbox checked={!!editTglSerahFinance} disabled /><span>Serahkan berkas ke Finance</span></div>
-                <div className="flex items-center gap-2"><Checkbox checked={!!editTglTransferVendor} disabled /><span>Vendor sudah dibayar</span></div>
+
+            {/* Right Side - Task Checklist */}
+            <div className="col-span-1 p-6 bg-muted/30">
+              <div className="space-y-4">
+                <p className="text-sm font-semibold">Task Checklist</p>
+                <div className="space-y-3">
+                  <div className={`flex items-center gap-3 p-3 rounded-lg border ${true ? 'bg-green-50 border-green-200' : 'bg-white'}`}>
+                    <Checkbox checked disabled className="data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500" />
+                    <span className={`text-sm ${true ? 'text-green-700' : ''}`}>Pengajuan Pengadaan</span>
+                  </div>
+                  <div className={`flex items-center gap-3 p-3 rounded-lg border ${editTaskTransferVendor ? 'bg-green-50 border-green-200' : 'bg-white'}`}>
+                    <Checkbox id="editTaskTransferVendor" checked={editTaskTransferVendor} onCheckedChange={c => setEditTaskTransferVendor(!!c)} className="data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500" />
+                    <label htmlFor="editTaskTransferVendor" className={`text-sm cursor-pointer ${editTaskTransferVendor ? 'text-green-700' : ''}`}>Transfer dari Vendor</label>
+                  </div>
+                  <div className={`flex items-center gap-3 p-3 rounded-lg border ${editTaskTerimaBerkas ? 'bg-green-50 border-green-200' : 'bg-white'}`}>
+                    <Checkbox id="editTaskTerimaBerkas" checked={editTaskTerimaBerkas} onCheckedChange={c => setEditTaskTerimaBerkas(!!c)} className="data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500" />
+                    <label htmlFor="editTaskTerimaBerkas" className={`text-sm cursor-pointer ${editTaskTerimaBerkas ? 'text-green-700' : ''}`}>Terima berkas pengadaan</label>
+                  </div>
+                  <div className={`flex items-center gap-3 p-3 rounded-lg border ${!!editNoTiketMydx ? 'bg-green-50 border-green-200' : 'bg-white'}`}>
+                    <Checkbox checked={!!editNoTiketMydx} disabled className="data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500" />
+                    <span className={`text-sm ${!!editNoTiketMydx ? 'text-green-700' : 'text-muted-foreground'}`}>Upload ke Mydx</span>
+                  </div>
+                  <div className={`flex items-center gap-3 p-3 rounded-lg border ${!!editTglSerahFinance ? 'bg-green-50 border-green-200' : 'bg-white'}`}>
+                    <Checkbox checked={!!editTglSerahFinance} disabled className="data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500" />
+                    <span className={`text-sm ${!!editTglSerahFinance ? 'text-green-700' : 'text-muted-foreground'}`}>Serahkan berkas ke Finance</span>
+                  </div>
+                  <div className={`flex items-center gap-3 p-3 rounded-lg border ${!!editTglTransferVendor ? 'bg-green-50 border-green-200' : 'bg-white'}`}>
+                    <Checkbox checked={!!editTglTransferVendor} disabled className="data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500" />
+                    <span className={`text-sm ${!!editTglTransferVendor ? 'text-green-700' : 'text-muted-foreground'}`}>Vendor sudah dibayar</span>
+                  </div>
+                </div>
               </div>
             </div>
-            <div className="flex gap-2 justify-end"><Button variant="outline" onClick={() => setShowEditDialog(false)}>Batal</Button><Button onClick={handleEdit}>Simpan</Button></div>
           </div>
         </DialogContent>
       </Dialog>
