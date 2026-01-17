@@ -11,7 +11,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { LayoutDashboard, Wallet, BarChart3, LogOut, Database, ChevronDown, Building2, FileCode, Settings, FolderOpen, Users } from 'lucide-react'
+import { LayoutDashboard, Wallet, BarChart3, LogOut, Database, ChevronDown, Building2, FileCode, Settings, FolderOpen, Users, UserCog } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 // Weather icon component using custom images
@@ -30,6 +30,25 @@ export default function Navbar() {
   const pathname = usePathname()
   const [weather, setWeather] = useState<{ temp: number; code: number } | null>(null)
   const [currentDate, setCurrentDate] = useState('')
+  const [userAvatar, setUserAvatar] = useState('/avatar.png')
+  const [userName, setUserName] = useState('')
+  const [userEmail, setUserEmail] = useState('')
+
+  useEffect(() => {
+    // Load user profile (avatar, name, email)
+    if (session?.user?.email) {
+      fetch('/api/user/profile')
+        .then(r => r.json())
+        .then(data => {
+          if (data && !data.error) {
+            setUserAvatar(data.avatar || '/avatar.png')
+            setUserName(data.name || '')
+            setUserEmail(data.email || '')
+          }
+        })
+        .catch(() => {})
+    }
+  }, [session])
 
   useEffect(() => {
     // Set current date
@@ -99,23 +118,25 @@ export default function Navbar() {
               <DropdownMenuTrigger asChild>
                 <button className="flex items-center gap-3 hover:bg-gray-50 rounded-lg px-2 py-1 transition-colors">
                   <Image 
-                    src="/avatar.png" 
+                    src={userAvatar} 
                     alt="Avatar" 
                     width={36} 
                     height={36} 
                     className="rounded-lg"
                   />
                   <div className="text-left">
-                    <p className="font-medium text-sm">{session?.user?.name}</p>
-                    <p className="text-xs text-muted-foreground">{session?.user?.email}</p>
+                    <p className="font-medium text-sm">{userName || session?.user?.name}</p>
+                    <p className="text-xs text-muted-foreground">{userEmail || session?.user?.email}</p>
                   </div>
                   <ChevronDown className="h-4 w-4 text-muted-foreground" />
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuItem className="cursor-pointer">
-                  <Settings className="h-4 w-4 mr-2" />
-                  Pengaturan
+                <DropdownMenuItem asChild className="cursor-pointer">
+                  <Link href="/dashboard/settings" className="flex items-center">
+                    <Settings className="h-4 w-4 mr-2" />
+                    Pengaturan
+                  </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => signOut()} className="cursor-pointer">
@@ -182,6 +203,12 @@ export default function Navbar() {
                   <Link href="/dashboard/master/vendor" className="flex items-center gap-2 cursor-pointer">
                     <Users className="h-4 w-4" />
                     Vendor
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/dashboard/master/pic-anggaran" className="flex items-center gap-2 cursor-pointer">
+                    <UserCog className="h-4 w-4" />
+                    PIC Anggaran
                   </Link>
                 </DropdownMenuItem>
               </DropdownMenuContent>

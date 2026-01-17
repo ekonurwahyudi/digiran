@@ -12,6 +12,7 @@ model User {
   password  String
   name      String
   role      String   @default("user")
+  avatar    String?  @default("/avatar.png")
   createdAt DateTime @default(now())
 }
 
@@ -127,4 +128,19 @@ model Transaction {
   
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
+}
+
+model PicAnggaran {
+  id                    String   @id @default(cuid())
+  unit                  String
+  namaPemegangImprest   String
+  nikPemegangImprest    String
+  namaPenanggungJawab   String
+  nikPenanggungJawab    String
+  year                  Int
+  isActive              Boolean  @default(true)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@unique([unit, year])
 }

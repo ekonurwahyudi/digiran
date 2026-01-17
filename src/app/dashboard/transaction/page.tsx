@@ -88,6 +88,7 @@ export default function TransactionPage() {
   const [year, setYear] = useState(new Date().getFullYear())
   const [message, setMessage] = useState('')
   const [activeTab, setActiveTab] = useState('all')
+  const [picAnggaran, setPicAnggaran] = useState<any>(null)
   
   // Filter states
   const [filterGl, setFilterGl] = useState('')
@@ -142,6 +143,16 @@ export default function TransactionPage() {
   }, [])
 
   useEffect(() => { loadTransactions() }, [year])
+  useEffect(() => {
+    // Load PIC Anggaran for current year
+    fetch(`/api/pic-anggaran?year=${year}`)
+      .then(r => r.json())
+      .then(data => {
+        if (data && data.length > 0) {
+          setPicAnggaran(data[0]) // Use first PIC for now
+        }
+      })
+  }, [year])
   const loadTransactions = () => { fetch(`/api/transaction?year=${year}`).then(r => r.json()).then(setTransactions) }
 
   useEffect(() => {
@@ -491,15 +502,20 @@ export default function TransactionPage() {
         ws.getCell(currentRow, 4).alignment = { horizontal: 'center' }
         currentRow += 4
         
-        ws.getCell(currentRow, 1).value = 'EVI CHRISTIANA'
+        const namaPemegang = picAnggaran?.namaPemegangImprest || 'NIDA'
+        const nikPemegang = picAnggaran?.nikPemegangImprest || '700661'
+        const namaPenanggung = picAnggaran?.namaPenanggungJawab || 'IRWAN'
+        const nikPenanggung = picAnggaran?.nikPenanggungJawab || '720410'
+        
+        ws.getCell(currentRow, 1).value = namaPemegang
         ws.mergeCells(currentRow, 4, currentRow, 6)
-        ws.getCell(currentRow, 4).value = 'ISWANTORO'
+        ws.getCell(currentRow, 4).value = namaPenanggung
         ws.getCell(currentRow, 4).alignment = { horizontal: 'center' }
         currentRow++
         
-        ws.getCell(currentRow, 1).value = 'NIK: 700661'
+        ws.getCell(currentRow, 1).value = `NIK: ${nikPemegang}`
         ws.mergeCells(currentRow, 4, currentRow, 6)
-        ws.getCell(currentRow, 4).value = 'NIK: 720410'
+        ws.getCell(currentRow, 4).value = `NIK: ${nikPenanggung}`
         ws.getCell(currentRow, 4).alignment = { horizontal: 'center' }
         
         currentRow += 5
@@ -616,8 +632,8 @@ export default function TransactionPage() {
       {/* Transaction List with Tabs */}
       <Card className="border">
         <CardHeader>
-          <CardTitle>Daftar Transaksi</CardTitle>
-          <CardDescription>Riwayat pencatatan anggaran tahun {year}</CardDescription>
+          <CardTitle>Riwayat Pencatatan Anggaran Tahun {year}</CardTitle>
+          <CardDescription>Data transaksi dan pencatatan anggaran</CardDescription>
         </CardHeader>
         <CardContent>
           <Tabs value={activeTab} onValueChange={setActiveTab}>
