@@ -14,6 +14,18 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
       q2Amount: data.q2Amount,
       q3Amount: data.q3Amount,
       q4Amount: data.q4Amount,
+      janAmount: data.janAmount ?? undefined,
+      febAmount: data.febAmount ?? undefined,
+      marAmount: data.marAmount ?? undefined,
+      aprAmount: data.aprAmount ?? undefined,
+      mayAmount: data.mayAmount ?? undefined,
+      junAmount: data.junAmount ?? undefined,
+      julAmount: data.julAmount ?? undefined,
+      augAmount: data.augAmount ?? undefined,
+      sepAmount: data.sepAmount ?? undefined,
+      octAmount: data.octAmount ?? undefined,
+      novAmount: data.novAmount ?? undefined,
+      decAmount: data.decAmount ?? undefined,
     },
   })
 

@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { ColumnDef } from '@tanstack/react-table'
 import { format } from 'date-fns'
 import { id } from 'date-fns/locale'
@@ -8,6 +8,9 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { DataTable } from '@/components/ui/data-table'
 import { TableSkeleton } from '@/components/loading'
+import { useGlAccounts, useRegionals } from '@/lib/hooks/useMaster'
+import { useBudgets } from '@/lib/hooks/useBudget'
+import { useTransactions } from '@/lib/hooks/useTransaction'
 
 interface GlAccount { id: string; code: string; description: string }
 interface Regional { id: string; code: string; name: string }
@@ -23,43 +26,26 @@ interface Budget {
 interface SummaryRow { key: string; glCode: string; quarter: number; regionalCode: string; regionalName: string; allocated: number; used: number; remaining: number }
 
 export default function ReportPage() {
-  const [glAccounts, setGlAccounts] = useState<GlAccount[]>([])
-  const [regionals, setRegionals] = useState<Regional[]>([])
-  const [transactions, setTransactions] = useState<Transaction[]>([])
-  const [budgets, setBudgets] = useState<Budget[]>([])
   const [year, setYear] = useState(new Date().getFullYear())
   const [filterGl, setFilterGl] = useState('all')
   const [filterQuarter, setFilterQuarter] = useState('all')
   const [filterRegional, setFilterRegional] = useState('all')
-  const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    setLoading(true)
-    Promise.all([
-      fetch('/api/gl-account').then(r => r.json()),
-      fetch('/api/regional').then(r => r.json()),
-      fetch(`/api/budget?year=${year}`).then(r => r.json())
-    ]).then(([glData, regionalData, budgetData]) => {
-      setGlAccounts(glData)
-      setRegionals(regionalData)
-      setBudgets(budgetData)
-      setLoading(false)
-    })
-  }, [year])
+  // TanStack Query hooks
+  const { data: glAccounts = [], isLoading: loadingGl } = useGlAccounts()
+  const { data: regionals = [], isLoading: loadingRegionals } = useRegionals()
+  const { data: budgets = [], isLoading: loadingBudgets } = useBudgets(year)
+  const { data: transactions = [], isLoading: loadingTransactions } = useTransactions(year)
 
-  useEffect(() => {
-    setLoading(true)
-    const params = new URLSearchParams({ year: year.toString() })
-    if (filterGl !== 'all') params.append('glAccountId', filterGl)
-    if (filterQuarter !== 'all') params.append('quarter', filterQuarter)
-    if (filterRegional !== 'all') params.append('regionalCode', filterRegional)
-    fetch(`/api/transaction?${params}`)
-      .then(r => r.json())
-      .then(data => {
-        setTransactions(data)
-        setLoading(false)
-      })
-  }, [year, filterGl, filterQuarter, filterRegional])
+  const isLoading = loadingGl || loadingRegionals || loadingBudgets || loadingTransactions
+
+  // Filter transactions based on selected filters
+  const filteredTransactions = (transactions as Transaction[]).filter(t => {
+    if (filterGl !== 'all' && t.glAccountId !== filterGl) return false
+    if (filterQuarter !== 'all' && t.quarter !== parseInt(filterQuarter)) return false
+    if (filterRegional !== 'all' && t.regionalCode !== filterRegional) return false
+    return true
+  })
 
   const summaryColumns: ColumnDef<SummaryRow>[] = [
     { accessorKey: 'glCode', header: 'GL Account' },
@@ -81,7 +67,7 @@ export default function ReportPage() {
       cell: ({ row }) => row.original.tanggalKwitansi ? format(new Date(row.original.tanggalKwitansi), 'dd MMM yyyy', { locale: id }) : '-' },
     { accessorKey: 'glAccount.code', header: 'GL Account', cell: ({ row }) => row.original.glAccount.code },
     { accessorKey: 'quarter', header: 'Kuartal', cell: ({ row }) => `Q${row.getValue('quarter')}` },
-    { accessorKey: 'regionalCode', header: 'Regional', cell: ({ row }) => regionals.find(r => r.code === row.original.regionalCode)?.name || row.original.regionalCode },
+    { accessorKey: 'regionalCode', header: 'Regional', cell: ({ row }) => (regionals as Regional[]).find(r => r.code === row.original.regionalCode)?.name || row.original.regionalCode },
     { accessorKey: 'kegiatan', header: 'Kegiatan' },
     { accessorKey: 'regionalPengguna', header: 'Regional Pengguna' },
     { accessorKey: 'nilaiKwitansi', header: () => <div className="text-right">Nilai (Rp)</div>,
@@ -91,18 +77,18 @@ export default function ReportPage() {
 
   const summaryData = (): SummaryRow[] => {
     const summary: SummaryRow[] = []
-    budgets.forEach((budget) => {
+    ;(budgets as Budget[]).forEach((budget) => {
       budget.allocations.forEach((alloc) => {
-        const used = transactions
+        const used = (transactions as Transaction[])
           .filter(t => t.glAccountId === budget.glAccountId && t.quarter === alloc.quarter && t.regionalCode === alloc.regionalCode)
           .reduce((sum, t) => sum + t.nilaiKwitansi, 0)
-        const reg = regionals.find(r => r.code === alloc.regionalCode)
+        const reg = (regionals as Regional[]).find(r => r.code === alloc.regionalCode)
         const row: SummaryRow = {
           key: `${budget.glAccount.code}-Q${alloc.quarter}-${alloc.regionalCode}`,
           glCode: budget.glAccount.code, quarter: alloc.quarter, regionalCode: alloc.regionalCode,
           regionalName: reg?.name || alloc.regionalCode, allocated: alloc.amount, used, remaining: alloc.amount - used,
         }
-        if (filterGl !== 'all') { const gl = glAccounts.find(g => g.id === filterGl); if (gl && row.glCode !== gl.code) return }
+        if (filterGl !== 'all') { const gl = (glAccounts as GlAccount[]).find(g => g.id === filterGl); if (gl && row.glCode !== gl.code) return }
         if (filterQuarter !== 'all' && row.quarter !== parseInt(filterQuarter)) return
         if (filterRegional !== 'all' && row.regionalCode !== filterRegional) return
         summary.push(row)
@@ -111,9 +97,7 @@ export default function ReportPage() {
     return summary
   }
 
-  if (loading) {
-    return <TableSkeleton title="Laporan Anggaran" showFilters={true} showActions={false} rows={10} columns={8} />
-  }
+  if (isLoading) return <TableSkeleton title="Laporan Anggaran" showFilters={true} showActions={false} rows={10} columns={8} />
 
   return (
     <div className="space-y-6">
@@ -127,12 +111,8 @@ export default function ReportPage() {
           </Select>
         </div>
       </div>
-
       <Card className="border">
-        <CardHeader>
-          <CardTitle>Filter</CardTitle>
-          <CardDescription>Pilih kriteria untuk menampilkan laporan</CardDescription>
-        </CardHeader>
+        <CardHeader><CardTitle>Filter</CardTitle><CardDescription>Pilih kriteria untuk menampilkan laporan</CardDescription></CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-2">
@@ -141,7 +121,7 @@ export default function ReportPage() {
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Semua GL Account</SelectItem>
-                  {glAccounts.map(gl => <SelectItem key={gl.id} value={gl.id}>{gl.code} - {gl.description}</SelectItem>)}
+                  {(glAccounts as GlAccount[]).map(gl => <SelectItem key={gl.id} value={gl.id}>{gl.code} - {gl.description}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
@@ -161,28 +141,20 @@ export default function ReportPage() {
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Semua Regional</SelectItem>
-                  {regionals.map(r => <SelectItem key={r.id} value={r.code}>{r.name}</SelectItem>)}
+                  {(regionals as Regional[]).map(r => <SelectItem key={r.id} value={r.code}>{r.name}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
           </div>
         </CardContent>
       </Card>
-
       <Card className="border">
-        <CardHeader>
-          <CardTitle>Ringkasan Sisa Anggaran</CardTitle>
-          <CardDescription>Rekapitulasi alokasi dan penggunaan anggaran per GL Account</CardDescription>
-        </CardHeader>
+        <CardHeader><CardTitle>Ringkasan Sisa Anggaran</CardTitle><CardDescription>Rekapitulasi alokasi dan penggunaan anggaran per GL Account</CardDescription></CardHeader>
         <CardContent><DataTable columns={summaryColumns} data={summaryData()} searchKey="glCode" searchPlaceholder="Cari GL Account..." /></CardContent>
       </Card>
-
       <Card className="border">
-        <CardHeader>
-          <CardTitle>Daftar Transaksi</CardTitle>
-          <CardDescription>Riwayat pencatatan anggaran berdasarkan filter</CardDescription>
-        </CardHeader>
-        <CardContent><DataTable columns={transactionColumns} data={transactions} searchKey="kegiatan" searchPlaceholder="Cari kegiatan..." /></CardContent>
+        <CardHeader><CardTitle>Daftar Transaksi</CardTitle><CardDescription>Riwayat pencatatan anggaran berdasarkan filter</CardDescription></CardHeader>
+        <CardContent><DataTable columns={transactionColumns} data={filteredTransactions} searchKey="kegiatan" searchPlaceholder="Cari kegiatan..." /></CardContent>
       </Card>
     </div>
   )

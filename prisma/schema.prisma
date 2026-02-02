@@ -64,6 +64,19 @@ model Budget {
   q2Amount        Float    @default(0)
   q3Amount        Float    @default(0)
   q4Amount        Float    @default(0)
+  // Monthly amounts
+  janAmount       Float    @default(0)
+  febAmount       Float    @default(0)
+  marAmount       Float    @default(0)
+  aprAmount       Float    @default(0)
+  mayAmount       Float    @default(0)
+  junAmount       Float    @default(0)
+  julAmount       Float    @default(0)
+  augAmount       Float    @default(0)
+  sepAmount       Float    @default(0)
+  octAmount       Float    @default(0)
+  novAmount       Float    @default(0)
+  decAmount       Float    @default(0)
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
   allocations     RegionalAllocation[]

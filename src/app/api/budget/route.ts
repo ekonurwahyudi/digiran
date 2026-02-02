@@ -15,29 +15,37 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const data = await req.json()
   
+  const budgetData = {
+    rkap: data.rkap || data.totalAmount,
+    releasePercent: data.releasePercent || 100,
+    totalAmount: data.totalAmount,
+    q1Amount: data.q1Amount,
+    q2Amount: data.q2Amount,
+    q3Amount: data.q3Amount,
+    q4Amount: data.q4Amount,
+    janAmount: data.janAmount || 0,
+    febAmount: data.febAmount || 0,
+    marAmount: data.marAmount || 0,
+    aprAmount: data.aprAmount || 0,
+    mayAmount: data.mayAmount || 0,
+    junAmount: data.junAmount || 0,
+    julAmount: data.julAmount || 0,
+    augAmount: data.augAmount || 0,
+    sepAmount: data.sepAmount || 0,
+    octAmount: data.octAmount || 0,
+    novAmount: data.novAmount || 0,
+    decAmount: data.decAmount || 0,
+  }
+  
   const budget = await prisma.budget.upsert({
     where: {
       glAccountId_year: { glAccountId: data.glAccountId, year: data.year },
     },
-    update: {
-      rkap: data.rkap || data.totalAmount,
-      releasePercent: data.releasePercent || 100,
-      totalAmount: data.totalAmount,
-      q1Amount: data.q1Amount,
-      q2Amount: data.q2Amount,
-      q3Amount: data.q3Amount,
-      q4Amount: data.q4Amount,
-    },
+    update: budgetData,
     create: {
       glAccountId: data.glAccountId,
       year: data.year,
-      rkap: data.rkap || data.totalAmount,
-      releasePercent: data.releasePercent || 100,
-      totalAmount: data.totalAmount,
-      q1Amount: data.q1Amount,
-      q2Amount: data.q2Amount,
-      q3Amount: data.q3Amount,
-      q4Amount: data.q4Amount,
+      ...budgetData,
     },
   })
 

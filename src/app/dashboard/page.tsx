@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -10,6 +10,7 @@ import { ChartRadial } from '@/components/ui/chart-radial'
 import { CartesianGrid, Line, LineChart, XAxis, YAxis } from 'recharts'
 import { ChartContainer, ChartTooltip, type ChartConfig, ChartLegend, ChartLegendContent } from '@/components/ui/chart'
 import { DashboardSkeleton } from '@/components/loading'
+import { useDashboardBudgets, useDashboardTransactions, useDashboardGlAccounts } from '@/lib/hooks/useDashboard'
 
 interface GlAccount {
   id: string
@@ -25,6 +26,18 @@ interface Budget {
   q2Amount: number
   q3Amount: number
   q4Amount: number
+  janAmount: number
+  febAmount: number
+  marAmount: number
+  aprAmount: number
+  mayAmount: number
+  junAmount: number
+  julAmount: number
+  augAmount: number
+  sepAmount: number
+  octAmount: number
+  novAmount: number
+  decAmount: number
   glAccount: GlAccount
 }
 
@@ -42,39 +55,20 @@ interface Transaction {
 
 export default function DashboardPage() {
   const [year, setYear] = useState(new Date().getFullYear())
-  const [budgets, setBudgets] = useState<Budget[]>([])
-  const [transactions, setTransactions] = useState<Transaction[]>([])
-  const [glAccountsCount, setGlAccountsCount] = useState(0)
-  const [glAccounts, setGlAccounts] = useState<GlAccount[]>([])
   const [selectedGlAccount, setSelectedGlAccount] = useState<string>('all')
   const [periodType, setPeriodType] = useState<'quarter' | 'month'>('quarter')
-  // Set default active tab based on current month/quarter
-  const currentMonth = new Date().getMonth() // 0-11
-  const currentQuarter = Math.ceil((currentMonth + 1) / 3) // 1-4
+  const currentMonth = new Date().getMonth()
+  const currentQuarter = Math.ceil((currentMonth + 1) / 3)
   const monthKeys = ['jan', 'feb', 'mar', 'apr', 'mei', 'jun', 'jul', 'agu', 'sep', 'okt', 'nov', 'des']
   const [activeTab, setActiveTab] = useState<string>(`q${currentQuarter}`)
-  const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    setLoading(true)
-    fetch('/api/gl-account').then((r) => r.json()).then((data) => {
-      setGlAccountsCount(data.length)
-      setGlAccounts(data)
-      setLoading(false)
-    })
-  }, [])
+  // TanStack Query hooks
+  const { data: glAccounts = [], isLoading: loadingGl } = useDashboardGlAccounts()
+  const { data: budgets = [], isLoading: loadingBudgets } = useDashboardBudgets(year)
+  const { data: transactions = [], isLoading: loadingTransactions } = useDashboardTransactions(year)
 
-  useEffect(() => {
-    setLoading(true)
-    Promise.all([
-      fetch(`/api/budget?year=${year}`).then((r) => r.json()),
-      fetch(`/api/transaction?year=${year}`).then((r) => r.json())
-    ]).then(([budgetData, transactionData]) => {
-      setBudgets(budgetData)
-      setTransactions(transactionData)
-      setLoading(false)
-    })
-  }, [year])
+  const isLoading = loadingGl || loadingBudgets || loadingTransactions
+  const glAccountsCount = glAccounts.length
 
   const totalBudget = budgets.reduce((sum, b) => sum + b.totalAmount, 0)
   const totalUsed = transactions.reduce((sum, t) => sum + t.nilaiKwitansi, 0)
@@ -96,36 +90,39 @@ export default function DashboardPage() {
   }
 
   const getBudgetByMonth = (budget: Budget, month: number) => {
-    // Hitung anggaran per bulan (anggaran kuartal dibagi 3)
+    // Get monthly budget from database field
+    const monthKeys = ['janAmount', 'febAmount', 'marAmount', 'aprAmount', 'mayAmount', 'junAmount', 'julAmount', 'augAmount', 'sepAmount', 'octAmount', 'novAmount', 'decAmount'] as const
+    const monthlyBudget = budget[monthKeys[month]] || 0
+    
+    // If no monthly budget set, fallback to quarter divided by 3
     const quarter = Math.ceil((month + 1) / 3)
     const qKey = `q${quarter}Amount` as 'q1Amount' | 'q2Amount' | 'q3Amount' | 'q4Amount'
-    const monthlyBudget = budget[qKey] / 3
+    const fallbackBudget = monthlyBudget > 0 ? monthlyBudget : budget[qKey] / 3
     
-    // Hitung penggunaan per bulan - filter by quarter first, then check if transaction belongs to this month
-    // Use tanggalKwitansi or tglSerahFinance to determine the month
+    // Hitung penggunaan per bulan - use tanggalKwitansi to determine the month
     const monthUsed = transactions
       .filter(t => {
         if (t.glAccountId !== budget.glAccountId) return false
-        // Check if transaction is in the same quarter
-        if (t.quarter !== quarter) return false
         
-        // Try to get month from tglSerahFinance first, then tanggalKwitansi
-        const txDateStr = (t as any).tanggalKwitansi || t.tglSerahFinance
+        // Try to get month from tanggalKwitansi first, then tglSerahFinance
+        const txDateStr = t.tanggalKwitansi || t.tglSerahFinance
         if (txDateStr) {
           const txDate = new Date(txDateStr)
           return txDate.getMonth() === month
         }
         
-        // If no date available, distribute evenly across quarter months
-        // This ensures transactions without dates still show up
-        const quarterStartMonth = (quarter - 1) * 3 // 0, 3, 6, 9
-        const monthInQuarter = month - quarterStartMonth // 0, 1, 2
-        // Only count in first month of quarter if no date
-        return monthInQuarter === 0
+        // If no date available, check if transaction is in the same quarter
+        // and distribute to first month of quarter
+        if (t.quarter === quarter) {
+          const quarterStartMonth = (quarter - 1) * 3
+          return month === quarterStartMonth
+        }
+        
+        return false
       })
       .reduce((sum, t) => sum + t.nilaiKwitansi, 0)
     
-    return { budget: monthlyBudget, used: monthUsed, remaining: monthlyBudget - monthUsed }
+    return { budget: fallbackBudget, used: monthUsed, remaining: fallbackBudget - monthUsed }
   }
 
   // Data untuk monitoring chart
@@ -202,7 +199,7 @@ export default function DashboardPage() {
     return result
   }
 
-  if (loading) {
+  if (isLoading) {
     return <DashboardSkeleton />
   }
 
@@ -353,30 +350,35 @@ export default function DashboardPage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {budgets.map((budget) => {
-                        const data = getBudgetByQuarter(budget, q)
-                        const outlook = data.budget > 0 ? (data.used / data.budget) * 100 : 0
-                        return (
-                          <TableRow key={budget.id}>
-                            <TableCell className="font-medium">{budget.glAccount.code}</TableCell>
-                            <TableCell>{budget.glAccount.description}</TableCell>
-                            <TableCell className="text-right">{data.budget.toLocaleString('id-ID')}</TableCell>
-                            <TableCell className="text-right text-red-600">{data.used.toLocaleString('id-ID')}</TableCell>
-                            <TableCell className={`text-right font-semibold ${data.remaining >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                              {data.remaining.toLocaleString('id-ID')}
-                            </TableCell>
-                            <TableCell className="text-center">
-                              <span className={`text-xs font-semibold px-2 py-1 rounded-full ${
-                                outlook >= 80 ? 'bg-green-100 text-green-600' : 
-                                outlook >= 40 ? 'bg-yellow-100 text-yellow-600' : 
-                                'bg-red-100 text-red-600'
-                              }`}>
-                                {outlook.toFixed(1)}%
-                              </span>
-                            </TableCell>
-                          </TableRow>
-                        )
-                      })}
+                      {[...budgets]
+                        .sort((a, b) => {
+                          const qKey = `q${q}Amount` as 'q1Amount' | 'q2Amount' | 'q3Amount' | 'q4Amount'
+                          return b[qKey] - a[qKey]
+                        })
+                        .map((budget) => {
+                          const data = getBudgetByQuarter(budget, q)
+                          const outlook = data.budget > 0 ? (data.used / data.budget) * 100 : 0
+                          return (
+                            <TableRow key={budget.id}>
+                              <TableCell className="font-medium">{budget.glAccount.code}</TableCell>
+                              <TableCell>{budget.glAccount.description}</TableCell>
+                              <TableCell className="text-right">{data.budget.toLocaleString('id-ID')}</TableCell>
+                              <TableCell className="text-right text-red-600">{data.used.toLocaleString('id-ID')}</TableCell>
+                              <TableCell className={`text-right font-semibold ${data.remaining >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                {data.remaining.toLocaleString('id-ID')}
+                              </TableCell>
+                              <TableCell className="text-center">
+                                <span className={`text-xs font-semibold px-2 py-1 rounded-full ${
+                                  outlook >= 80 ? 'bg-green-100 text-green-600' : 
+                                  outlook >= 40 ? 'bg-yellow-100 text-yellow-600' : 
+                                  'bg-red-100 text-red-600'
+                                }`}>
+                                  {outlook.toFixed(1)}%
+                                </span>
+                              </TableCell>
+                            </TableRow>
+                          )
+                        })}
                       {budgets.length === 0 && (
                         <TableRow>
                           <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
@@ -407,6 +409,7 @@ export default function DashboardPage() {
               </TabsList>
               {['jan', 'feb', 'mar', 'apr', 'mei', 'jun', 'jul', 'agu', 'sep', 'okt', 'nov', 'des'].map((monthKey, monthIndex) => {
                 const monthNames = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember']
+                const monthAmountKeys = ['janAmount', 'febAmount', 'marAmount', 'aprAmount', 'mayAmount', 'junAmount', 'julAmount', 'augAmount', 'sepAmount', 'octAmount', 'novAmount', 'decAmount'] as const
                 return (
                   <TabsContent key={monthKey} value={monthKey}>
                     <Table>
@@ -421,30 +424,39 @@ export default function DashboardPage() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {budgets.map((budget) => {
-                          const data = getBudgetByMonth(budget, monthIndex)
-                          const outlook = data.budget > 0 ? (data.used / data.budget) * 100 : 0
-                          return (
-                            <TableRow key={budget.id}>
-                              <TableCell className="font-medium">{budget.glAccount.code}</TableCell>
-                              <TableCell>{budget.glAccount.description}</TableCell>
-                              <TableCell className="text-right">{data.budget.toLocaleString('id-ID')}</TableCell>
-                              <TableCell className="text-right text-red-600">{data.used.toLocaleString('id-ID')}</TableCell>
-                              <TableCell className={`text-right font-semibold ${data.remaining >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                {data.remaining.toLocaleString('id-ID')}
-                              </TableCell>
-                              <TableCell className="text-center">
-                                <span className={`text-xs font-semibold px-2 py-1 rounded-full ${
-                                  outlook >= 80 ? 'bg-green-100 text-green-600' : 
-                                  outlook >= 40 ? 'bg-yellow-100 text-yellow-600' : 
-                                  'bg-red-100 text-red-600'
-                                }`}>
-                                  {outlook.toFixed(1)}%
-                                </span>
-                              </TableCell>
-                            </TableRow>
-                          )
-                        })}
+                        {[...budgets]
+                          .sort((a, b) => {
+                            // Sort by monthly budget, fallback to quarter/3 if no monthly budget
+                            const quarter = Math.ceil((monthIndex + 1) / 3)
+                            const qKey = `q${quarter}Amount` as 'q1Amount' | 'q2Amount' | 'q3Amount' | 'q4Amount'
+                            const aMonthly = a[monthAmountKeys[monthIndex]] || a[qKey] / 3
+                            const bMonthly = b[monthAmountKeys[monthIndex]] || b[qKey] / 3
+                            return bMonthly - aMonthly
+                          })
+                          .map((budget) => {
+                            const data = getBudgetByMonth(budget, monthIndex)
+                            const outlook = data.budget > 0 ? (data.used / data.budget) * 100 : 0
+                            return (
+                              <TableRow key={budget.id}>
+                                <TableCell className="font-medium">{budget.glAccount.code}</TableCell>
+                                <TableCell>{budget.glAccount.description}</TableCell>
+                                <TableCell className="text-right">{data.budget.toLocaleString('id-ID')}</TableCell>
+                                <TableCell className="text-right text-red-600">{data.used.toLocaleString('id-ID')}</TableCell>
+                                <TableCell className={`text-right font-semibold ${data.remaining >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                  {data.remaining.toLocaleString('id-ID')}
+                                </TableCell>
+                                <TableCell className="text-center">
+                                  <span className={`text-xs font-semibold px-2 py-1 rounded-full ${
+                                    outlook >= 80 ? 'bg-green-100 text-green-600' : 
+                                    outlook >= 40 ? 'bg-yellow-100 text-yellow-600' : 
+                                    'bg-red-100 text-red-600'
+                                  }`}>
+                                    {outlook.toFixed(1)}%
+                                  </span>
+                                </TableCell>
+                              </TableRow>
+                            )
+                          })}
                         {budgets.length === 0 && (
                           <TableRow>
                             <TableCell colSpan={6} className="text-center text-muted-foreground py-8">

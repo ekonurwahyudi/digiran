@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { ColumnDef } from '@tanstack/react-table'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -12,6 +12,8 @@ import { Badge } from '@/components/ui/badge'
 import { Switch } from '@/components/ui/switch'
 import { Plus, Pencil, Trash2, CheckCircle } from 'lucide-react'
 import { TableSkeleton } from '@/components/loading'
+import { useVendors, useCreateVendor, useUpdateVendor, useDeleteVendor } from '@/lib/hooks/useMaster'
+import api from '@/lib/axios'
 
 interface Vendor {
   id: string
@@ -24,7 +26,6 @@ interface Vendor {
 }
 
 export default function VendorPage() {
-  const [vendors, setVendors] = useState<Vendor[]>([])
   const [message, setMessage] = useState('')
   const [showDialog, setShowDialog] = useState(false)
   const [editing, setEditing] = useState<Vendor | null>(null)
@@ -34,22 +35,13 @@ export default function VendorPage() {
   const [phone, setPhone] = useState('')
   const [email, setEmail] = useState('')
   const [isActive, setIsActive] = useState(true)
-  const [loading, setLoading] = useState(true)
   const [deleteId, setDeleteId] = useState<string | null>(null)
 
-  useEffect(() => {
-    loadData()
-  }, [])
-
-  const loadData = () => {
-    setLoading(true)
-    fetch('/api/vendor?includeInactive=true')
-      .then((r) => r.json())
-      .then(data => {
-        setVendors(data)
-        setLoading(false)
-      })
-  }
+  // TanStack Query hooks
+  const { data: vendors = [], isLoading } = useVendors()
+  const createVendor = useCreateVendor()
+  const updateVendor = useUpdateVendor()
+  const deleteVendor = useDeleteVendor()
 
   const openDialog = (item?: Vendor) => {
     if (item) {
@@ -75,33 +67,30 @@ export default function VendorPage() {
   const handleSave = async () => {
     const data = { name, alamat, pic, phone, email, isActive }
     
-    if (editing) {
-      await fetch(`/api/vendor/${editing.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      })
-      setMessage('Vendor berhasil diupdate!')
-    } else {
-      await fetch('/api/vendor', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      })
-      setMessage('Vendor berhasil ditambahkan!')
+    try {
+      if (editing) {
+        await updateVendor.mutateAsync({ id: editing.id, data })
+        setMessage('Vendor berhasil diupdate!')
+      } else {
+        await createVendor.mutateAsync(data)
+        setMessage('Vendor berhasil ditambahkan!')
+      }
+      setShowDialog(false)
+    } catch (error) {
+      setMessage('Terjadi kesalahan!')
     }
-
-    setShowDialog(false)
-    loadData()
     setTimeout(() => setMessage(''), 3000)
   }
 
   const handleDelete = async () => {
     if (!deleteId) return
-    await fetch(`/api/vendor/${deleteId}`, { method: 'DELETE' })
-    setDeleteId(null)
-    loadData()
-    setMessage('Vendor berhasil dinonaktifkan!')
+    try {
+      await deleteVendor.mutateAsync(deleteId)
+      setDeleteId(null)
+      setMessage('Vendor berhasil dinonaktifkan!')
+    } catch (error) {
+      setMessage('Terjadi kesalahan!')
+    }
     setTimeout(() => setMessage(''), 3000)
   }
 
@@ -136,7 +125,7 @@ export default function VendorPage() {
     },
   ]
 
-  if (loading) {
+  if (isLoading) {
     return <TableSkeleton title="Master Vendor" showFilters={false} showActions={true} rows={6} columns={6} />
   }
 
@@ -211,7 +200,9 @@ export default function VendorPage() {
             )}
             <div className="flex gap-2 justify-end">
               <Button variant="outline" onClick={() => setShowDialog(false)}>Batal</Button>
-              <Button onClick={handleSave} disabled={!name}>Simpan</Button>
+              <Button onClick={handleSave} disabled={!name || createVendor.isPending || updateVendor.isPending}>
+                {(createVendor.isPending || updateVendor.isPending) ? 'Menyimpan...' : 'Simpan'}
+              </Button>
             </div>
           </div>
         </DialogContent>
@@ -227,7 +218,9 @@ export default function VendorPage() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Batal</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} className="bg-red-500 hover:bg-red-600">Nonaktifkan</AlertDialogAction>
+            <AlertDialogAction onClick={handleDelete} className="bg-red-500 hover:bg-red-600">
+              {deleteVendor.isPending ? 'Memproses...' : 'Nonaktifkan'}
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

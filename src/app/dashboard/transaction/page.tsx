@@ -24,6 +24,10 @@ import { Wallet, TrendingUp, TrendingDown, CheckCircle, Pencil, Trash2, AlertTri
 import { CurrencyInput } from '@/components/ui/currency-input'
 import { cn } from '@/lib/utils'
 import { TableSkeleton } from '@/components/loading'
+import { useTransactions, useRemainingBudget, useCreateTransaction, useUpdateTransaction, useDeleteTransaction } from '@/lib/hooks/useTransaction'
+import { useGlAccounts, useRegionals, useVendors, usePicAnggaran } from '@/lib/hooks/useMaster'
+import { useBudgets } from '@/lib/hooks/useBudget'
+import api from '@/lib/axios'
 
 interface GlAccount { id: string; code: string; description: string }
 interface Regional { id: string; code: string; name: string }
@@ -81,16 +85,9 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 export default function TransactionPage() {
-  const [glAccounts, setGlAccounts] = useState<GlAccount[]>([])
-  const [regionals, setRegionals] = useState<Regional[]>([])
-  const [vendors, setVendors] = useState<Vendor[]>([])
-  const [transactions, setTransactions] = useState<Transaction[]>([])
-  const [remaining, setRemaining] = useState<RemainingInfo | null>(null)
   const [year, setYear] = useState(new Date().getFullYear())
   const [message, setMessage] = useState('')
   const [activeTab, setActiveTab] = useState('all')
-  const [picAnggaran, setPicAnggaran] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
   
   // Filter states
   const [filterGl, setFilterGl] = useState('')
@@ -143,57 +140,36 @@ export default function TransactionPage() {
   const [uploading, setUploading] = useState(false)
   const [previewImage, setPreviewImage] = useState<string | null>(null)
 
-  useEffect(() => {
-    setLoading(true)
-    Promise.all([
-      fetch('/api/gl-account').then(r => r.json()),
-      fetch('/api/regional').then(r => r.json()),
-      fetch('/api/vendor').then(r => r.json())
-    ]).then(([glData, regionalData, vendorData]) => {
-      setGlAccounts(glData)
-      setRegionals(regionalData)
-      setVendors(vendorData)
-      if (regionalData.length > 0) setRegional(regionalData[0].code)
-      setLoading(false)
-    })
-  }, [])
+  // TanStack Query hooks
+  const { data: glAccounts = [], isLoading: glLoading } = useGlAccounts()
+  const { data: regionals = [], isLoading: regionalLoading } = useRegionals()
+  const { data: vendors = [] } = useVendors(false)
+  const { data: transactions = [], isLoading: transactionLoading } = useTransactions(year)
+  const { data: picAnggaranList = [] } = usePicAnggaran(year)
+  const { data: remaining } = useRemainingBudget(selectedGl, parseInt(quarter), regional, year)
+  const { data: budgets = [] } = useBudgets(year)
+  
+  const createTransaction = useCreateTransaction()
+  const updateTransaction = useUpdateTransaction()
+  const deleteTransaction = useDeleteTransaction()
 
-  useEffect(() => { loadTransactions() }, [year])
-  useEffect(() => {
-    // Load PIC Anggaran for current year
-    fetch(`/api/pic-anggaran?year=${year}`)
-      .then(r => r.json())
-      .then(data => {
-        if (data && data.length > 0) {
-          setPicAnggaran(data[0]) // Use first PIC for now
-        }
-      })
-  }, [year])
-  const loadTransactions = () => { 
-    setLoading(true)
-    fetch(`/api/transaction?year=${year}`)
-      .then(r => r.json())
-      .then(data => {
-        setTransactions(data)
-        setLoading(false)
-      })
-  }
+  const picAnggaran = picAnggaranList.length > 0 ? picAnggaranList[0] : null
+  const loading = glLoading || regionalLoading || transactionLoading
 
+  // Set default regional when loaded
   useEffect(() => {
-    if (selectedGl && regional) {
-      fetch(`/api/transaction/remaining?glAccountId=${selectedGl}&quarter=${quarter}&regionalCode=${regional}&year=${year}`)
-        .then(r => { if (!r.ok) return { allocated: 0, used: 0, remaining: 0 }; return r.json() })
-        .then(setRemaining).catch(() => setRemaining({ allocated: 0, used: 0, remaining: 0 }))
+    if (regionals.length > 0 && !regional) {
+      setRegional(regionals[0].code)
     }
-  }, [selectedGl, quarter, regional, year])
+  }, [regionals, regional])
 
   // Status counts
-  const openCount = transactions.filter(t => t.status === 'Open').length
-  const prosesCount = transactions.filter(t => t.status === 'Proses').length
-  const closeCount = transactions.filter(t => t.status === 'Close').length
+  const openCount = transactions.filter((t: Transaction) => t.status === 'Open').length
+  const prosesCount = transactions.filter((t: Transaction) => t.status === 'Proses').length
+  const closeCount = transactions.filter((t: Transaction) => t.status === 'Close').length
 
   // Filtered transactions by tab and filters
-  const filteredTransactions = transactions.filter(t => {
+  const filteredTransactions = transactions.filter((t: Transaction) => {
     if (activeTab !== 'all' && t.status !== activeTab) return false
     if (filterGl && t.glAccountId !== filterGl) return false
     if (filterQuarter && t.quarter !== parseInt(filterQuarter)) return false
@@ -208,14 +184,20 @@ export default function TransactionPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!remaining || remaining.remaining <= 0) return
-    await fetch('/api/transaction', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ glAccountId: selectedGl, quarter: parseInt(quarter), regionalCode: regional, kegiatan, regionalPengguna, year, tanggalKwitansi: tanggalKwitansi?.toISOString(), nilaiKwitansi, jenisPengadaan }),
-    })
-    setMessage('Transaksi berhasil disimpan!')
-    setKegiatan(''); setRegionalPengguna(''); setTanggalKwitansi(undefined); setNilaiKwitansi(0); setJenisPengadaan('')
-    fetch(`/api/transaction/remaining?glAccountId=${selectedGl}&quarter=${quarter}&regionalCode=${regional}&year=${year}`).then(r => r.json()).then(setRemaining).catch(() => {})
-    loadTransactions(); setTimeout(() => setMessage(''), 3000)
+    
+    try {
+      await createTransaction.mutateAsync({
+        glAccountId: selectedGl, quarter: parseInt(quarter), regionalCode: regional, 
+        kegiatan, regionalPengguna, year, 
+        tanggalKwitansi: tanggalKwitansi?.toISOString(), 
+        nilaiKwitansi, jenisPengadaan
+      })
+      setMessage('Transaksi berhasil disimpan!')
+      setKegiatan(''); setRegionalPengguna(''); setTanggalKwitansi(undefined); setNilaiKwitansi(0); setJenisPengadaan('')
+    } catch (error) {
+      setMessage('Terjadi kesalahan!')
+    }
+    setTimeout(() => setMessage(''), 3000)
   }
 
   const openViewDialog = (t: Transaction) => { 
@@ -236,22 +218,17 @@ export default function TransactionPage() {
     setEditPicFinance(t.picFinance || ''); setEditNoHpFinance(t.noHpFinance || '')
     setEditTglTransferVendor(t.tglTransferVendor ? new Date(t.tglTransferVendor) : undefined)
     setEditNilaiTransfer(t.nilaiTransfer); setEditTaskTransferVendor(t.taskTransferVendor); setEditTaskTerimaBerkas(t.taskTerimaBerkas)
-    
-    // Load files for this transaction
     loadTransactionFiles(t.id)
-    
     setShowEditDialog(true)
   }
 
   const loadTransactionFiles = async (transactionId: string) => {
     try {
-      const response = await fetch(`/api/transaction/${transactionId}/files`)
-      if (response.ok) {
-        const filesData = await response.json()
-        setFiles(filesData)
-      }
+      const filesData = await api.get(`/transaction/${transactionId}/files`)
+      setFiles(Array.isArray(filesData) ? filesData : [])
     } catch (error) {
       console.error('Error loading files:', error)
+      setFiles([])
     }
   }
 
@@ -263,7 +240,6 @@ export default function TransactionPage() {
     
     try {
       for (const file of Array.from(selectedFiles)) {
-        // Check file size (10MB limit)
         if (file.size > 10 * 1024 * 1024) {
           setMessage(`File ${file.name} terlalu besar (max 10MB)`)
           setTimeout(() => setMessage(''), 3000)
@@ -273,19 +249,10 @@ export default function TransactionPage() {
         const formData = new FormData()
         formData.append('file', file)
 
-        const response = await fetch(`/api/transaction/${editingTransaction.id}/files`, {
-          method: 'POST',
-          body: formData
+        const newFile = await api.post(`/transaction/${editingTransaction.id}/files`, formData, {
+          headers: { 'Content-Type': 'multipart/form-data' }
         })
-
-        if (response.ok) {
-          const newFile = await response.json()
-          setFiles(prev => [newFile, ...prev])
-        } else {
-          const error = await response.json()
-          setMessage(`Gagal upload ${file.name}: ${error.error}`)
-          setTimeout(() => setMessage(''), 3000)
-        }
+        setFiles(prev => [newFile, ...prev])
       }
       
       if (selectedFiles.length > 0) {
@@ -298,7 +265,6 @@ export default function TransactionPage() {
       setTimeout(() => setMessage(''), 3000)
     } finally {
       setUploading(false)
-      // Reset file input
       event.target.value = ''
     }
   }
@@ -307,19 +273,10 @@ export default function TransactionPage() {
     if (!editingTransaction) return
 
     try {
-      const response = await fetch(`/api/transaction/${editingTransaction.id}/files?fileId=${fileId}`, {
-        method: 'DELETE'
-      })
-
-      if (response.ok) {
-        setFiles(prev => prev.filter(f => f.id !== fileId))
-        setMessage('File berhasil dihapus!')
-        setTimeout(() => setMessage(''), 3000)
-      } else {
-        const error = await response.json()
-        setMessage(`Gagal hapus file: ${error.error}`)
-        setTimeout(() => setMessage(''), 3000)
-      }
+      await api.delete(`/transaction/${editingTransaction.id}/files?fileId=${fileId}`)
+      setFiles(prev => prev.filter(f => f.id !== fileId))
+      setMessage('File berhasil dihapus!')
+      setTimeout(() => setMessage(''), 3000)
     } catch (error) {
       console.error('Error deleting file:', error)
       setMessage('Terjadi kesalahan saat hapus file')
@@ -328,129 +285,81 @@ export default function TransactionPage() {
   }
 
   const formatFileSize = (bytes: number): string => {
-    if (bytes >= 1024 * 1024) {
-      return (bytes / (1024 * 1024)).toFixed(1) + ' MB'
-    } else if (bytes >= 1024) {
-      return (bytes / 1024).toFixed(1) + ' KB'
-    } else {
-      return bytes + ' B'
-    }
+    if (bytes >= 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(1) + ' MB'
+    else if (bytes >= 1024) return (bytes / 1024).toFixed(1) + ' KB'
+    else return bytes + ' B'
   }
 
   const handleFilePreview = (file: any) => {
-    if (file.mimeType.includes('image')) {
-      setPreviewImage(file.filePath)
-    } else {
-      window.open(file.filePath, '_blank')
-    }
+    if (file.mimeType.includes('image')) setPreviewImage(file.filePath)
+    else window.open(file.filePath, '_blank')
   }
 
   const getFileIcon = (file: any) => {
     const mimeType = file.mimeType.toLowerCase()
     const fileName = file.originalName.toLowerCase()
     
-    // Image files - show thumbnail
     if (mimeType.includes('image')) {
       return (
         <div className="w-10 h-10 rounded overflow-hidden border">
-          <img 
-            src={file.filePath} 
-            alt={file.originalName}
-            className="w-full h-full object-cover"
-            onError={(e) => {
-              // Fallback to icon if image fails to load
-              e.currentTarget.style.display = 'none'
-              const nextElement = e.currentTarget.nextElementSibling as HTMLElement
-              if (nextElement) {
-                nextElement.style.display = 'flex'
-              }
-            }}
-          />
-          <div className="w-10 h-10 bg-blue-100 rounded flex items-center justify-center" style={{display: 'none'}}>
-            <Image className="h-5 w-5 text-blue-600" />
-          </div>
+          <img src={file.filePath} alt={file.originalName} className="w-full h-full object-cover"
+            onError={(e) => { e.currentTarget.style.display = 'none'; const next = e.currentTarget.nextElementSibling as HTMLElement; if (next) next.style.display = 'flex' }} />
+          <div className="w-10 h-10 bg-blue-100 rounded flex items-center justify-center" style={{display: 'none'}}><Image className="h-5 w-5 text-blue-600" /></div>
         </div>
       )
     }
-    
-    // PDF files - red
-    if (mimeType.includes('pdf')) {
-      return (
-        <div className="w-10 h-10 bg-red-100 rounded flex items-center justify-center">
-          <FileText className="h-5 w-5 text-red-600" />
-        </div>
-      )
-    }
-    
-    // Excel files - green
-    if (mimeType.includes('excel') || mimeType.includes('spreadsheet') || 
-        fileName.endsWith('.xls') || fileName.endsWith('.xlsx')) {
-      return (
-        <div className="w-10 h-10 bg-green-100 rounded flex items-center justify-center">
-          <FileSpreadsheet className="h-5 w-5 text-green-600" />
-        </div>
-      )
-    }
-    
-    // PowerPoint files - orange
-    if (mimeType.includes('presentation') || fileName.endsWith('.ppt') || fileName.endsWith('.pptx')) {
-      return (
-        <div className="w-10 h-10 bg-orange-100 rounded flex items-center justify-center">
-          <Presentation className="h-5 w-5 text-orange-600" />
-        </div>
-      )
-    }
-    
-    // Word documents - blue
-    if (mimeType.includes('word') || mimeType.includes('document') || 
-        fileName.endsWith('.doc') || fileName.endsWith('.docx')) {
-      return (
-        <div className="w-10 h-10 bg-blue-100 rounded flex items-center justify-center">
-          <FileText className="h-5 w-5 text-blue-600" />
-        </div>
-      )
-    }
-    
-    // Default file - gray
-    return (
-      <div className="w-10 h-10 bg-gray-100 rounded flex items-center justify-center">
-        <File className="h-5 w-5 text-gray-600" />
-      </div>
-    )
+    if (mimeType.includes('pdf')) return <div className="w-10 h-10 bg-red-100 rounded flex items-center justify-center"><FileText className="h-5 w-5 text-red-600" /></div>
+    if (mimeType.includes('excel') || mimeType.includes('spreadsheet') || fileName.endsWith('.xls') || fileName.endsWith('.xlsx')) 
+      return <div className="w-10 h-10 bg-green-100 rounded flex items-center justify-center"><FileSpreadsheet className="h-5 w-5 text-green-600" /></div>
+    if (mimeType.includes('presentation') || fileName.endsWith('.ppt') || fileName.endsWith('.pptx')) 
+      return <div className="w-10 h-10 bg-orange-100 rounded flex items-center justify-center"><Presentation className="h-5 w-5 text-orange-600" /></div>
+    if (mimeType.includes('word') || mimeType.includes('document') || fileName.endsWith('.doc') || fileName.endsWith('.docx')) 
+      return <div className="w-10 h-10 bg-blue-100 rounded flex items-center justify-center"><FileText className="h-5 w-5 text-blue-600" /></div>
+    return <div className="w-10 h-10 bg-gray-100 rounded flex items-center justify-center"><File className="h-5 w-5 text-gray-600" /></div>
   }
 
   const handleEdit = async () => {
     if (!editingTransaction) return
-    await fetch(`/api/transaction/${editingTransaction.id}`, {
-      method: 'PUT', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        glAccountId: editGl, quarter: parseInt(editQuarter), regionalCode: editRegional, kegiatan: editKegiatan, regionalPengguna: editRegionalPengguna,
-        tanggalKwitansi: editTanggalKwitansi?.toISOString(), nilaiKwitansi: editNilaiKwitansi, jenisPajak: editJenisPajak, keterangan: editKeterangan,
-        jenisPengadaan: editJenisPengadaan, vendorId: editVendorId || null, noTiketMydx: editNoTiketMydx, tglSerahFinance: editTglSerahFinance?.toISOString(),
-        picFinance: editPicFinance, noHpFinance: editNoHpFinance, tglTransferVendor: editTglTransferVendor?.toISOString(),
-        nilaiTransfer: editNilaiTransfer, taskTransferVendor: editTaskTransferVendor, taskTerimaBerkas: editTaskTerimaBerkas,
-      }),
-    })
-    setShowEditDialog(false); setEditingTransaction(null); loadTransactions()
-    setMessage('Transaksi berhasil diupdate!'); setTimeout(() => setMessage(''), 3000)
+    try {
+      await updateTransaction.mutateAsync({
+        id: editingTransaction.id,
+        data: {
+          glAccountId: editGl, quarter: parseInt(editQuarter), regionalCode: editRegional, kegiatan: editKegiatan, regionalPengguna: editRegionalPengguna,
+          tanggalKwitansi: editTanggalKwitansi?.toISOString(), nilaiKwitansi: editNilaiKwitansi, jenisPajak: editJenisPajak, keterangan: editKeterangan,
+          jenisPengadaan: editJenisPengadaan, vendorId: editVendorId || null, noTiketMydx: editNoTiketMydx, tglSerahFinance: editTglSerahFinance?.toISOString(),
+          picFinance: editPicFinance, noHpFinance: editNoHpFinance, tglTransferVendor: editTglTransferVendor?.toISOString(),
+          nilaiTransfer: editNilaiTransfer, taskTransferVendor: editTaskTransferVendor, taskTerimaBerkas: editTaskTerimaBerkas,
+        }
+      })
+      setShowEditDialog(false); setEditingTransaction(null)
+      setMessage('Transaksi berhasil diupdate!')
+    } catch (error) {
+      setMessage('Terjadi kesalahan!')
+    }
+    setTimeout(() => setMessage(''), 3000)
   }
 
   const handleDelete = async () => {
     if (!deleteId) return
-    await fetch(`/api/transaction/${deleteId}`, { method: 'DELETE' })
-    setShowDeleteDialog(false); setDeleteId(null); loadTransactions()
-    if (selectedGl && regional) { fetch(`/api/transaction/remaining?glAccountId=${selectedGl}&quarter=${quarter}&regionalCode=${regional}&year=${year}`).then(r => r.json()).then(setRemaining).catch(() => {}) }
-    setMessage('Transaksi berhasil dihapus!'); setTimeout(() => setMessage(''), 3000)
+    try {
+      await deleteTransaction.mutateAsync(deleteId)
+      setShowDeleteDialog(false); setDeleteId(null)
+      setMessage('Transaksi berhasil dihapus!')
+    } catch (error) {
+      setMessage('Terjadi kesalahan!')
+    }
+    setTimeout(() => setMessage(''), 3000)
   }
+
 
   const handleExport = async () => {
     const MONTHS = ['JANUARI', 'FEBRUARI', 'MARET', 'APRIL', 'MEI', 'JUNI', 'JULI', 'AGUSTUS', 'SEPTEMBER', 'OKTOBER', 'NOVEMBER', 'DESEMBER']
     
-    const transactionsWithDate = filteredTransactions.filter(t => t.tglSerahFinance)
-    const transactionsWithoutDate = filteredTransactions.filter(t => !t.tglSerahFinance)
+    const transactionsWithDate = filteredTransactions.filter((t: Transaction) => t.tglSerahFinance)
+    const transactionsWithoutDate = filteredTransactions.filter((t: Transaction) => !t.tglSerahFinance)
     
     const groupedByMonth: { [key: number]: Transaction[] } = {}
-    transactionsWithDate.forEach(t => {
+    transactionsWithDate.forEach((t: Transaction) => {
       const month = new Date(t.tglSerahFinance!).getMonth()
       if (!groupedByMonth[month]) groupedByMonth[month] = []
       groupedByMonth[month].push(t)
@@ -487,7 +396,7 @@ export default function TransactionPage() {
         const row = ws.addRow([
           rowNum++, format(new Date(t.tglSerahFinance!), 'dd-MM-yy'),
           t.tanggalKwitansi ? format(new Date(t.tanggalKwitansi), 'dd-MM-yyyy') : '-',
-          t.kegiatan, regionals.find(r => r.code === t.regionalCode)?.name || t.regionalCode,
+          t.kegiatan, regionals.find((r: Regional) => r.code === t.regionalCode)?.name || t.regionalCode,
           t.vendor?.name || '-', t.nilaiKwitansi,
           JENIS_PAJAK.find(p => p.value === t.jenisPajak)?.label || 'Non-PPN',
           Math.round(t.nilaiTanpaPPN), Math.round(t.nilaiPPN), t.status
@@ -502,10 +411,10 @@ export default function TransactionPage() {
       const pendingRow = ws.addRow(['', '', '', 'BELUM SERAH KE FINANCE'])
       pendingRow.getCell(4).font = { bold: true, size: 12, color: { argb: 'FFFF0000' } }
       
-      transactionsWithoutDate.forEach(t => {
+      transactionsWithoutDate.forEach((t: Transaction) => {
         const row = ws.addRow([
           rowNum++, '-', t.tanggalKwitansi ? format(new Date(t.tanggalKwitansi), 'dd-MM-yyyy') : '-',
-          t.kegiatan, regionals.find(r => r.code === t.regionalCode)?.name || t.regionalCode,
+          t.kegiatan, regionals.find((r: Regional) => r.code === t.regionalCode)?.name || t.regionalCode,
           t.vendor?.name || '-', t.nilaiKwitansi,
           JENIS_PAJAK.find(p => p.value === t.jenisPajak)?.label || 'Non-PPN',
           Math.round(t.nilaiTanpaPPN), Math.round(t.nilaiPPN), t.status
@@ -525,12 +434,8 @@ export default function TransactionPage() {
     const currentMonth = new Date().getMonth()
     const currentYear = new Date().getFullYear()
     
-    const budgetsRes = await fetch(`/api/budget?year=${year}`)
-    const budgets: Budget[] = await budgetsRes.json()
-    
     const workbook = new ExcelJS.Workbook()
     
-    // Load logo
     const logoRes = await fetch('/infranexia.png')
     const logoBlob = await logoRes.blob()
     const logoBuffer = await logoBlob.arrayBuffer()
@@ -538,35 +443,31 @@ export default function TransactionPage() {
     
     for (let q = 1; q <= 4; q++) {
       const ws = workbook.addWorksheet(`KKA Q${q}`)
-      const quarterTransactions = filteredTransactions.filter(t => t.quarter === q)
+      const quarterTransactions = filteredTransactions.filter((t: Transaction) => t.quarter === q)
       const quarterMonths = QUARTER_MONTHS[q]
       
-      const glAccountIds = Array.from(new Set(quarterTransactions.map(t => t.glAccountId)))
-      budgets.forEach(b => {
+      const glAccountIds = Array.from(new Set(quarterTransactions.map((t: Transaction) => t.glAccountId)))
+      budgets.forEach((b: Budget) => {
         const qAmount = q === 1 ? b.q1Amount : q === 2 ? b.q2Amount : q === 3 ? b.q3Amount : b.q4Amount
         if (qAmount > 0 && !glAccountIds.includes(b.glAccountId)) glAccountIds.push(b.glAccountId)
       })
       
-      ws.columns = [
-        { width: 5 }, { width: 12 }, { width: 50 }, { width: 18 }, { width: 18 }, { width: 18 }
-      ]
+      ws.columns = [{ width: 5 }, { width: 12 }, { width: 50 }, { width: 18 }, { width: 18 }, { width: 18 }]
       
       let currentRow = 1
       
       for (const glId of glAccountIds) {
-        const glAccount = glAccounts.find(g => g.id === glId)
+        const glAccount = glAccounts.find((g: GlAccount) => g.id === glId)
         if (!glAccount) continue
         
-        const budget = budgets.find(b => b.glAccountId === glId)
+        const budget = budgets.find((b: Budget) => b.glAccountId === glId)
         const qBudget = budget ? (q === 1 ? budget.q1Amount : q === 2 ? budget.q2Amount : q === 3 ? budget.q3Amount : budget.q4Amount) : 0
         const monthlyBudget = qBudget / 3
-        const glTransactions = quarterTransactions.filter(t => t.glAccountId === glId)
+        const glTransactions = quarterTransactions.filter((t: Transaction) => t.glAccountId === glId)
         
-        // Logo (far right)
         ws.addImage(logoId, { tl: { col: 5, row: currentRow - 1 }, ext: { width: 100, height: 35 } })
         currentRow += 3
         
-        // Title with border
         ws.mergeCells(currentRow, 1, currentRow, 6)
         ws.getCell(currentRow, 1).value = 'KARTU KENDALI ANGGARAN'
         ws.getCell(currentRow, 1).font = { bold: true, size: 11 }
@@ -574,9 +475,6 @@ export default function TransactionPage() {
         ws.getCell(currentRow, 1).border = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } }
         currentRow += 1
         
-        const headerStartRow = currentRow // Start of header info box
-        
-        // Header info row 1 - with left/right border only
         ws.mergeCells(currentRow, 1, currentRow, 2)
         ws.getCell(currentRow, 1).value = 'Unit'
         ws.getCell(currentRow, 1).border = { left: { style: 'thin' } }
@@ -587,7 +485,6 @@ export default function TransactionPage() {
         ws.getCell(currentRow, 6).border = { right: { style: 'thin' } }
         currentRow++
         
-        // Header info row 2
         ws.mergeCells(currentRow, 1, currentRow, 2)
         ws.getCell(currentRow, 1).value = 'Cost Center'
         ws.getCell(currentRow, 1).border = { left: { style: 'thin' } }
@@ -598,7 +495,6 @@ export default function TransactionPage() {
         ws.getCell(currentRow, 6).border = { right: { style: 'thin' } }
         currentRow++
         
-        // Header info row 3
         ws.mergeCells(currentRow, 1, currentRow, 2)
         ws.getCell(currentRow, 1).value = 'Periode'
         ws.getCell(currentRow, 1).border = { left: { style: 'thin' } }
@@ -606,12 +502,10 @@ export default function TransactionPage() {
         ws.getCell(currentRow, 6).border = { right: { style: 'thin' } }
         currentRow++
         
-        // Empty row between header info and table - with left/right border to connect
         ws.getCell(currentRow, 1).border = { left: { style: 'thin' } }
         ws.getCell(currentRow, 6).border = { right: { style: 'thin' } }
         currentRow++
         
-        // Table header
         const headers = ['NO', 'TANGGAL', 'KEGIATAN', 'BUDGET', 'PENGGUNAAN', 'SISA BUDGET']
         headers.forEach((h, i) => {
           const cell = ws.getCell(currentRow, i + 1)
@@ -629,7 +523,6 @@ export default function TransactionPage() {
         interface DataRow { date: Date; kegiatan: string; budget: number; penggunaan: number; isBudget: boolean }
         const dataRows: DataRow[] = []
         
-        // Budget entries per month
         quarterMonths.forEach(monthIdx => {
           if (year < currentYear || (year === currentYear && monthIdx <= currentMonth)) {
             dataRows.push({
@@ -640,8 +533,7 @@ export default function TransactionPage() {
           }
         })
         
-        // Transactions
-        glTransactions.forEach(t => {
+        glTransactions.forEach((t: Transaction) => {
           dataRows.push({
             date: t.tanggalKwitansi ? new Date(t.tanggalKwitansi) : new Date(t.tanggalEntry),
             kegiatan: t.kegiatan, budget: 0, penggunaan: t.nilaiKwitansi, isBudget: false
@@ -650,7 +542,6 @@ export default function TransactionPage() {
         
         dataRows.sort((a, b) => a.date.getTime() - b.date.getTime())
         
-        // Data rows
         dataRows.forEach(d => {
           const row = ws.getRow(currentRow)
           row.getCell(1).value = rowNum++
@@ -677,7 +568,6 @@ export default function TransactionPage() {
           currentRow++
         })
         
-        // Sisa anggaran row with grey background - "Sisa anggaran" in col 3, totals in col 4,5,6
         const sisaRow = ws.getRow(currentRow)
         for (let c = 1; c <= 6; c++) {
           sisaRow.getCell(c).border = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } }
@@ -697,7 +587,6 @@ export default function TransactionPage() {
         sisaRow.getCell(6).font = { bold: true }
         currentRow += 3
         
-        // Signature - Yang Membuat (left) and Menyetujui (center col 4-6)
         ws.getCell(currentRow, 1).value = 'Yang Membuat,'
         ws.mergeCells(currentRow, 4, currentRow, 6)
         ws.getCell(currentRow, 4).value = 'Menyetujui,'
@@ -738,7 +627,7 @@ export default function TransactionPage() {
     { accessorKey: 'tanggalKwitansi', header: 'Tgl Kwitansi', cell: ({ row }) => row.original.tanggalKwitansi ? format(new Date(row.original.tanggalKwitansi), 'dd MMM yy', { locale: idLocale }) : '-' },
     { accessorKey: 'glAccount.code', header: 'GL Account', cell: ({ row }) => row.original.glAccount.code },
     { accessorKey: 'quarter', header: 'Kuartal', cell: ({ row }) => `Q${row.getValue('quarter')}` },
-    { accessorKey: 'regionalCode', header: 'Regional', cell: ({ row }) => regionals.find(r => r.code === row.original.regionalCode)?.name || row.original.regionalCode },
+    { accessorKey: 'regionalCode', header: 'Regional', cell: ({ row }) => regionals.find((r: Regional) => r.code === row.original.regionalCode)?.name || row.original.regionalCode },
     { accessorKey: 'kegiatan', header: 'Kegiatan' },
     { accessorKey: 'nilaiKwitansi', header: () => <div className="text-right">Nilai (Rp)</div>, cell: ({ row }) => <div className="text-right">{row.original.nilaiKwitansi.toLocaleString('id-ID')}</div> },
     { accessorKey: 'jenisPengadaan', header: 'Pengadaan', cell: ({ row }) => JENIS_PENGADAAN.find(p => p.value === row.original.jenisPengadaan)?.label || '-' },
@@ -752,11 +641,12 @@ export default function TransactionPage() {
     )},
   ]
 
-  const isSubmitDisabled = !selectedGl || !regional || (remaining !== null && remaining.remaining <= 0)
+  const isSubmitDisabled = !selectedGl || !regional || (remaining !== null && remaining !== undefined && remaining.remaining <= 0)
 
   if (loading) {
     return <TableSkeleton title="Pencatatan Transaksi" showFilters={true} showActions={true} rows={8} columns={7} />
   }
+
 
   return (
     <div className="space-y-6">
@@ -787,7 +677,7 @@ export default function TransactionPage() {
                     <Label>GL Account</Label>
                     <Select value={selectedGl} onValueChange={setSelectedGl}>
                       <SelectTrigger><SelectValue placeholder="Pilih GL Account" /></SelectTrigger>
-                      <SelectContent>{glAccounts.map(gl => <SelectItem key={gl.id} value={gl.id}>{gl.code} - {gl.description}</SelectItem>)}</SelectContent>
+                      <SelectContent>{glAccounts.map((gl: GlAccount) => <SelectItem key={gl.id} value={gl.id}>{gl.code} - {gl.description}</SelectItem>)}</SelectContent>
                     </Select>
                   </div>
                   <div className="space-y-2">
@@ -801,7 +691,7 @@ export default function TransactionPage() {
                     <Label>Alokasi Regional</Label>
                     <Select value={regional} onValueChange={setRegional}>
                       <SelectTrigger><SelectValue placeholder="Pilih Regional" /></SelectTrigger>
-                      <SelectContent>{regionals.map(r => <SelectItem key={r.id} value={r.code}>{r.name}</SelectItem>)}</SelectContent>
+                      <SelectContent>{regionals.map((r: Regional) => <SelectItem key={r.id} value={r.code}>{r.name}</SelectItem>)}</SelectContent>
                     </Select>
                   </div>
                   <div className="space-y-2">
@@ -818,8 +708,10 @@ export default function TransactionPage() {
                   <div className="space-y-2"><Label>Tanggal Kwitansi</Label><DatePicker date={tanggalKwitansi} onSelect={setTanggalKwitansi} placeholder="Pilih tanggal" /></div>
                   <div className="space-y-2"><Label>Nilai Kwitansi</Label><CurrencyInput value={nilaiKwitansi} onChange={setNilaiKwitansi} /></div>
                 </div>
-                <Button type="submit" disabled={isSubmitDisabled}>Simpan</Button>
-                {remaining !== null && remaining.remaining <= 0 && <p className="text-sm text-red-500 flex items-center gap-1"><AlertTriangle className="h-4 w-4" />Sisa anggaran 0</p>}
+                <Button type="submit" disabled={isSubmitDisabled || createTransaction.isPending}>
+                  {createTransaction.isPending ? 'Menyimpan...' : 'Simpan'}
+                </Button>
+                {remaining !== null && remaining !== undefined && remaining.remaining <= 0 && <p className="text-sm text-red-500 flex items-center gap-1"><AlertTriangle className="h-4 w-4" />Sisa anggaran 0</p>}
               </form>
             </CardContent>
           </Card>
@@ -827,7 +719,7 @@ export default function TransactionPage() {
         <Card className="border">
           <CardHeader>
             <CardTitle className="flex items-center gap-2"><Wallet className="h-5 w-5" />Info Sisa Anggaran</CardTitle>
-            <CardDescription>{regionals.find(r => r.code === regional)?.name || regional} - Q{quarter}</CardDescription>
+            <CardDescription>{regionals.find((r: Regional) => r.code === regional)?.name || regional} - Q{quarter}</CardDescription>
           </CardHeader>
           <CardContent>
             {remaining ? (
@@ -858,20 +750,12 @@ export default function TransactionPage() {
               </TabsList>
               
               <div className="flex items-center gap-2">
-                {/* Search */}
-                <Input 
-                  placeholder="Cari kegiatan..." 
-                  className="w-[250px] h-9"
-                  value={searchQuery}
-                  onChange={e => setSearchQuery(e.target.value)}
-                />
+                <Input placeholder="Cari kegiatan..." className="w-[250px] h-9" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
                 
-                {/* Filter Button */}
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button variant="outline" size="sm" className="gap-2 h-9">
-                      <Filter className="h-4 w-4" />
-                      Filter
+                      <Filter className="h-4 w-4" />Filter
                       {(filterGl || filterQuarter || filterRegional || filterPengadaan) && (
                         <Badge variant="secondary" className="ml-1 h-5 w-5 p-0 flex items-center justify-center text-xs">
                           {[filterGl, filterQuarter, filterRegional, filterPengadaan].filter(Boolean).length}
@@ -886,21 +770,17 @@ export default function TransactionPage() {
                         <div className="space-y-1.5">
                           <Label className="text-xs text-muted-foreground">GL Account</Label>
                           <Select value={filterGl || 'all'} onValueChange={v => setFilterGl(v === 'all' ? '' : v)}>
-                            <SelectTrigger className="h-9">
-                              <SelectValue placeholder="Semua GL Account" />
-                            </SelectTrigger>
+                            <SelectTrigger className="h-9"><SelectValue placeholder="Semua GL Account" /></SelectTrigger>
                             <SelectContent>
                               <SelectItem value="all">Semua GL Account</SelectItem>
-                              {glAccounts.map(gl => <SelectItem key={gl.id} value={gl.id}>{gl.code} - {gl.description}</SelectItem>)}
+                              {glAccounts.map((gl: GlAccount) => <SelectItem key={gl.id} value={gl.id}>{gl.code} - {gl.description}</SelectItem>)}
                             </SelectContent>
                           </Select>
                         </div>
                         <div className="space-y-1.5">
                           <Label className="text-xs text-muted-foreground">Kuartal</Label>
                           <Select value={filterQuarter || 'all'} onValueChange={v => setFilterQuarter(v === 'all' ? '' : v)}>
-                            <SelectTrigger className="h-9">
-                              <SelectValue placeholder="Semua Kuartal" />
-                            </SelectTrigger>
+                            <SelectTrigger className="h-9"><SelectValue placeholder="Semua Kuartal" /></SelectTrigger>
                             <SelectContent>
                               <SelectItem value="all">Semua Kuartal</SelectItem>
                               {[1,2,3,4].map(q => <SelectItem key={q} value={q.toString()}>Q{q}</SelectItem>)}
@@ -910,21 +790,17 @@ export default function TransactionPage() {
                         <div className="space-y-1.5">
                           <Label className="text-xs text-muted-foreground">Regional</Label>
                           <Select value={filterRegional || 'all'} onValueChange={v => setFilterRegional(v === 'all' ? '' : v)}>
-                            <SelectTrigger className="h-9">
-                              <SelectValue placeholder="Semua Regional" />
-                            </SelectTrigger>
+                            <SelectTrigger className="h-9"><SelectValue placeholder="Semua Regional" /></SelectTrigger>
                             <SelectContent>
                               <SelectItem value="all">Semua Regional</SelectItem>
-                              {regionals.map(r => <SelectItem key={r.id} value={r.code}>{r.name}</SelectItem>)}
+                              {regionals.map((r: Regional) => <SelectItem key={r.id} value={r.code}>{r.name}</SelectItem>)}
                             </SelectContent>
                           </Select>
                         </div>
                         <div className="space-y-1.5">
                           <Label className="text-xs text-muted-foreground">Jenis Pengadaan</Label>
                           <Select value={filterPengadaan || 'all'} onValueChange={v => setFilterPengadaan(v === 'all' ? '' : v)}>
-                            <SelectTrigger className="h-9">
-                              <SelectValue placeholder="Semua Pengadaan" />
-                            </SelectTrigger>
+                            <SelectTrigger className="h-9"><SelectValue placeholder="Semua Pengadaan" /></SelectTrigger>
                             <SelectContent>
                               <SelectItem value="all">Semua Pengadaan</SelectItem>
                               {JENIS_PENGADAAN.map(p => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}
@@ -933,24 +809,17 @@ export default function TransactionPage() {
                         </div>
                       </div>
                       {(filterGl || filterQuarter || filterRegional || filterPengadaan) && (
-                        <Button size="sm" className="w-full" onClick={() => { setFilterGl(''); setFilterQuarter(''); setFilterRegional(''); setFilterPengadaan('') }}>
-                          Reset Filter
-                        </Button>
+                        <Button size="sm" className="w-full" onClick={() => { setFilterGl(''); setFilterQuarter(''); setFilterRegional(''); setFilterPengadaan('') }}>Reset Filter</Button>
                       )}
                     </div>
                   </PopoverContent>
                 </Popover>
 
-                {/* Export Button */}
                 <Button size="sm" className="bg-green-500 hover:bg-green-600 text-white h-9 gap-2" onClick={handleExport}>
-                  <FileSpreadsheet className="h-4 w-4" />
-                  Export
+                  <FileSpreadsheet className="h-4 w-4" />Export
                 </Button>
-
-                {/* Export KKA Button */}
                 <Button size="sm" className="h-9 gap-2" onClick={handleExportKKA}>
-                  <FileSpreadsheet className="h-4 w-4" />
-                  Export KKA
+                  <FileSpreadsheet className="h-4 w-4" />Export KKA
                 </Button>
               </div>
             </div>
@@ -971,217 +840,74 @@ export default function TransactionPage() {
           </DialogHeader>
           {viewingTransaction && (
             <div className="grid grid-cols-3 gap-0">
-              {/* Left Side - Details */}
               <div className="col-span-2 px-6 pb-6 space-y-4 border-r">
-                {/* GL Account */}
                 <div className="space-y-1.5">
                   <Label className="text-sm text-muted-foreground">GL Account</Label>
                   <Input value={`${viewingTransaction.glAccount.code} - ${viewingTransaction.glAccount.description}`} disabled className="bg-muted/50 font-medium" />
                 </div>
-
-                {/* Basic Info Grid */}
                 <div className="grid grid-cols-3 gap-4">
-                  <div className="space-y-1.5">
-                    <Label className="text-sm text-muted-foreground">Kuartal</Label>
-                    <Input value={`Q${viewingTransaction.quarter}`} disabled className="bg-muted/50 font-medium" />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label className="text-sm text-muted-foreground">Regional</Label>
-                    <Input value={regionals.find(r => r.code === viewingTransaction.regionalCode)?.name || '-'} disabled className="bg-muted/50 font-medium" />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label className="text-sm text-muted-foreground">Regional Pengguna</Label>
-                    <Input value={viewingTransaction.regionalPengguna} disabled className="bg-muted/50 font-medium" />
-                  </div>
+                  <div className="space-y-1.5"><Label className="text-sm text-muted-foreground">Kuartal</Label><Input value={`Q${viewingTransaction.quarter}`} disabled className="bg-muted/50 font-medium" /></div>
+                  <div className="space-y-1.5"><Label className="text-sm text-muted-foreground">Regional</Label><Input value={regionals.find((r: Regional) => r.code === viewingTransaction.regionalCode)?.name || '-'} disabled className="bg-muted/50 font-medium" /></div>
+                  <div className="space-y-1.5"><Label className="text-sm text-muted-foreground">Regional Pengguna</Label><Input value={viewingTransaction.regionalPengguna} disabled className="bg-muted/50 font-medium" /></div>
                 </div>
-
-                {/* Kegiatan */}
-                <div className="space-y-1.5">
-                  <Label className="text-sm text-muted-foreground">Kegiatan</Label>
-                  <Input value={viewingTransaction.kegiatan} disabled className="bg-muted/50 font-medium" />
-                </div>
-
-                {/* Kwitansi Info */}
+                <div className="space-y-1.5"><Label className="text-sm text-muted-foreground">Kegiatan</Label><Input value={viewingTransaction.kegiatan} disabled className="bg-muted/50 font-medium" /></div>
                 <div className="grid grid-cols-3 gap-4">
-                  <div className="space-y-1.5">
-                    <Label className="text-sm text-muted-foreground">Tanggal Kwitansi</Label>
-                    <Input value={viewingTransaction.tanggalKwitansi ? format(new Date(viewingTransaction.tanggalKwitansi), 'dd MMMM yyyy', { locale: idLocale }) : '-'} disabled className="bg-muted/50 font-medium" />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label className="text-sm text-muted-foreground">Nilai Kwitansi</Label>
-                    <div className="flex">
-                      <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-input bg-muted text-muted-foreground text-sm">Rp</span>
-                      <Input value={viewingTransaction.nilaiKwitansi.toLocaleString('id-ID')} disabled className="bg-muted/50 font-medium rounded-l-none" />
-                    </div>
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label className="text-sm text-muted-foreground">Jenis Pajak</Label>
-                    <Input value={JENIS_PAJAK.find(p => p.value === viewingTransaction.jenisPajak)?.label || 'Tanpa PPN'} disabled className="bg-muted/50 font-medium" />
-                  </div>
+                  <div className="space-y-1.5"><Label className="text-sm text-muted-foreground">Tanggal Kwitansi</Label><Input value={viewingTransaction.tanggalKwitansi ? format(new Date(viewingTransaction.tanggalKwitansi), 'dd MMMM yyyy', { locale: idLocale }) : '-'} disabled className="bg-muted/50 font-medium" /></div>
+                  <div className="space-y-1.5"><Label className="text-sm text-muted-foreground">Nilai Kwitansi</Label><div className="flex"><span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-input bg-muted text-muted-foreground text-sm">Rp</span><Input value={viewingTransaction.nilaiKwitansi.toLocaleString('id-ID')} disabled className="bg-muted/50 font-medium rounded-l-none" /></div></div>
+                  <div className="space-y-1.5"><Label className="text-sm text-muted-foreground">Jenis Pajak</Label><Input value={JENIS_PAJAK.find(p => p.value === viewingTransaction.jenisPajak)?.label || 'Tanpa PPN'} disabled className="bg-muted/50 font-medium" /></div>
                 </div>
-
-                {/* PPN Info */}
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <Label className="text-sm text-muted-foreground">
-                      {viewingTransaction.jenisPajak === 'TanpaPPN' ? 'Nilai Non PPN' : 'Nilai Tanpa PPN'}
-                    </Label>
-                    <div className="flex">
-                      <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-input bg-muted text-muted-foreground text-sm">Rp</span>
-                      <Input value={viewingTransaction.nilaiTanpaPPN.toLocaleString('id-ID', { maximumFractionDigits: 0 })} disabled className="bg-muted/50 font-medium rounded-l-none" />
-                    </div>
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label className="text-sm text-muted-foreground">
-                      {viewingTransaction.jenisPajak === 'TanpaPPN' ? 'Nilai Non PPN' : 
-                       viewingTransaction.jenisPajak === 'PPN11' ? 'Nilai PPN 11%' :
-                       viewingTransaction.jenisPajak === 'PPNJasa2' ? 'Nilai PPH Jasa 2%' :
-                       viewingTransaction.jenisPajak === 'PPNInklaring1.1' ? 'Nilai Inklaring 1.1%' : 'Nilai PPN'}
-                    </Label>
-                    <div className="flex">
-                      <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-input bg-muted text-muted-foreground text-sm">Rp</span>
-                      <Input value={viewingTransaction.nilaiPPN.toLocaleString('id-ID', { maximumFractionDigits: 0 })} disabled className="bg-muted/50 font-medium rounded-l-none" />
-                    </div>
-                  </div>
+                  <div className="space-y-1.5"><Label className="text-sm text-muted-foreground">{viewingTransaction.jenisPajak === 'TanpaPPN' ? 'Nilai Non PPN' : 'Nilai Tanpa PPN'}</Label><div className="flex"><span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-input bg-muted text-muted-foreground text-sm">Rp</span><Input value={viewingTransaction.nilaiTanpaPPN.toLocaleString('id-ID', { maximumFractionDigits: 0 })} disabled className="bg-muted/50 font-medium rounded-l-none" /></div></div>
+                  <div className="space-y-1.5"><Label className="text-sm text-muted-foreground">{viewingTransaction.jenisPajak === 'TanpaPPN' ? 'Nilai Non PPN' : viewingTransaction.jenisPajak === 'PPN11' ? 'Nilai PPN 11%' : viewingTransaction.jenisPajak === 'PPNJasa2' ? 'Nilai PPH Jasa 2%' : viewingTransaction.jenisPajak === 'PPNInklaring1.1' ? 'Nilai Inklaring 1.1%' : 'Nilai PPN'}</Label><div className="flex"><span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-input bg-muted text-muted-foreground text-sm">Rp</span><Input value={viewingTransaction.nilaiPPN.toLocaleString('id-ID', { maximumFractionDigits: 0 })} disabled className="bg-muted/50 font-medium rounded-l-none" /></div></div>
                 </div>
-
-                {/* Pengadaan Info */}
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <Label className="text-sm text-muted-foreground">Jenis Pengadaan</Label>
-                    <Input value={JENIS_PENGADAAN.find(p => p.value === viewingTransaction.jenisPengadaan)?.label || '-'} disabled className="bg-muted/50 font-medium" />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label className="text-sm text-muted-foreground">Vendor</Label>
-                    <Input value={viewingTransaction.vendor?.name || '-'} disabled className="bg-muted/50 font-medium" />
-                  </div>
+                  <div className="space-y-1.5"><Label className="text-sm text-muted-foreground">Jenis Pengadaan</Label><Input value={JENIS_PENGADAAN.find(p => p.value === viewingTransaction.jenisPengadaan)?.label || '-'} disabled className="bg-muted/50 font-medium" /></div>
+                  <div className="space-y-1.5"><Label className="text-sm text-muted-foreground">Vendor</Label><Input value={viewingTransaction.vendor?.name || '-'} disabled className="bg-muted/50 font-medium" /></div>
                 </div>
-
-                {/* Keterangan */}
-                <div className="space-y-1.5">
-                  <Label className="text-sm text-muted-foreground">Keterangan</Label>
-                  <Textarea value={viewingTransaction.keterangan || '-'} disabled className="bg-muted/50 font-medium min-h-[60px] resize-none" />
-                </div>
-
-                {/* Finance Info Section */}
+                <div className="space-y-1.5"><Label className="text-sm text-muted-foreground">Keterangan</Label><Textarea value={viewingTransaction.keterangan || '-'} disabled className="bg-muted/50 font-medium min-h-[60px] resize-none" /></div>
                 <div className="pt-4 border-t space-y-4">
                   <p className="text-sm font-semibold text-muted-foreground">Informasi Finance</p>
                   <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-1.5">
-                      <Label className="text-sm text-muted-foreground">No. Tiket Mydx</Label>
-                      <Input value={viewingTransaction.noTiketMydx || '-'} disabled className="bg-muted/50 font-medium" />
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label className="text-sm text-muted-foreground">Tgl Serahkan ke Finance</Label>
-                      <Input value={viewingTransaction.tglSerahFinance ? format(new Date(viewingTransaction.tglSerahFinance), 'dd MMMM yyyy', { locale: idLocale }) : '-'} disabled className="bg-muted/50 font-medium" />
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label className="text-sm text-muted-foreground">PIC Finance</Label>
-                      <Input value={viewingTransaction.picFinance || '-'} disabled className="bg-muted/50 font-medium" />
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label className="text-sm text-muted-foreground">No HP Finance</Label>
-                      <Input value={viewingTransaction.noHpFinance || '-'} disabled className="bg-muted/50 font-medium" />
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label className="text-sm text-muted-foreground">Tgl Transfer Vendor</Label>
-                      <Input value={viewingTransaction.tglTransferVendor ? format(new Date(viewingTransaction.tglTransferVendor), 'dd MMMM yyyy', { locale: idLocale }) : '-'} disabled className="bg-muted/50 font-medium" />
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label className="text-sm text-muted-foreground">Nilai Transfer (Rp)</Label>
-                      <Input value={viewingTransaction.nilaiTransfer ? viewingTransaction.nilaiTransfer.toLocaleString('id-ID') : '-'} disabled className="bg-muted/50 font-medium" />
-                    </div>
+                    <div className="space-y-1.5"><Label className="text-sm text-muted-foreground">No. Tiket Mydx</Label><Input value={viewingTransaction.noTiketMydx || '-'} disabled className="bg-muted/50 font-medium" /></div>
+                    <div className="space-y-1.5"><Label className="text-sm text-muted-foreground">Tgl Serahkan ke Finance</Label><Input value={viewingTransaction.tglSerahFinance ? format(new Date(viewingTransaction.tglSerahFinance), 'dd MMMM yyyy', { locale: idLocale }) : '-'} disabled className="bg-muted/50 font-medium" /></div>
+                    <div className="space-y-1.5"><Label className="text-sm text-muted-foreground">PIC Finance</Label><Input value={viewingTransaction.picFinance || '-'} disabled className="bg-muted/50 font-medium" /></div>
+                    <div className="space-y-1.5"><Label className="text-sm text-muted-foreground">No HP Finance</Label><Input value={viewingTransaction.noHpFinance || '-'} disabled className="bg-muted/50 font-medium" /></div>
+                    <div className="space-y-1.5"><Label className="text-sm text-muted-foreground">Tgl Transfer Vendor</Label><Input value={viewingTransaction.tglTransferVendor ? format(new Date(viewingTransaction.tglTransferVendor), 'dd MMMM yyyy', { locale: idLocale }) : '-'} disabled className="bg-muted/50 font-medium" /></div>
+                    <div className="space-y-1.5"><Label className="text-sm text-muted-foreground">Nilai Transfer (Rp)</Label><Input value={viewingTransaction.nilaiTransfer ? viewingTransaction.nilaiTransfer.toLocaleString('id-ID') : '-'} disabled className="bg-muted/50 font-medium" /></div>
                   </div>
                 </div>
-
-                {/* Actions */}
                 <div className="flex gap-2 justify-end pt-4 border-t">
                   <Button variant="outline" onClick={() => setShowViewDialog(false)}>Tutup</Button>
                   <Button onClick={() => { setShowViewDialog(false); openEditDialog(viewingTransaction) }}>Edit</Button>
                 </div>
               </div>
-
-              {/* Right Side - Status & Task Checklist */}
               <div className="col-span-1 px-5 py-6 bg-muted/30">
-                {/* Status */}
-                <div className="flex items-center justify-between mb-6 pb-4 border-b">
-                  <span className="text-sm font-semibold">Status</span>
-                  <StatusBadge status={viewingTransaction.status} />
-                </div>
-
-                {/* Task Checklist */}
+                <div className="flex items-center justify-between mb-6 pb-4 border-b"><span className="text-sm font-semibold">Status</span><StatusBadge status={viewingTransaction.status} /></div>
                 <div className="space-y-4">
                   <p className="text-sm font-semibold">Task Checklist</p>
                   <div className="space-y-3">
-                    <div className={`flex items-center gap-2 p-2.5 rounded-lg border ${viewingTransaction.taskPengajuan ? 'bg-green-50 border-green-200' : 'bg-white'}`}>
-                      <Checkbox checked={viewingTransaction.taskPengajuan} disabled className="data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500" />
-                      <span className={`text-sm ${viewingTransaction.taskPengajuan ? 'text-green-700' : ''}`}>Pengajuan Pengadaan</span>
-                    </div>
-                    <div className={`flex items-center gap-2 p-2.5 rounded-lg border ${viewingTransaction.taskTransferVendor ? 'bg-green-50 border-green-200' : 'bg-white'}`}>
-                      <Checkbox checked={viewingTransaction.taskTransferVendor} disabled className="data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500" />
-                      <span className={`text-sm ${viewingTransaction.taskTransferVendor ? 'text-green-700' : ''}`}>Transfer dari Vendor</span>
-                    </div>
-                    <div className={`flex items-center gap-2 p-2.5 rounded-lg border ${viewingTransaction.taskTerimaBerkas ? 'bg-green-50 border-green-200' : 'bg-white'}`}>
-                      <Checkbox checked={viewingTransaction.taskTerimaBerkas} disabled className="data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500" />
-                      <span className={`text-sm ${viewingTransaction.taskTerimaBerkas ? 'text-green-700' : ''}`}>Terima berkas pengadaan</span>
-                    </div>
-                    <div className={`flex items-center gap-2 p-2.5 rounded-lg border ${viewingTransaction.taskUploadMydx ? 'bg-green-50 border-green-200' : 'bg-white'}`}>
-                      <Checkbox checked={viewingTransaction.taskUploadMydx} disabled className="data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500" />
-                      <span className={`text-sm ${viewingTransaction.taskUploadMydx ? 'text-green-700' : ''}`}>Upload ke Mydx</span>
-                    </div>
-                    <div className={`flex items-center gap-2 p-2.5 rounded-lg border ${viewingTransaction.taskSerahFinance ? 'bg-green-50 border-green-200' : 'bg-white'}`}>
-                      <Checkbox checked={viewingTransaction.taskSerahFinance} disabled className="data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500" />
-                      <span className={`text-sm ${viewingTransaction.taskSerahFinance ? 'text-green-700' : ''}`}>Serahkan berkas ke Finance</span>
-                    </div>
-                    <div className={`flex items-center gap-2 p-2.5 rounded-lg border ${viewingTransaction.taskVendorDibayar ? 'bg-green-50 border-green-200' : 'bg-white'}`}>
-                      <Checkbox checked={viewingTransaction.taskVendorDibayar} disabled className="data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500" />
-                      <span className={`text-sm ${viewingTransaction.taskVendorDibayar ? 'text-green-700' : ''}`}>Vendor sudah dibayar</span>
-                    </div>
+                    <div className={`flex items-center gap-2 p-2.5 rounded-lg border ${viewingTransaction.taskPengajuan ? 'bg-green-50 border-green-200' : 'bg-white'}`}><Checkbox checked={viewingTransaction.taskPengajuan} disabled className="data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500" /><span className={`text-sm ${viewingTransaction.taskPengajuan ? 'text-green-700' : ''}`}>Pengajuan Pengadaan</span></div>
+                    <div className={`flex items-center gap-2 p-2.5 rounded-lg border ${viewingTransaction.taskTransferVendor ? 'bg-green-50 border-green-200' : 'bg-white'}`}><Checkbox checked={viewingTransaction.taskTransferVendor} disabled className="data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500" /><span className={`text-sm ${viewingTransaction.taskTransferVendor ? 'text-green-700' : ''}`}>Transfer dari Vendor</span></div>
+                    <div className={`flex items-center gap-2 p-2.5 rounded-lg border ${viewingTransaction.taskTerimaBerkas ? 'bg-green-50 border-green-200' : 'bg-white'}`}><Checkbox checked={viewingTransaction.taskTerimaBerkas} disabled className="data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500" /><span className={`text-sm ${viewingTransaction.taskTerimaBerkas ? 'text-green-700' : ''}`}>Terima Berkas</span></div>
+                    <div className={`flex items-center gap-2 p-2.5 rounded-lg border ${viewingTransaction.taskUploadMydx ? 'bg-green-50 border-green-200' : 'bg-white'}`}><Checkbox checked={viewingTransaction.taskUploadMydx} disabled className="data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500" /><span className={`text-sm ${viewingTransaction.taskUploadMydx ? 'text-green-700' : ''}`}>Upload Mydx</span></div>
+                    <div className={`flex items-center gap-2 p-2.5 rounded-lg border ${viewingTransaction.taskSerahFinance ? 'bg-green-50 border-green-200' : 'bg-white'}`}><Checkbox checked={viewingTransaction.taskSerahFinance} disabled className="data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500" /><span className={`text-sm ${viewingTransaction.taskSerahFinance ? 'text-green-700' : ''}`}>Serah ke Finance</span></div>
+                    <div className={`flex items-center gap-2 p-2.5 rounded-lg border ${viewingTransaction.taskVendorDibayar ? 'bg-green-50 border-green-200' : 'bg-white'}`}><Checkbox checked={viewingTransaction.taskVendorDibayar} disabled className="data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500" /><span className={`text-sm ${viewingTransaction.taskVendorDibayar ? 'text-green-700' : ''}`}>Vendor Dibayar</span></div>
                   </div>
                 </div>
-
-                {/* File Display Section */}
-                <div className="space-y-4 pt-4 border-t">
-                  <div className="flex items-center justify-between">
-                    <p className="text-sm font-semibold">Lampiran File</p>
-                    {files.length > 0 && (
-                      <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">
-                        {files.length} file{files.length > 1 ? 's' : ''}
-                      </span>
-                    )}
-                  </div>
-                  
+                {/* Files Section */}
+                <div className="mt-6 pt-4 border-t space-y-3">
+                  <p className="text-sm font-semibold">Lampiran File</p>
                   {files.length === 0 ? (
-                    <div className="text-center py-6 bg-gray-50/50 rounded-lg border border-dashed border-gray-300">
-                      <div className="flex flex-col items-center gap-2">
-                        <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
-                          <FileText className="h-5 w-5 text-gray-400" />
-                        </div>
-                        <p className="text-xs text-muted-foreground">Belum ada file</p>
-                      </div>
-                    </div>
+                    <p className="text-sm text-muted-foreground">Tidak ada file</p>
                   ) : (
                     <div className="space-y-2">
-                      {files.map((file) => (
-                        <div key={file.id} className="group flex items-center gap-2 p-2 bg-white/50 border rounded-lg hover:bg-white hover:shadow-sm transition-all duration-200">
-                          <div className="flex-shrink-0">
-                            {getFileIcon(file)}
-                          </div>
+                      {files.map(file => (
+                        <div key={file.id} className="flex items-center gap-3 p-2 bg-white rounded-lg border cursor-pointer hover:bg-gray-50" onClick={() => handleFilePreview(file)}>
+                          {getFileIcon(file)}
                           <div className="flex-1 min-w-0">
-                            <p className="text-xs font-medium truncate">{file.originalName}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {formatFileSize(file.fileSize)}
-                            </p>
+                            <p className="text-sm font-medium truncate">{file.originalName}</p>
+                            <p className="text-xs text-muted-foreground">{formatFileSize(file.fileSize)}</p>
                           </div>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleFilePreview(file)}
-                            className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                            title={file.mimeType.includes('image') ? 'Preview gambar' : 'Lihat file'}
-                          >
-                            <Eye className="h-3 w-3 text-blue-600" />
-                          </Button>
                         </div>
                       ))}
                     </div>
@@ -1193,6 +919,7 @@ export default function TransactionPage() {
         </DialogContent>
       </Dialog>
 
+
       {/* Edit Dialog */}
       <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
         <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto p-0">
@@ -1200,334 +927,113 @@ export default function TransactionPage() {
             <DialogTitle>Edit Transaksi</DialogTitle>
             <p className="text-sm text-muted-foreground mt-0.5">Ubah data transaksi dan lengkapi informasi yang diperlukan</p>
           </DialogHeader>
-          <div className="grid grid-cols-3 gap-0">
-            {/* Left Side - Form */}
-            <div className="col-span-2 px-6 pb-6 space-y-4 border-r">
-              {/* GL Account */}
-              <div className="space-y-1.5">
-                <Label className="text-sm text-muted-foreground">GL Account</Label>
-                <Select value={editGl} onValueChange={setEditGl}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{glAccounts.map(gl => <SelectItem key={gl.id} value={gl.id}>{gl.code} - {gl.description}</SelectItem>)}</SelectContent></Select>
-              </div>
-
-              {/* Basic Info Grid */}
-              <div className="grid grid-cols-3 gap-4">
+          {editingTransaction && (
+            <div className="grid grid-cols-3 gap-0">
+              <div className="col-span-2 px-6 pb-6 space-y-4 border-r">
                 <div className="space-y-1.5">
-                  <Label className="text-sm text-muted-foreground">Kuartal</Label>
-                  <Select value={editQuarter} onValueChange={setEditQuarter}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{[1,2,3,4].map(q => <SelectItem key={q} value={q.toString()}>Q{q}</SelectItem>)}</SelectContent></Select>
+                  <Label className="text-sm text-muted-foreground">GL Account</Label>
+                  <Select value={editGl} onValueChange={setEditGl}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>{glAccounts.map((gl: GlAccount) => <SelectItem key={gl.id} value={gl.id}>{gl.code} - {gl.description}</SelectItem>)}</SelectContent>
+                  </Select>
                 </div>
-                <div className="space-y-1.5">
-                  <Label className="text-sm text-muted-foreground">Regional</Label>
-                  <Select value={editRegional} onValueChange={setEditRegional}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{regionals.map(r => <SelectItem key={r.id} value={r.code}>{r.name}</SelectItem>)}</SelectContent></Select>
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="space-y-1.5"><Label className="text-sm text-muted-foreground">Kuartal</Label><Select value={editQuarter} onValueChange={setEditQuarter}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{[1,2,3,4].map(q => <SelectItem key={q} value={q.toString()}>Q{q}</SelectItem>)}</SelectContent></Select></div>
+                  <div className="space-y-1.5"><Label className="text-sm text-muted-foreground">Regional</Label><Select value={editRegional} onValueChange={setEditRegional}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{regionals.map((r: Regional) => <SelectItem key={r.id} value={r.code}>{r.name}</SelectItem>)}</SelectContent></Select></div>
+                  <div className="space-y-1.5"><Label className="text-sm text-muted-foreground">Regional Pengguna</Label><Input value={editRegionalPengguna} onChange={e => setEditRegionalPengguna(e.target.value)} /></div>
                 </div>
-                <div className="space-y-1.5">
-                  <Label className="text-sm text-muted-foreground">Regional Pengguna</Label>
-                  <Input value={editRegionalPengguna} onChange={e => setEditRegionalPengguna(e.target.value)} />
+                <div className="space-y-1.5"><Label className="text-sm text-muted-foreground">Kegiatan</Label><Input value={editKegiatan} onChange={e => setEditKegiatan(e.target.value)} /></div>
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="space-y-1.5"><Label className="text-sm text-muted-foreground">Tanggal Kwitansi</Label><DatePicker date={editTanggalKwitansi} onSelect={setEditTanggalKwitansi} /></div>
+                  <div className="space-y-1.5"><Label className="text-sm text-muted-foreground">Nilai Kwitansi</Label><CurrencyInput value={editNilaiKwitansi} onChange={setEditNilaiKwitansi} /></div>
+                  <div className="space-y-1.5"><Label className="text-sm text-muted-foreground">Jenis Pajak</Label><Select value={editJenisPajak} onValueChange={setEditJenisPajak}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{JENIS_PAJAK.map(p => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}</SelectContent></Select></div>
                 </div>
-              </div>
-
-              {/* Kegiatan */}
-              <div className="space-y-1.5">
-                <Label className="text-sm text-muted-foreground">Kegiatan</Label>
-                <Input value={editKegiatan} onChange={e => setEditKegiatan(e.target.value)} />
-              </div>
-
-              {/* Kwitansi Info */}
-              <div className="grid grid-cols-3 gap-4">
-                <div className="space-y-1.5">
-                  <Label className="text-sm text-muted-foreground">Tanggal Kwitansi</Label>
-                  <DatePicker date={editTanggalKwitansi} onSelect={setEditTanggalKwitansi} />
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-sm text-muted-foreground">Nilai Kwitansi</Label>
-                  <CurrencyInput value={editNilaiKwitansi} onChange={setEditNilaiKwitansi} />
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-sm text-muted-foreground">Jenis Pajak</Label>
-                  <Select value={editJenisPajak} onValueChange={setEditJenisPajak}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{JENIS_PAJAK.map(p => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}</SelectContent></Select>
-                </div>
-              </div>
-
-              {/* PPN Info */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <Label className="text-sm text-muted-foreground">
-                    {editJenisPajak === 'TanpaPPN' ? 'Nilai Non PPN' : 'Nilai Tanpa PPN'}
-                  </Label>
-                  <div className="flex">
-                    <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-input bg-muted text-muted-foreground text-sm">Rp</span>
-                    <Input value={editPpnCalc.nilaiTanpaPPN.toLocaleString('id-ID', { maximumFractionDigits: 0 })} disabled className="bg-muted/50 rounded-l-none" />
-                  </div>
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-sm text-muted-foreground">
-                    {editJenisPajak === 'TanpaPPN' ? 'Nilai Non PPN' : 
-                     editJenisPajak === 'PPN11' ? 'Nilai PPN 11%' :
-                     editJenisPajak === 'PPNJasa2' ? 'Nilai PPH Jasa 2%' :
-                     editJenisPajak === 'PPNInklaring1.1' ? 'Nilai Inklaring 1.1%' : 'Nilai PPN'}
-                  </Label>
-                  <div className="flex">
-                    <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-input bg-muted text-muted-foreground text-sm">Rp</span>
-                    <Input value={editPpnCalc.nilaiPPN.toLocaleString('id-ID', { maximumFractionDigits: 0 })} disabled className="bg-muted/50 rounded-l-none" />
-                  </div>
-                </div>
-              </div>
-
-              {/* Pengadaan Info */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <Label className="text-sm text-muted-foreground">Jenis Pengadaan</Label>
-                  <Select value={editJenisPengadaan} onValueChange={setEditJenisPengadaan}><SelectTrigger><SelectValue placeholder="Pilih jenis pengadaan" /></SelectTrigger><SelectContent>{JENIS_PENGADAAN.map(p => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}</SelectContent></Select>
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-sm text-muted-foreground">Vendor</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button variant="outline" role="combobox" className="w-full justify-between font-normal">
-                        {editVendorId ? vendors.find(v => v.id === editVendorId)?.name : "Pilih vendor..."}
-                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-[300px] p-0">
-                      <Command>
-                        <CommandInput placeholder="Cari vendor..." />
-                        <CommandList>
-                          <CommandEmpty>Vendor tidak ditemukan.</CommandEmpty>
-                          <CommandGroup>
-                            {vendors.map(v => (
-                              <CommandItem key={v.id} value={v.name} onSelect={() => setEditVendorId(v.id)}>
-                                <Check className={cn("mr-2 h-4 w-4", editVendorId === v.id ? "opacity-100" : "opacity-0")} />
-                                {v.name}
-                              </CommandItem>
-                            ))}
-                          </CommandGroup>
-                        </CommandList>
-                      </Command>
-                    </PopoverContent>
-                  </Popover>
-                </div>
-              </div>
-
-              {/* Keterangan */}
-              <div className="space-y-1.5">
-                <Label className="text-sm text-muted-foreground">Keterangan</Label>
-                <Textarea value={editKeterangan} onChange={e => setEditKeterangan(e.target.value)} className="min-h-[60px]" />
-              </div>
-
-              {/* Finance Info */}
-              <div className="pt-4 border-t space-y-4">
-                <p className="text-sm font-semibold text-muted-foreground">Informasi Finance</p>
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <Label className="text-sm text-muted-foreground">No. Tiket Mydx</Label>
-                    <Input value={editNoTiketMydx} onChange={e => setEditNoTiketMydx(e.target.value)} />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label className="text-sm text-muted-foreground">Tgl Serahkan ke Finance</Label>
-                    <DatePicker date={editTglSerahFinance} onSelect={setEditTglSerahFinance} />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label className="text-sm text-muted-foreground">PIC Finance</Label>
-                    <Input value={editPicFinance} onChange={e => setEditPicFinance(e.target.value)} />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label className="text-sm text-muted-foreground">No HP Finance</Label>
-                    <Input value={editNoHpFinance} onChange={e => setEditNoHpFinance(e.target.value)} />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label className="text-sm text-muted-foreground">Tgl Transfer ke Vendor</Label>
-                    <DatePicker date={editTglTransferVendor} onSelect={setEditTglTransferVendor} />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label className="text-sm text-muted-foreground">Nilai Transfer (Rp)</Label>
-                    <CurrencyInput value={editNilaiTransfer || 0} onChange={v => setEditNilaiTransfer(v || undefined)} />
+                  <div className="space-y-1.5"><Label className="text-sm text-muted-foreground">{editJenisPajak === 'TanpaPPN' ? 'Nilai Non PPN' : 'Nilai Tanpa PPN'}</Label><div className="flex"><span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-input bg-muted text-muted-foreground text-sm">Rp</span><Input value={editPpnCalc.nilaiTanpaPPN.toLocaleString('id-ID', { maximumFractionDigits: 0 })} disabled className="bg-muted/50 font-medium rounded-l-none" /></div></div>
+                  <div className="space-y-1.5"><Label className="text-sm text-muted-foreground">{editJenisPajak === 'TanpaPPN' ? 'Nilai Non PPN' : editJenisPajak === 'PPN11' ? 'Nilai PPN 11%' : editJenisPajak === 'PPNJasa2' ? 'Nilai PPH Jasa 2%' : editJenisPajak === 'PPNInklaring1.1' ? 'Nilai Inklaring 1.1%' : 'Nilai PPN'}</Label><div className="flex"><span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-input bg-muted text-muted-foreground text-sm">Rp</span><Input value={editPpnCalc.nilaiPPN.toLocaleString('id-ID', { maximumFractionDigits: 0 })} disabled className="bg-muted/50 font-medium rounded-l-none" /></div></div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1.5"><Label className="text-sm text-muted-foreground">Jenis Pengadaan</Label><Select value={editJenisPengadaan} onValueChange={setEditJenisPengadaan}><SelectTrigger><SelectValue placeholder="Pilih jenis" /></SelectTrigger><SelectContent>{JENIS_PENGADAAN.map(p => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}</SelectContent></Select></div>
+                  <div className="space-y-1.5"><Label className="text-sm text-muted-foreground">Vendor</Label><Select value={editVendorId} onValueChange={setEditVendorId}><SelectTrigger><SelectValue placeholder="Pilih vendor" /></SelectTrigger><SelectContent>{vendors.map((v: Vendor) => <SelectItem key={v.id} value={v.id}>{v.name}</SelectItem>)}</SelectContent></Select></div>
+                </div>
+                <div className="space-y-1.5"><Label className="text-sm text-muted-foreground">Keterangan</Label><Textarea value={editKeterangan} onChange={e => setEditKeterangan(e.target.value)} className="min-h-[60px] resize-none" /></div>
+                <div className="pt-4 border-t space-y-4">
+                  <p className="text-sm font-semibold text-muted-foreground">Informasi Finance</p>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1.5"><Label className="text-sm text-muted-foreground">No. Tiket Mydx</Label><Input value={editNoTiketMydx} onChange={e => setEditNoTiketMydx(e.target.value)} /></div>
+                    <div className="space-y-1.5"><Label className="text-sm text-muted-foreground">Tgl Serahkan ke Finance</Label><DatePicker date={editTglSerahFinance} onSelect={setEditTglSerahFinance} /></div>
+                    <div className="space-y-1.5"><Label className="text-sm text-muted-foreground">PIC Finance</Label><Input value={editPicFinance} onChange={e => setEditPicFinance(e.target.value)} /></div>
+                    <div className="space-y-1.5"><Label className="text-sm text-muted-foreground">No HP Finance</Label><Input value={editNoHpFinance} onChange={e => setEditNoHpFinance(e.target.value)} /></div>
+                    <div className="space-y-1.5"><Label className="text-sm text-muted-foreground">Tgl Transfer Vendor</Label><DatePicker date={editTglTransferVendor} onSelect={setEditTglTransferVendor} /></div>
+                    <div className="space-y-1.5"><Label className="text-sm text-muted-foreground">Nilai Transfer</Label><CurrencyInput value={editNilaiTransfer || 0} onChange={setEditNilaiTransfer} /></div>
                   </div>
                 </div>
-              </div>
-
-              {/* Actions */}
-              <div className="flex gap-2 justify-end pt-4 border-t">
-                <Button variant="outline" onClick={() => setShowEditDialog(false)}>Batal</Button>
-                <Button onClick={handleEdit}>Simpan Perubahan</Button>
-              </div>
-            </div>
-
-            {/* Right Side - Status & Task Checklist */}
-            <div className="col-span-1 px-5 py-6 bg-muted/30">
-              {/* Status */}
-              <div className="flex items-center justify-between mb-6 pb-4 border-b">
-                <span className="text-sm font-semibold">Status</span>
-                <StatusBadge status={
-                  // Check all fields and tasks for Close
-                  (editGl && editQuarter && editRegional && editKegiatan && editRegionalPengguna &&
-                   editTanggalKwitansi && editNilaiKwitansi > 0 && editJenisPajak && editJenisPengadaan &&
-                   editVendorId && editNoTiketMydx && editTglSerahFinance && editPicFinance && 
-                   editNoHpFinance && editTglTransferVendor && editNilaiTransfer &&
-                   editTaskTransferVendor && editTaskTerimaBerkas) ? 'Close' : 'Proses'
-                } />
-              </div>
-
-              {/* Task Checklist */}
-              <div className="space-y-4">
-                <p className="text-sm font-semibold">Task Checklist</p>
-                <div className="space-y-3">
-                  <div className={`flex items-center gap-2 p-2.5 rounded-lg border ${true ? 'bg-green-50 border-green-200' : 'bg-white'}`}>
-                    <Checkbox checked disabled className="data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500" />
-                    <span className={`text-sm ${true ? 'text-green-700' : ''}`}>Pengajuan Pengadaan</span>
-                  </div>
-                  <div className={`flex items-center gap-2 p-2.5 rounded-lg border ${editTaskTransferVendor ? 'bg-green-50 border-green-200' : 'bg-white'}`}>
-                    <Checkbox id="editTaskTransferVendor" checked={editTaskTransferVendor} onCheckedChange={c => setEditTaskTransferVendor(!!c)} className="data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500" />
-                    <label htmlFor="editTaskTransferVendor" className={`text-sm cursor-pointer ${editTaskTransferVendor ? 'text-green-700' : ''}`}>Transfer dari Vendor</label>
-                  </div>
-                  <div className={`flex items-center gap-2 p-2.5 rounded-lg border ${editTaskTerimaBerkas ? 'bg-green-50 border-green-200' : 'bg-white'}`}>
-                    <Checkbox id="editTaskTerimaBerkas" checked={editTaskTerimaBerkas} onCheckedChange={c => setEditTaskTerimaBerkas(!!c)} className="data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500" />
-                    <label htmlFor="editTaskTerimaBerkas" className={`text-sm cursor-pointer ${editTaskTerimaBerkas ? 'text-green-700' : ''}`}>Terima berkas pengadaan</label>
-                  </div>
-                  <div className={`flex items-center gap-2 p-2.5 rounded-lg border ${!!editNoTiketMydx ? 'bg-green-50 border-green-200' : 'bg-white'}`}>
-                    <Checkbox checked={!!editNoTiketMydx} disabled className="data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500" />
-                    <span className={`text-sm ${!!editNoTiketMydx ? 'text-green-700' : 'text-muted-foreground'}`}>Upload ke Mydx</span>
-                  </div>
-                  <div className={`flex items-center gap-2 p-2.5 rounded-lg border ${!!editTglSerahFinance ? 'bg-green-50 border-green-200' : 'bg-white'}`}>
-                    <Checkbox checked={!!editTglSerahFinance} disabled className="data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500" />
-                    <span className={`text-sm ${!!editTglSerahFinance ? 'text-green-700' : 'text-muted-foreground'}`}>Serahkan berkas ke Finance</span>
-                  </div>
-                  <div className={`flex items-center gap-2 p-2.5 rounded-lg border ${!!editTglTransferVendor ? 'bg-green-50 border-green-200' : 'bg-white'}`}>
-                    <Checkbox checked={!!editTglTransferVendor} disabled className="data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500" />
-                    <span className={`text-sm ${!!editTglTransferVendor ? 'text-green-700' : 'text-muted-foreground'}`}>Vendor sudah dibayar</span>
-                  </div>
+                <div className="flex gap-2 justify-end pt-4 border-t">
+                  <Button variant="outline" onClick={() => setShowEditDialog(false)}>Batal</Button>
+                  <Button onClick={handleEdit} disabled={updateTransaction.isPending}>{updateTransaction.isPending ? 'Menyimpan...' : 'Simpan'}</Button>
                 </div>
               </div>
-
-              {/* File Upload Section */}
-              <div className="space-y-4 pt-4 border-t">
-                <div className="flex items-center justify-between">
+              <div className="col-span-1 px-5 py-6 bg-muted/30">
+                <div className="flex items-center justify-between mb-6 pb-4 border-b"><span className="text-sm font-semibold">Status</span><StatusBadge status={editingTransaction.status} /></div>
+                <div className="space-y-4">
+                  <p className="text-sm font-semibold">Task Checklist</p>
+                  <div className="space-y-3">
+                    <div className={`flex items-center gap-2 p-2.5 rounded-lg border ${editingTransaction.taskPengajuan ? 'bg-green-50 border-green-200' : 'bg-white'}`}><Checkbox checked={editingTransaction.taskPengajuan} disabled className="data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500" /><span className={`text-sm ${editingTransaction.taskPengajuan ? 'text-green-700' : ''}`}>Pengajuan Pengadaan</span></div>
+                    <div className={`flex items-center gap-2 p-2.5 rounded-lg border ${editTaskTransferVendor ? 'bg-green-50 border-green-200' : 'bg-white'}`}><Checkbox checked={editTaskTransferVendor} onCheckedChange={(c) => setEditTaskTransferVendor(!!c)} className="data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500" /><span className={`text-sm ${editTaskTransferVendor ? 'text-green-700' : ''}`}>Transfer dari Vendor</span></div>
+                    <div className={`flex items-center gap-2 p-2.5 rounded-lg border ${editTaskTerimaBerkas ? 'bg-green-50 border-green-200' : 'bg-white'}`}><Checkbox checked={editTaskTerimaBerkas} onCheckedChange={(c) => setEditTaskTerimaBerkas(!!c)} className="data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500" /><span className={`text-sm ${editTaskTerimaBerkas ? 'text-green-700' : ''}`}>Terima Berkas</span></div>
+                    <div className={`flex items-center gap-2 p-2.5 rounded-lg border ${!!editNoTiketMydx ? 'bg-green-50 border-green-200' : 'bg-white'}`}><Checkbox checked={!!editNoTiketMydx} disabled className="data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500" /><span className={`text-sm ${!!editNoTiketMydx ? 'text-green-700' : ''}`}>Upload Mydx</span></div>
+                    <div className={`flex items-center gap-2 p-2.5 rounded-lg border ${!!editTglSerahFinance ? 'bg-green-50 border-green-200' : 'bg-white'}`}><Checkbox checked={!!editTglSerahFinance} disabled className="data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500" /><span className={`text-sm ${!!editTglSerahFinance ? 'text-green-700' : ''}`}>Serah ke Finance</span></div>
+                    <div className={`flex items-center gap-2 p-2.5 rounded-lg border ${!!editTglTransferVendor ? 'bg-green-50 border-green-200' : 'bg-white'}`}><Checkbox checked={!!editTglTransferVendor} disabled className="data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500" /><span className={`text-sm ${!!editTglTransferVendor ? 'text-green-700' : ''}`}>Vendor Dibayar</span></div>
+                  </div>
+                </div>
+                {/* Files Section */}
+                <div className="mt-6 pt-4 border-t space-y-3">
                   <p className="text-sm font-semibold">Lampiran File</p>
-                  {files.length > 0 && (
-                    <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">
-                      {files.length} file{files.length > 1 ? 's' : ''}
-                    </span>
-                  )}
-                </div>
-                
-                {/* Upload Form */}
-                <div className="space-y-2">
-                  <Input
-                    type="file"
-                    multiple
-                    onChange={handleFileUpload}
-                    disabled={uploading}
-                    className="text-xs h-8"
-                    accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png,.gif,.bmp,.webp"
-                  />
-                  {uploading && (
-                    <div className="flex items-center gap-2 text-xs text-blue-600">
-                      <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-600"></div>
-                      Uploading...
-                    </div>
-                  )}
-                  <p className="text-xs text-muted-foreground">
-                    PDF, DOC, XLS, PPT, JPG, PNG (Max 10MB)
-                  </p>
-                </div>
-
-                {/* File List */}
-                {files.length === 0 ? (
-                  <div className="text-center py-4 bg-gray-50/50 rounded-lg border border-dashed border-gray-300">
-                    <div className="flex flex-col items-center gap-1">
-                      <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
-                        <FileText className="h-4 w-4 text-gray-400" />
-                      </div>
-                      <p className="text-xs text-muted-foreground">Belum ada file</p>
-                    </div>
-                  </div>
-                ) : (
                   <div className="space-y-2">
-                    {files.map((file) => (
-                      <div key={file.id} className="group flex items-center gap-2 p-2 bg-white/50 border rounded-lg hover:bg-white hover:shadow-sm transition-all duration-200">
-                        <div className="flex-shrink-0">
-                          {getFileIcon(file)}
+                    <label className="flex items-center justify-center gap-2 p-3 border-2 border-dashed rounded-lg cursor-pointer hover:bg-gray-50">
+                      <input type="file" multiple className="hidden" onChange={handleFileUpload} disabled={uploading} accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png,.gif" />
+                      {uploading ? <span className="text-sm text-muted-foreground">Mengupload...</span> : <><FileText className="h-4 w-4 text-muted-foreground" /><span className="text-sm text-muted-foreground">Upload File</span></>}
+                    </label>
+                    {files.map(file => (
+                      <div key={file.id} className="flex items-center gap-3 p-2 bg-white rounded-lg border">
+                        <div className="cursor-pointer" onClick={() => handleFilePreview(file)}>{getFileIcon(file)}</div>
+                        <div className="flex-1 min-w-0 cursor-pointer" onClick={() => handleFilePreview(file)}>
+                          <p className="text-sm font-medium truncate">{file.originalName}</p>
+                          <p className="text-xs text-muted-foreground">{formatFileSize(file.fileSize)}</p>
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-xs font-medium truncate">{file.originalName}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {formatFileSize(file.fileSize)}
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleFilePreview(file)}
-                            className="h-6 w-6 p-0"
-                            title={file.mimeType.includes('image') ? 'Preview gambar' : 'Lihat file'}
-                          >
-                            <Eye className="h-3 w-3 text-blue-600" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDeleteFile(file.id)}
-                            className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
-                            title="Hapus file"
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
-                        </div>
+                        <Button variant="ghost" size="sm" onClick={() => handleDeleteFile(file.id)} className="text-red-500 hover:text-red-700"><Trash2 className="h-4 w-4" /></Button>
                       </div>
                     ))}
                   </div>
-                )}
+                </div>
               </div>
             </div>
-          </div>
+          )}
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirmation */}
+      {/* Delete Dialog */}
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
-          <AlertDialogHeader><AlertDialogTitle>Hapus Transaksi?</AlertDialogTitle><AlertDialogDescription>Tindakan ini tidak dapat dibatalkan.</AlertDialogDescription></AlertDialogHeader>
-          <AlertDialogFooter><AlertDialogCancel>Batal</AlertDialogCancel><AlertDialogAction onClick={handleDelete} className="bg-red-500 hover:bg-red-600">Hapus</AlertDialogAction></AlertDialogFooter>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Hapus Transaksi?</AlertDialogTitle>
+            <AlertDialogDescription>Transaksi akan dihapus permanen dan tidak dapat dikembalikan.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Batal</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-red-500 hover:bg-red-600">{deleteTransaction.isPending ? 'Menghapus...' : 'Hapus'}</AlertDialogAction>
+          </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Image Preview Modal */}
-      <Dialog open={!!previewImage} onOpenChange={() => setPreviewImage(null)}>
-        <DialogContent className="max-w-4xl max-h-[90vh] p-0">
-          <DialogHeader className="px-6 pt-6 pb-2">
-            <DialogTitle>Preview Gambar</DialogTitle>
-          </DialogHeader>
-          <div className="px-6 pb-6">
-            {previewImage && (
-              <div className="flex justify-center">
-                <img 
-                  src={previewImage} 
-                  alt="Preview" 
-                  className="max-w-full max-h-[70vh] object-contain rounded-lg shadow-lg"
-                  onError={() => {
-                    setMessage('Gagal memuat gambar')
-                    setTimeout(() => setMessage(''), 3000)
-                    setPreviewImage(null)
-                  }}
-                />
-              </div>
-            )}
-            <div className="flex justify-center gap-2 mt-4">
-              <Button
-                variant="outline"
-                onClick={() => setPreviewImage(null)}
-              >
-                Tutup
-              </Button>
-              <Button
-                onClick={() => window.open(previewImage!, '_blank')}
-                className="bg-blue-600 hover:bg-blue-700"
-              >
-                Buka di Tab Baru
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+      {/* Image Preview Dialog */}
+      {previewImage && (
+        <Dialog open={!!previewImage} onOpenChange={() => setPreviewImage(null)}>
+          <DialogContent className="max-w-4xl">
+            <img src={previewImage} alt="Preview" className="w-full h-auto" />
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   )
 }

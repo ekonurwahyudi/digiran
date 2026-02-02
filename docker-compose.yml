@@ -4,6 +4,7 @@ services:
   db:
     image: postgres:16-alpine
     container_name: digiran-postgres
+    restart: unless-stopped
     environment:
       POSTGRES_USER: digiran_user
       POSTGRES_PASSWORD: digiran_password
@@ -12,10 +13,18 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U digiran_user -d digiran_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   app:
-    build: .
+    build: 
+      context: .
+      dockerfile: Dockerfile
     container_name: digiran-app
+    restart: unless-stopped
     ports:
       - "3000:3000"
     environment:
@@ -23,7 +32,10 @@ services:
       NEXTAUTH_SECRET: your-secret-key-change-in-production
       NEXTAUTH_URL: http://localhost:3000
     depends_on:
-      - db
+      db:
+        condition: service_healthy
+    volumes:
+      - ./public/uploads:/app/public/uploads
 
 volumes:
   postgres_data:

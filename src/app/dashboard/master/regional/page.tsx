@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { ColumnDef } from '@tanstack/react-table'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -12,16 +12,16 @@ import { Badge } from '@/components/ui/badge'
 import { Switch } from '@/components/ui/switch'
 import { Plus, Pencil, Trash2, CheckCircle } from 'lucide-react'
 import { TableSkeleton } from '@/components/loading'
+import { useRegionals, useCreateRegional, useUpdateRegional, useDeleteRegional } from '@/lib/hooks/useMaster'
 
-interface Regional {
-  id: string
-  code: string
-  name: string
-  isActive: boolean
-}
+interface Regional { id: string; code: string; name: string; isActive: boolean }
 
 export default function RegionalPage() {
-  const [regionals, setRegionals] = useState<Regional[]>([])
+  const { data: regionals = [], isLoading } = useRegionals()
+  const createRegional = useCreateRegional()
+  const updateRegional = useUpdateRegional()
+  const deleteRegional = useDeleteRegional()
+
   const [message, setMessage] = useState('')
   const [showDialog, setShowDialog] = useState(false)
   const [editing, setEditing] = useState<Regional | null>(null)
@@ -29,176 +29,75 @@ export default function RegionalPage() {
   const [name, setName] = useState('')
   const [isActive, setIsActive] = useState(true)
   const [deleteId, setDeleteId] = useState<string | null>(null)
-  const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    loadData()
-  }, [])
-
-  const loadData = () => {
-    setLoading(true)
-    fetch('/api/regional?includeInactive=true')
-      .then((r) => r.json())
-      .then(data => {
-        setRegionals(data)
-        setLoading(false)
-      })
-  }
+  const showMessage = (msg: string) => { setMessage(msg); setTimeout(() => setMessage(''), 3000) }
 
   const openDialog = (item?: Regional) => {
-    if (item) {
-      setEditing(item)
-      setCode(item.code)
-      setName(item.name)
-      setIsActive(item.isActive)
-    } else {
-      setEditing(null)
-      setCode('')
-      setName('')
-      setIsActive(true)
-    }
+    if (item) { setEditing(item); setCode(item.code); setName(item.name); setIsActive(item.isActive) }
+    else { setEditing(null); setCode(''); setName(''); setIsActive(true) }
     setShowDialog(true)
   }
 
   const handleSave = async () => {
     const data = { code, name, isActive }
-    
-    if (editing) {
-      await fetch(`/api/regional/${editing.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      })
-      setMessage('Regional berhasil diupdate!')
-    } else {
-      await fetch('/api/regional', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      })
-      setMessage('Regional berhasil ditambahkan!')
-    }
-
-    setShowDialog(false)
-    loadData()
-    setTimeout(() => setMessage(''), 3000)
+    try {
+      if (editing) { await updateRegional.mutateAsync({ id: editing.id, data }); showMessage('Regional berhasil diupdate!') }
+      else { await createRegional.mutateAsync(data); showMessage('Regional berhasil ditambahkan!') }
+      setShowDialog(false)
+    } catch { showMessage('Gagal menyimpan Regional') }
   }
 
   const handleDelete = async () => {
     if (!deleteId) return
-    await fetch(`/api/regional/${deleteId}`, { method: 'DELETE' })
-    setDeleteId(null)
-    loadData()
-    setMessage('Regional berhasil dinonaktifkan!')
-    setTimeout(() => setMessage(''), 3000)
+    try { await deleteRegional.mutateAsync(deleteId); setDeleteId(null); showMessage('Regional berhasil dinonaktifkan!') }
+    catch { showMessage('Gagal menghapus Regional') }
   }
 
   const columns: ColumnDef<Regional>[] = [
     { accessorKey: 'code', header: 'Kode' },
     { accessorKey: 'name', header: 'Nama Regional' },
-    {
-      accessorKey: 'isActive',
-      header: 'Status',
-      cell: ({ row }) => (
-        <Badge variant={row.getValue('isActive') ? 'default' : 'secondary'}>
-          {row.getValue('isActive') ? 'Aktif' : 'Nonaktif'}
-        </Badge>
-      ),
-    },
-    {
-      id: 'actions',
-      header: 'Aksi',
-      cell: ({ row }) => (
-        <div className="flex gap-1">
-          <Button variant="outline" size="sm" onClick={() => openDialog(row.original)}>
-            <Pencil className="h-4 w-4" />
-          </Button>
-          <Button variant="outline" size="sm" onClick={() => setDeleteId(row.original.id)} disabled={!row.original.isActive}>
-            <Trash2 className="h-4 w-4 text-red-500" />
-          </Button>
-        </div>
-      ),
-    },
+    { accessorKey: 'isActive', header: 'Status', cell: ({ row }) => (<Badge variant={row.getValue('isActive') ? 'default' : 'secondary'}>{row.getValue('isActive') ? 'Aktif' : 'Nonaktif'}</Badge>) },
+    { id: 'actions', header: 'Aksi', cell: ({ row }) => (
+      <div className="flex gap-1">
+        <Button variant="outline" size="sm" onClick={() => openDialog(row.original)}><Pencil className="h-4 w-4" /></Button>
+        <Button variant="outline" size="sm" onClick={() => setDeleteId(row.original.id)} disabled={!row.original.isActive}><Trash2 className="h-4 w-4 text-red-500" /></Button>
+      </div>
+    )},
   ]
 
-  if (loading) {
-    return <TableSkeleton title="Master Regional" showFilters={false} showActions={true} rows={6} columns={4} />
-  }
+  if (isLoading) return <TableSkeleton title="Master Regional" showFilters={false} showActions={true} rows={6} columns={4} />
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Regional</h1>
-        <p className="text-muted-foreground">Kelola data Regional</p>
-      </div>
-
-      {message && (
-        <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-md flex items-center gap-2">
-          <CheckCircle className="h-4 w-4" />
-          {message}
-        </div>
-      )}
-
+      <div><h1 className="text-3xl font-bold">Regional</h1><p className="text-muted-foreground">Kelola data Regional</p></div>
+      {message && (<div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-md flex items-center gap-2"><CheckCircle className="h-4 w-4" />{message}</div>)}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
-          <div>
-            <CardTitle>Daftar Regional</CardTitle>
-            <CardDescription>Kelola data regional untuk alokasi anggaran</CardDescription>
-          </div>
-          <Button onClick={() => openDialog()}>
-            <Plus className="h-4 w-4 mr-2" />
-            Tambah Regional
-          </Button>
+          <div><CardTitle>Daftar Regional</CardTitle><CardDescription>Kelola data regional untuk alokasi anggaran</CardDescription></div>
+          <Button onClick={() => openDialog()}><Plus className="h-4 w-4 mr-2" />Tambah Regional</Button>
         </CardHeader>
-        <CardContent>
-          <DataTable 
-            columns={columns} 
-            data={regionals}
-            searchKey="code"
-            searchPlaceholder="Cari kode Regional..."
-          />
-        </CardContent>
+        <CardContent><DataTable columns={columns} data={regionals as Regional[]} searchKey="code" searchPlaceholder="Cari kode Regional..." /></CardContent>
       </Card>
-
       <Dialog open={showDialog} onOpenChange={setShowDialog}>
         <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{editing ? 'Edit Regional' : 'Tambah Regional'}</DialogTitle>
-          </DialogHeader>
+          <DialogHeader><DialogTitle>{editing ? 'Edit Regional' : 'Tambah Regional'}</DialogTitle></DialogHeader>
           <div className="space-y-4">
-            <div className="space-y-2">
-              <Label>Kode</Label>
-              <Input value={code} onChange={(e) => setCode(e.target.value)} placeholder="TREG-1" />
-            </div>
-            <div className="space-y-2">
-              <Label>Nama Regional</Label>
-              <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Regional 1" />
-            </div>
-            {editing && (
-              <div className="flex items-center gap-2">
-                <Switch checked={isActive} onCheckedChange={setIsActive} />
-                <Label>Aktif</Label>
-              </div>
-            )}
+            <div className="space-y-2"><Label>Kode</Label><Input value={code} onChange={(e) => setCode(e.target.value)} placeholder="TREG-1" /></div>
+            <div className="space-y-2"><Label>Nama Regional</Label><Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Regional 1" /></div>
+            {editing && (<div className="flex items-center gap-2"><Switch checked={isActive} onCheckedChange={setIsActive} /><Label>Aktif</Label></div>)}
             <div className="flex gap-2 justify-end">
               <Button variant="outline" onClick={() => setShowDialog(false)}>Batal</Button>
-              <Button onClick={handleSave} disabled={!code || !name}>Simpan</Button>
+              <Button onClick={handleSave} disabled={!code || !name || createRegional.isPending || updateRegional.isPending}>{(createRegional.isPending || updateRegional.isPending) ? 'Menyimpan...' : 'Simpan'}</Button>
             </div>
           </div>
         </DialogContent>
       </Dialog>
-
       <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
         <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Nonaktifkan Regional?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Regional akan dinonaktifkan dan tidak akan muncul di pilihan input.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
+          <AlertDialogHeader><AlertDialogTitle>Nonaktifkan Regional?</AlertDialogTitle><AlertDialogDescription>Regional akan dinonaktifkan dan tidak akan muncul di pilihan input.</AlertDialogDescription></AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Batal</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} className="bg-red-500 hover:bg-red-600">Nonaktifkan</AlertDialogAction>
+            <AlertDialogAction onClick={handleDelete} disabled={deleteRegional.isPending} className="bg-red-500 hover:bg-red-600">{deleteRegional.isPending ? 'Menghapus...' : 'Nonaktifkan'}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

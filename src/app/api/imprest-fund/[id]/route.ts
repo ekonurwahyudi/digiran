@@ -254,6 +254,33 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
+    // Get the imprest fund first to check status and card
+    const imprestFund = await prisma.imprestFund.findUnique({
+      where: { id: params.id },
+      include: { imprestFundCard: true }
+    })
+
+    if (!imprestFund) {
+      return NextResponse.json({ error: 'Imprest fund not found' }, { status: 404 })
+    }
+
+    // If imprest fund has a card and status is not draft, return the saldo
+    if (imprestFund.imprestFundCardId && imprestFund.status !== 'draft') {
+      // Calculate amount to return: totalAmount minus any nilaiTransfer already received
+      const amountToReturn = imprestFund.totalAmount - (imprestFund.nilaiTransfer || 0)
+      
+      if (amountToReturn > 0) {
+        await prisma.imprestFundCard.update({
+          where: { id: imprestFund.imprestFundCardId },
+          data: {
+            saldo: {
+              increment: amountToReturn
+            }
+          }
+        })
+      }
+    }
+
     // Delete related transactions first (cascade delete)
     await prisma.transaction.deleteMany({
       where: { imprestFundId: params.id } as any
