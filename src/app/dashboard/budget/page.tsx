@@ -13,7 +13,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { CurrencyInput } from '@/components/ui/currency-input'
 import { Calculator, Settings, Pencil, Trash2, CheckCircle, Percent, RotateCcw, Upload, Download, X } from 'lucide-react'
 import { FormSkeleton } from '@/components/loading'
-import { useGlAccounts, useRegionals, useBudgets, useCreateBudget, useUpdateBudget, useDeleteBudget, useSaveAllocations, useImportBudget } from '@/lib/hooks/useBudget'
+import { useBudgets, useCreateBudget, useUpdateBudget, useDeleteBudget, useSaveAllocations, useImportBudget } from '@/lib/hooks/useBudget'
+import { useGlAccounts, useRegionals } from '@/lib/hooks/useMaster'
 
 interface GlAccount { id: string; code: string; description: string; keterangan: string }
 interface Regional { id: string; code: string; name: string }
@@ -182,7 +183,7 @@ export default function BudgetPage() {
     const allocs: Record<string, number> = {}
     const pcts: Record<string, number> = {}
     for (let q = 1; q <= 4; q++) {
-      regionals.forEach((reg) => {
+      regionals.forEach((reg: Regional) => {
         const existing = budget.allocations.find(a => a.quarter === q && a.regionalCode === reg.code)
         allocs[`q${q}_${reg.code}`] = existing?.amount || 0
         pcts[`q${q}_${reg.code}`] = existing?.percentage || 0
@@ -197,7 +198,7 @@ export default function BudgetPage() {
     const perRegional = Math.floor(qAmount / count)
     const newAllocs = { ...allocations }
     const newPcts = { ...percentages }
-    regionals.forEach((reg, idx) => {
+    regionals.forEach((reg: Regional, idx: number) => {
       newAllocs[`q${quarter}_${reg.code}`] = idx === count - 1 ? qAmount - perRegional * (count - 1) : perRegional
       newPcts[`q${quarter}_${reg.code}`] = parseFloat((100 / count).toFixed(2))
     })
@@ -209,20 +210,20 @@ export default function BudgetPage() {
     const newPcts = { ...percentages }
     let filledPct = 0
     const emptyRegionals: Regional[] = []
-    regionals.forEach((reg) => {
+    regionals.forEach((reg: Regional) => {
       const pct = newPcts[`q${quarter}_${reg.code}`] || 0
       if (pct > 0) { filledPct += pct } else { emptyRegionals.push(reg) }
     })
     const remainingPct = 100 - filledPct
     if (emptyRegionals.length > 0 && remainingPct > 0) {
       const pctPerEmpty = remainingPct / emptyRegionals.length
-      emptyRegionals.forEach((reg) => { newPcts[`q${quarter}_${reg.code}`] = parseFloat(pctPerEmpty.toFixed(2)) })
+      emptyRegionals.forEach((reg: Regional) => { newPcts[`q${quarter}_${reg.code}`] = parseFloat(pctPerEmpty.toFixed(2)) })
     }
     setPercentages(newPcts)
     const newAllocs = { ...allocations }
     let totalAllocated = 0
     const lastRegional = regionals[regionals.length - 1]
-    regionals.forEach((reg, idx) => {
+    regionals.forEach((reg: Regional, idx: number) => {
       const pct = newPcts[`q${quarter}_${reg.code}`] || 0
       if (idx < regionals.length - 1) {
         const amount = Math.floor(qAmount * pct / 100)
@@ -237,7 +238,7 @@ export default function BudgetPage() {
   const resetQuarter = (quarter: number) => {
     const newAllocs = { ...allocations }
     const newPcts = { ...percentages }
-    regionals.forEach((reg) => { newAllocs[`q${quarter}_${reg.code}`] = 0; newPcts[`q${quarter}_${reg.code}`] = 0 })
+    regionals.forEach((reg: Regional) => { newAllocs[`q${quarter}_${reg.code}`] = 0; newPcts[`q${quarter}_${reg.code}`] = 0 })
     setAllocations(newAllocs); setPercentages(newPcts)
   }
 
@@ -245,7 +246,7 @@ export default function BudgetPage() {
     if (!selectedBudget) return
     const allocs: { budgetId: string; quarter: number; regionalCode: string; amount: number; percentage: number }[] = []
     for (let q = 1; q <= 4; q++) {
-      regionals.forEach((reg) => {
+      regionals.forEach((reg: Regional) => {
         allocs.push({ budgetId: selectedBudget.id, quarter: q, regionalCode: reg.code, amount: allocations[`q${q}_${reg.code}`] || 0, percentage: percentages[`q${q}_${reg.code}`] || 0 })
       })
     }
@@ -409,7 +410,7 @@ export default function BudgetPage() {
               <Label>GL Account</Label>
               <Select value={selectedGl} onValueChange={setSelectedGl}>
                 <SelectTrigger><SelectValue placeholder="Pilih GL Account" /></SelectTrigger>
-                <SelectContent>{glAccounts.map(gl => <SelectItem key={gl.id} value={gl.id}>{gl.code} - {gl.description}</SelectItem>)}</SelectContent>
+                <SelectContent>{glAccounts.map((gl: GlAccount) => <SelectItem key={gl.id} value={gl.id}>{gl.code} - {gl.description}</SelectItem>)}</SelectContent>
               </Select>
             </div>
             <div className="flex-1 space-y-2"><Label>Nilai RKAP</Label><CurrencyInput value={rkap} onChange={setRkap} /></div>
@@ -507,7 +508,7 @@ export default function BudgetPage() {
                       </div>
                     </div>
                     <div className="grid grid-cols-2 gap-4">
-                      {regionals.map((reg) => (
+                      {regionals.map((reg: Regional) => (
                         <div key={reg.id} className="p-3 border rounded-lg bg-gray-50/50 space-y-2">
                           <Label className="text-sm font-medium">{reg.name}</Label>
                           <div className="grid grid-cols-3 gap-2">
@@ -523,18 +524,18 @@ export default function BudgetPage() {
                     <div className="pt-4 border-t space-y-2">
                       <div className="flex justify-between text-sm">
                         <span className="text-muted-foreground">Total Persentase</span>
-                        <span className={`font-semibold ${Math.abs(regionals.reduce((sum, reg) => sum + (percentages[`q${q}_${reg.code}`] || 0), 0) - 100) < 0.01 ? 'text-green-600' : 'text-amber-600'}`}>
-                          {regionals.reduce((sum, reg) => sum + (percentages[`q${q}_${reg.code}`] || 0), 0).toFixed(2)}%
+                        <span className={`font-semibold ${Math.abs(regionals.reduce((sum: number, reg: Regional) => sum + (percentages[`q${q}_${reg.code}`] || 0), 0) - 100) < 0.01 ? 'text-green-600' : 'text-amber-600'}`}>
+                          {regionals.reduce((sum: number, reg: Regional) => sum + (percentages[`q${q}_${reg.code}`] || 0), 0).toFixed(2)}%
                         </span>
                       </div>
                       <div className="flex justify-between text-sm">
                         <span className="text-muted-foreground">Total Alokasi</span>
-                        <span className="font-semibold">Rp {regionals.reduce((sum, reg) => sum + (allocations[`q${q}_${reg.code}`] || 0), 0).toLocaleString('id-ID')}</span>
+                        <span className="font-semibold">Rp {regionals.reduce((sum: number, reg: Regional) => sum + (allocations[`q${q}_${reg.code}`] || 0), 0).toLocaleString('id-ID')}</span>
                       </div>
                       <div className="flex justify-between text-sm">
                         <span className="text-muted-foreground">Sisa</span>
-                        <span className={`font-semibold ${(selectedBudget[`q${q}Amount` as keyof Budget] as number) - regionals.reduce((sum, reg) => sum + (allocations[`q${q}_${reg.code}`] || 0), 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                          Rp {((selectedBudget[`q${q}Amount` as keyof Budget] as number) - regionals.reduce((sum, reg) => sum + (allocations[`q${q}_${reg.code}`] || 0), 0)).toLocaleString('id-ID')}
+                        <span className={`font-semibold ${(selectedBudget[`q${q}Amount` as keyof Budget] as number) - regionals.reduce((sum: number, reg: Regional) => sum + (allocations[`q${q}_${reg.code}`] || 0), 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          Rp {((selectedBudget[`q${q}Amount` as keyof Budget] as number) - regionals.reduce((sum: number, reg: Regional) => sum + (allocations[`q${q}_${reg.code}`] || 0), 0)).toLocaleString('id-ID')}
                         </span>
                       </div>
                     </div>
