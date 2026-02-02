@@ -14,7 +14,8 @@ export async function GET(
           include: {
             glAccount: true
           }
-        }
+        },
+        imprestFundCard: true
       }
     })
 
@@ -36,43 +37,209 @@ export async function PUT(
 ) {
   try {
     const body = await request.json()
-    const { kelompokKegiatan, items, status } = body
+    const { 
+      kelompokKegiatan, 
+      regionalCode,
+      imprestFundCardId,
+      items, 
+      status,
+      keterangan,
+      debit,
+      // Finance fields
+      noTiketMydx,
+      tglSerahFinance,
+      picFinance,
+      noHpFinance,
+      tglTransferVendor,
+      nilaiTransfer,
+      // Task fields
+      taskPengajuan,
+      taskTransferVendor,
+      taskTerimaBerkas,
+      taskUploadMydx,
+      taskSerahFinance,
+      taskVendorDibayar
+    } = body
 
-    if (!kelompokKegiatan || !items || !Array.isArray(items)) {
-      return NextResponse.json({ error: 'Kelompok kegiatan and items are required' }, { status: 400 })
+    // Get current imprest fund to check status change
+    const currentImprest: any = await prisma.imprestFund.findUnique({
+      where: { id: params.id },
+      include: { items: true }
+    })
+
+    if (!currentImprest) {
+      return NextResponse.json({ error: 'Imprest fund not found' }, { status: 404 })
     }
 
-    // Calculate total amount
-    const totalAmount = items.reduce((sum: number, item: any) => sum + (item.jumlah || 0), 0)
+    // Calculate total amount if items are provided
+    let totalAmount = currentImprest.totalAmount
+    if (items && Array.isArray(items)) {
+      totalAmount = items.reduce((sum: number, item: any) => sum + (item.jumlah || 0), 0)
+    }
 
-    // Delete existing items and create new ones
-    await prisma.imprestItem.deleteMany({
-      where: { imprestFundId: params.id }
-    })
+    // Auto-calculate task fields based on Finance Information
+    const finalNoTiketMydx = noTiketMydx !== undefined ? noTiketMydx : currentImprest.noTiketMydx
+    const finalTglSerahFinance = tglSerahFinance !== undefined ? (tglSerahFinance ? new Date(tglSerahFinance) : null) : currentImprest.tglSerahFinance
+    const finalTglTransferVendor = tglTransferVendor !== undefined ? (tglTransferVendor ? new Date(tglTransferVendor) : null) : currentImprest.tglTransferVendor
+    
+    const autoTaskUploadMydx = !!finalNoTiketMydx
+    const autoTaskSerahFinance = !!finalTglSerahFinance
+    const autoTaskVendorDibayar = !!finalTglTransferVendor
+
+    // Build update data object
+    const updateData: any = {
+      kelompokKegiatan: kelompokKegiatan || currentImprest.kelompokKegiatan,
+      regionalCode: regionalCode !== undefined ? regionalCode : currentImprest.regionalCode,
+      imprestFundCardId: imprestFundCardId !== undefined ? imprestFundCardId : currentImprest.imprestFundCardId,
+      status: status || currentImprest.status,
+      totalAmount,
+      keterangan: keterangan !== undefined ? keterangan : currentImprest.keterangan,
+      debit: debit !== undefined ? debit : currentImprest.debit,
+      // Finance fields
+      noTiketMydx: finalNoTiketMydx,
+      tglSerahFinance: finalTglSerahFinance,
+      picFinance: picFinance !== undefined ? picFinance : currentImprest.picFinance,
+      noHpFinance: noHpFinance !== undefined ? noHpFinance : currentImprest.noHpFinance,
+      tglTransferVendor: finalTglTransferVendor,
+      nilaiTransfer: nilaiTransfer !== undefined ? nilaiTransfer : currentImprest.nilaiTransfer,
+      // Task fields - auto-calculated based on Finance Information
+      taskPengajuan: taskPengajuan !== undefined ? taskPengajuan : currentImprest.taskPengajuan,
+      taskTransferVendor: taskTransferVendor !== undefined ? taskTransferVendor : currentImprest.taskTransferVendor,
+      taskTerimaBerkas: taskTerimaBerkas !== undefined ? taskTerimaBerkas : currentImprest.taskTerimaBerkas,
+      taskUploadMydx: autoTaskUploadMydx,
+      taskSerahFinance: autoTaskSerahFinance,
+      taskVendorDibayar: autoTaskVendorDibayar,
+    }
+
+    // If items are provided, update them
+    if (items && Array.isArray(items)) {
+      // Delete existing items and create new ones
+      await prisma.imprestItem.deleteMany({
+        where: { imprestFundId: params.id }
+      })
+
+      updateData.items = {
+        create: items.map((item: any) => ({
+          tanggal: new Date(item.tanggal),
+          uraian: item.uraian,
+          glAccountId: item.glAccountId,
+          jumlah: item.jumlah
+        }))
+      }
+    }
 
     const imprestFund = await prisma.imprestFund.update({
       where: { id: params.id },
-      data: {
-        kelompokKegiatan,
-        status,
-        totalAmount,
-        items: {
-          create: items.map((item: any) => ({
-            tanggal: new Date(item.tanggal),
-            uraian: item.uraian,
-            glAccountId: item.glAccountId,
-            jumlah: item.jumlah
-          }))
-        }
-      },
+      data: updateData,
       include: {
         items: {
           include: {
             glAccount: true
           }
-        }
+        },
+        imprestFundCard: true
       }
     })
+
+    // If status changed from draft to open, create transactions
+    if (currentImprest.status === 'draft' && status === 'open') {
+      const currentYear = new Date().getFullYear()
+      const currentQuarter = Math.ceil((new Date().getMonth() + 1) / 3)
+
+      // Delete existing transactions if any
+      await prisma.transaction.deleteMany({
+        where: { imprestFundId: params.id } as any
+      })
+
+      // Create new transactions for each item
+      for (const item of imprestFund.items) {
+        await prisma.transaction.create({
+          data: {
+            glAccountId: item.glAccountId,
+            quarter: currentQuarter,
+            regionalCode: (imprestFund as any).regionalCode || 'HO',
+            kegiatan: item.uraian,
+            regionalPengguna: (imprestFund as any).regionalCode || 'Head Office',
+            year: currentYear,
+            tanggalKwitansi: item.tanggal,
+            nilaiKwitansi: item.jumlah,
+            nilaiTanpaPPN: item.jumlah,
+            status: 'Open',
+            imprestFundId: params.id,
+            jenisPengadaan: 'InpresFund',
+            // Copy Finance fields
+            noTiketMydx: (imprestFund as any).noTiketMydx,
+            tglSerahFinance: (imprestFund as any).tglSerahFinance,
+            picFinance: (imprestFund as any).picFinance,
+            noHpFinance: (imprestFund as any).noHpFinance,
+            tglTransferVendor: (imprestFund as any).tglTransferVendor,
+            nilaiTransfer: (imprestFund as any).nilaiTransfer,
+            // Copy task fields
+            taskPengajuan: (imprestFund as any).taskPengajuan,
+            taskTransferVendor: (imprestFund as any).taskTransferVendor,
+            taskTerimaBerkas: (imprestFund as any).taskTerimaBerkas,
+            taskUploadMydx: (imprestFund as any).taskUploadMydx,
+            taskSerahFinance: (imprestFund as any).taskSerahFinance,
+            taskVendorDibayar: (imprestFund as any).taskVendorDibayar
+          } as any
+        })
+      }
+    } else if (status !== 'draft') {
+      // Update existing transactions with new status and finance information
+      const transactionStatus = status === 'close' ? 'Close' : status === 'proses' ? 'Proses' : 'Open'
+      
+      await prisma.transaction.updateMany({
+        where: { imprestFundId: params.id } as any,
+        data: {
+          status: transactionStatus,
+          // Sync Finance fields from Imprest Fund to Transactions
+          noTiketMydx: (imprestFund as any).noTiketMydx,
+          tglSerahFinance: (imprestFund as any).tglSerahFinance,
+          picFinance: (imprestFund as any).picFinance,
+          noHpFinance: (imprestFund as any).noHpFinance,
+          tglTransferVendor: (imprestFund as any).tglTransferVendor,
+          nilaiTransfer: (imprestFund as any).nilaiTransfer,
+          // Update task fields
+          taskPengajuan: (imprestFund as any).taskPengajuan,
+          taskTransferVendor: (imprestFund as any).taskTransferVendor,
+          taskTerimaBerkas: (imprestFund as any).taskTerimaBerkas,
+          taskUploadMydx: (imprestFund as any).taskUploadMydx,
+          taskSerahFinance: (imprestFund as any).taskSerahFinance,
+          taskVendorDibayar: (imprestFund as any).taskVendorDibayar
+        }
+      })
+    }
+
+    // Update Imprest Fund Card saldo based on status changes
+    if (imprestFund.imprestFundCardId) {
+      const card = await prisma.imprestFundCard.findUnique({
+        where: { id: imprestFund.imprestFundCardId }
+      })
+
+      if (card) {
+        let saldoChange = 0
+        
+        // When status changes from draft to open: reduce saldo
+        if (currentImprest.status === 'draft' && status === 'open') {
+          saldoChange = -totalAmount
+        }
+        
+        // When status changes to close: add back nilaiTransfer amount (transfer from finance)
+        if (currentImprest.status !== 'close' && status === 'close' && nilaiTransfer) {
+          saldoChange = nilaiTransfer
+        }
+        
+        // Update card saldo if there's a change
+        if (saldoChange !== 0) {
+          await prisma.imprestFundCard.update({
+            where: { id: imprestFund.imprestFundCardId },
+            data: {
+              saldo: card.saldo + saldoChange
+            }
+          })
+        }
+      }
+    }
 
     return NextResponse.json(imprestFund)
   } catch (error) {
@@ -81,17 +248,23 @@ export async function PUT(
   }
 }
 
-// DELETE - Delete imprest fund
+// DELETE - Delete imprest fund and related transactions
 export async function DELETE(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
+    // Delete related transactions first (cascade delete)
+    await prisma.transaction.deleteMany({
+      where: { imprestFundId: params.id } as any
+    })
+
+    // Then delete the imprest fund (items will be deleted automatically due to cascade)
     await prisma.imprestFund.delete({
       where: { id: params.id }
     })
 
-    return NextResponse.json({ message: 'Imprest fund deleted successfully' })
+    return NextResponse.json({ message: 'Imprest fund and related transactions deleted successfully' })
   } catch (error) {
     console.error('Error deleting imprest fund:', error)
     return NextResponse.json({ error: 'Failed to delete imprest fund' }, { status: 500 })

@@ -96,6 +96,35 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     },
   })
 
+  // Sync Finance Information back to Imprest Fund if this transaction is linked
+  if (transaction.imprestFundId) {
+    // Determine imprest fund status based on transaction status
+    let imprestStatus = 'open'
+    if (status === 'Close') {
+      imprestStatus = 'close'
+    } else if (status === 'Proses') {
+      imprestStatus = 'proses'
+    }
+
+    await prisma.imprestFund.update({
+      where: { id: transaction.imprestFundId },
+      data: {
+        noTiketMydx: data.noTiketMydx || null,
+        tglSerahFinance: data.tglSerahFinance ? new Date(data.tglSerahFinance) : null,
+        picFinance: data.picFinance || null,
+        noHpFinance: data.noHpFinance || null,
+        tglTransferVendor: data.tglTransferVendor ? new Date(data.tglTransferVendor) : null,
+        nilaiTransfer: data.nilaiTransfer || null,
+        taskTransferVendor,
+        taskTerimaBerkas,
+        taskUploadMydx,
+        taskSerahFinance,
+        taskVendorDibayar,
+        status: imprestStatus,
+      },
+    })
+  }
+
   return NextResponse.json(transaction)
 }
 

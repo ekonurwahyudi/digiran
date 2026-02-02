@@ -31,6 +31,14 @@ const regionals = [
   { code: 'TREG-7', name: 'Regional 7' },
 ]
 
+const vendors = [
+  { name: 'PT. Telkom Indonesia', alamat: 'Jakarta', pic: 'John Doe', phone: '021-12345678', email: 'contact@telkom.co.id' },
+  { name: 'CV. Mitra Teknologi', alamat: 'Bandung', pic: 'Jane Smith', phone: '022-87654321', email: 'info@mitratek.com' },
+  { name: 'PT. Solusi Digital', alamat: 'Surabaya', pic: 'Bob Wilson', phone: '031-11223344', email: 'sales@solusidigital.com' },
+  { name: 'UD. Berkah Jaya', alamat: 'Yogyakarta', pic: 'Ahmad Rahman', phone: '0274-556677', email: 'berkah@gmail.com' },
+  { name: 'PT. Inovasi Mandiri', alamat: 'Medan', pic: 'Siti Nurhaliza', phone: '061-998877', email: 'inovasi@mandiri.co.id' },
+]
+
 async function main() {
   console.log('Starting seed...')
   console.log('DATABASE_URL:', process.env.DATABASE_URL ? 'Found' : 'Not found')
@@ -75,6 +83,76 @@ async function main() {
     })
   }
   console.log('Regionals ready')
+
+  // Create Vendors
+  for (const vendor of vendors) {
+    const existingVendor = await prisma.vendor.findFirst({
+      where: { name: vendor.name }
+    })
+    
+    if (!existingVendor) {
+      await prisma.vendor.create({
+        data: vendor
+      })
+    }
+  }
+  console.log('Vendors ready')
+
+  // Create Budgets and Regional Allocations for 2026
+  const currentYear = 2026
+  const createdGlAccounts = await prisma.glAccount.findMany()
+  const createdRegionals = await prisma.regional.findMany()
+
+  for (const glAccount of createdGlAccounts) {
+    // Create budget for each GL Account
+    const budget = await prisma.budget.upsert({
+      where: {
+        glAccountId_year: {
+          glAccountId: glAccount.id,
+          year: currentYear
+        }
+      },
+      update: {},
+      create: {
+        glAccountId: glAccount.id,
+        year: currentYear,
+        rkap: 1000000000, // 1 Billion
+        releasePercent: 100,
+        totalAmount: 1000000000,
+        q1Amount: 250000000, // 250 Million per quarter
+        q2Amount: 250000000,
+        q3Amount: 250000000,
+        q4Amount: 250000000,
+      }
+    })
+
+    // Create regional allocations for each quarter
+    for (let quarter = 1; quarter <= 4; quarter++) {
+      const quarterAmount = 250000000 // 250 Million per quarter
+      const amountPerRegional = Math.floor(quarterAmount / createdRegionals.length)
+
+      for (const regional of createdRegionals) {
+        await prisma.regionalAllocation.upsert({
+          where: {
+            budgetId_regionalCode_quarter: {
+              budgetId: budget.id,
+              regionalCode: regional.code,
+              quarter: quarter
+            }
+          },
+          update: {},
+          create: {
+            budgetId: budget.id,
+            regionalCode: regional.code,
+            quarter: quarter,
+            amount: amountPerRegional,
+            percentage: (amountPerRegional / quarterAmount) * 100
+          }
+        })
+      }
+    }
+  }
+  console.log('Budgets and Regional Allocations ready')
 
   console.log('Seed completed!')
 }

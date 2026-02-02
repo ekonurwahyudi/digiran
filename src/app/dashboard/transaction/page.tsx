@@ -360,7 +360,10 @@ export default function TransactionPage() {
             onError={(e) => {
               // Fallback to icon if image fails to load
               e.currentTarget.style.display = 'none'
-              e.currentTarget.nextElementSibling.style.display = 'flex'
+              const nextElement = e.currentTarget.nextElementSibling as HTMLElement
+              if (nextElement) {
+                nextElement.style.display = 'flex'
+              }
             }}
           />
           <div className="w-10 h-10 bg-blue-100 rounded flex items-center justify-center" style={{display: 'none'}}>

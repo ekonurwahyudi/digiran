@@ -212,6 +212,12 @@ export default function Navbar() {
                     PIC Anggaran
                   </Link>
                 </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/dashboard/master/imprest-fund-card" className="flex items-center gap-2 cursor-pointer">
+                    <CreditCard className="h-4 w-4" />
+                    Imprest Fund Card
+                  </Link>
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>

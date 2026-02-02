@@ -6,9 +6,21 @@ export async function GET(req: NextRequest) {
   
   const glAccounts = await prisma.glAccount.findMany({
     where: includeInactive ? {} : { isActive: true },
+    select: {
+      id: true,
+      code: true,
+      description: true,
+      keterangan: true,
+      isActive: true
+    },
     orderBy: { code: 'asc' },
   })
-  return NextResponse.json(glAccounts)
+  
+  return NextResponse.json(glAccounts, {
+    headers: {
+      'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=120'
+    }
+  })
 }
 
 export async function POST(req: NextRequest) {

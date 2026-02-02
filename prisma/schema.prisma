@@ -128,6 +128,10 @@ model Transaction {
   // Status: Open, Proses, Close
   status            String    @default("Open")
   
+  // Imprest Fund relationship
+  imprestFundId     String?
+  imprestFund       ImprestFund? @relation(fields: [imprestFundId], references: [id])
+  
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
   
@@ -186,13 +190,42 @@ model TransactionFile {
 }
 
 model ImprestFund {
-  id               String        @id @default(cuid())
-  kelompokKegiatan String
-  status           String        @default("draft") // draft, proses, close
-  totalAmount      Float         @default(0)
+  id                  String        @id @default(cuid())
+  kelompokKegiatan    String
+  regionalCode        String?       // Regional code for budget allocation
+  status              String        @default("draft") // draft, open, proses, close
+  totalAmount         Float         @default(0)
+  debit               Float         @default(0)      // Top up amount
+  
+  // Simplified fields - only keep what's needed
+  keterangan            String?
+  imprestFundCardId     String?       // Link to ImprestFundCard for top up
+  imprestFundCard       ImprestFundCard? @relation(fields: [imprestFundCardId], references: [id])
+  
+  // Finance fields
+  noTiketMydx       String?
+  tglSerahFinance   DateTime?
+  picFinance        String?
+  noHpFinance       String?
+  tglTransferVendor DateTime?
+  nilaiTransfer     Float?
+  
+  // Task Checklist
+  taskPengajuan       Boolean @default(true)
+  taskTransferVendor  Boolean @default(false)
+  taskTerimaBerkas    Boolean @default(false)
+  taskUploadMydx      Boolean @default(false)
+  taskSerahFinance    Boolean @default(false)
+  taskVendorDibayar   Boolean @default(false)
+  
   createdAt        DateTime      @default(now())
   updatedAt        DateTime      @updatedAt
   items            ImprestItem[]
+  transactions     Transaction[] // Related transactions created from this imprest fund
+  
+  @@index([status])
+  @@index([imprestFundCardId])
+  @@index([createdAt(sort: Desc)])
 }
 
 model ImprestItem {
@@ -206,4 +239,16 @@ model ImprestItem {
   jumlah        Float
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
+}
+
+model ImprestFundCard {
+  id            String        @id @default(cuid())
+  nomorKartu    String        @unique
+  user          String
+  saldo         Float         @default(0)
+  pic           String
+  isActive      Boolean       @default(true)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  imprestFunds  ImprestFund[] // Top up records
 }

@@ -33,6 +33,7 @@ interface Transaction {
   glAccountId: string
   quarter: number
   nilaiKwitansi: number
+  tanggalKwitansi: string | null
   tglSerahFinance: string | null
   glAccount?: GlAccount
   jenisPengadaan?: string
@@ -47,7 +48,11 @@ export default function DashboardPage() {
   const [glAccounts, setGlAccounts] = useState<GlAccount[]>([])
   const [selectedGlAccount, setSelectedGlAccount] = useState<string>('all')
   const [periodType, setPeriodType] = useState<'quarter' | 'month'>('quarter')
-  const [activeTab, setActiveTab] = useState<string>('q1')
+  // Set default active tab based on current month/quarter
+  const currentMonth = new Date().getMonth() // 0-11
+  const currentQuarter = Math.ceil((currentMonth + 1) / 3) // 1-4
+  const monthKeys = ['jan', 'feb', 'mar', 'apr', 'mei', 'jun', 'jul', 'agu', 'sep', 'okt', 'nov', 'des']
+  const [activeTab, setActiveTab] = useState<string>(`q${currentQuarter}`)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -96,12 +101,27 @@ export default function DashboardPage() {
     const qKey = `q${quarter}Amount` as 'q1Amount' | 'q2Amount' | 'q3Amount' | 'q4Amount'
     const monthlyBudget = budget[qKey] / 3
     
-    // Hitung penggunaan per bulan
+    // Hitung penggunaan per bulan - filter by quarter first, then check if transaction belongs to this month
+    // Use tanggalKwitansi or tglSerahFinance to determine the month
     const monthUsed = transactions
       .filter(t => {
-        if (t.glAccountId !== budget.glAccountId || !t.tglSerahFinance) return false
-        const txDate = new Date(t.tglSerahFinance)
-        return txDate.getMonth() === month
+        if (t.glAccountId !== budget.glAccountId) return false
+        // Check if transaction is in the same quarter
+        if (t.quarter !== quarter) return false
+        
+        // Try to get month from tglSerahFinance first, then tanggalKwitansi
+        const txDateStr = (t as any).tanggalKwitansi || t.tglSerahFinance
+        if (txDateStr) {
+          const txDate = new Date(txDateStr)
+          return txDate.getMonth() === month
+        }
+        
+        // If no date available, distribute evenly across quarter months
+        // This ensures transactions without dates still show up
+        const quarterStartMonth = (quarter - 1) * 3 // 0, 3, 6, 9
+        const monthInQuarter = month - quarterStartMonth // 0, 1, 2
+        // Only count in first month of quarter if no date
+        return monthInQuarter === 0
       })
       .reduce((sum, t) => sum + t.nilaiKwitansi, 0)
     
@@ -292,7 +312,12 @@ export default function DashboardPage() {
               <Label className="text-sm text-muted-foreground">Filter:</Label>
               <Select value={periodType} onValueChange={(v: 'quarter' | 'month') => {
                 setPeriodType(v)
-                setActiveTab(v === 'quarter' ? 'q1' : 'jan')
+                // Set active tab to current month or quarter
+                if (v === 'quarter') {
+                  setActiveTab(`q${currentQuarter}`)
+                } else {
+                  setActiveTab(monthKeys[currentMonth])
+                }
               }}>
                 <SelectTrigger className="w-[150px]">
                   <SelectValue />
