@@ -2,7 +2,6 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import api from '@/lib/axios'
 
 interface GlAccount { id: string; code: string; description: string; keterangan: string }
-interface Regional { id: string; code: string; name: string }
 interface Budget {
   id: string; glAccountId: string; year: number; rkap: number; releasePercent: number; totalAmount: number
   q1Amount: number; q2Amount: number; q3Amount: number; q4Amount: number
@@ -16,30 +15,6 @@ interface Budget {
 export const budgetKeys = {
   all: ['budgets'] as const,
   byYear: (year: number) => [...budgetKeys.all, year] as const,
-  glAccounts: ['glAccounts'] as const,
-  regionals: ['regionals'] as const,
-}
-
-// Fetch GL Accounts
-export const useGlAccounts = () => {
-  return useQuery({
-    queryKey: budgetKeys.glAccounts,
-    queryFn: async () => {
-      const data = await api.get('/gl-account')
-      return data as unknown as GlAccount[]
-    },
-  })
-}
-
-// Fetch Regionals
-export const useRegionals = () => {
-  return useQuery({
-    queryKey: budgetKeys.regionals,
-    queryFn: async () => {
-      const data = await api.get('/regional')
-      return data as unknown as Regional[]
-    },
-  })
 }
 
 // Fetch Budgets by Year
