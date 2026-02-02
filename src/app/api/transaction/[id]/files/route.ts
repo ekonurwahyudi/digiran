@@ -3,6 +3,8 @@ import { writeFile, mkdir, readdir, unlink } from 'fs/promises'
 import { join } from 'path'
 import { existsSync } from 'fs'
 
+export const dynamic = 'force-dynamic'
+
 // Temporary file storage without database until Prisma is regenerated
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
   try {
