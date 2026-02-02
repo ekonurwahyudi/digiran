@@ -162,19 +162,9 @@ export const useDeletePicAnggaran = () => {
   })
 }
 
-// Imprest Fund Card hooks
+// Imprest Fund Card hooks (CRUD only - useImprestFundCards is in useImprestFund.ts)
 export const imprestFundCardKeys = {
   all: ['imprestFundCards'] as const,
-}
-
-export const useImprestFundCards = () => {
-  return useQuery({
-    queryKey: imprestFundCardKeys.all,
-    queryFn: async () => {
-      const data = await api.get('/imprest-fund-card')
-      return data as unknown as any[]
-    },
-  })
 }
 
 export const useCreateImprestFundCard = () => {

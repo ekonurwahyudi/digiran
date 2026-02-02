@@ -11,7 +11,8 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Plus, Pencil, Trash2, CreditCard, CheckCircle } from 'lucide-react'
 import { CurrencyInput } from '@/components/ui/currency-input'
 import { TableSkeleton } from '@/components/loading'
-import { useImprestFundCards, useCreateImprestFundCard, useUpdateImprestFundCard, useDeleteImprestFundCard } from '@/lib/hooks/useMaster'
+import { useImprestFundCards } from '@/lib/hooks/useImprestFund'
+import { useCreateImprestFundCard, useUpdateImprestFundCard, useDeleteImprestFundCard } from '@/lib/hooks/useMaster'
 
 interface ImprestFundCard { id: string; nomorKartu: string; user: string; saldo: number; pic: string; isActive: boolean }
 
