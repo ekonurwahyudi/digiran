@@ -1,0 +1,1019 @@
+--
+-- PostgreSQL database dump
+--
+
+\restrict gu938qQv6QU4zJ04Kkm0orGkfCvFnfTlOpIwOqjw51djbtkAWafRznWTHcLtvgy
+
+-- Dumped from database version 17.6
+-- Dumped by pg_dump version 17.6
+
+SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
+SET transaction_timeout = 0;
+SET client_encoding = 'UTF8';
+SET standard_conforming_strings = on;
+SELECT pg_catalog.set_config('search_path', '', false);
+SET check_function_bodies = false;
+SET xmloption = content;
+SET client_min_messages = warning;
+SET row_security = off;
+
+--
+-- Name: public; Type: SCHEMA; Schema: -; Owner: postgres
+--
+
+-- *not* creating schema, since initdb creates it
+
+
+ALTER SCHEMA public OWNER TO postgres;
+
+--
+-- Name: SCHEMA public; Type: COMMENT; Schema: -; Owner: postgres
+--
+
+COMMENT ON SCHEMA public IS '';
+
+
+SET default_tablespace = '';
+
+SET default_table_access_method = heap;
+
+--
+-- Name: Budget; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public."Budget" (
+    id text NOT NULL,
+    "glAccountId" text NOT NULL,
+    year integer NOT NULL,
+    rkap double precision DEFAULT 0 NOT NULL,
+    "releasePercent" double precision DEFAULT 100 NOT NULL,
+    "totalAmount" double precision NOT NULL,
+    "q1Amount" double precision DEFAULT 0 NOT NULL,
+    "q2Amount" double precision DEFAULT 0 NOT NULL,
+    "q3Amount" double precision DEFAULT 0 NOT NULL,
+    "q4Amount" double precision DEFAULT 0 NOT NULL,
+    "createdAt" timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    "updatedAt" timestamp(3) without time zone NOT NULL,
+    "aprAmount" double precision DEFAULT 0 NOT NULL,
+    "augAmount" double precision DEFAULT 0 NOT NULL,
+    "decAmount" double precision DEFAULT 0 NOT NULL,
+    "febAmount" double precision DEFAULT 0 NOT NULL,
+    "janAmount" double precision DEFAULT 0 NOT NULL,
+    "julAmount" double precision DEFAULT 0 NOT NULL,
+    "junAmount" double precision DEFAULT 0 NOT NULL,
+    "marAmount" double precision DEFAULT 0 NOT NULL,
+    "mayAmount" double precision DEFAULT 0 NOT NULL,
+    "novAmount" double precision DEFAULT 0 NOT NULL,
+    "octAmount" double precision DEFAULT 0 NOT NULL,
+    "sepAmount" double precision DEFAULT 0 NOT NULL
+);
+
+
+ALTER TABLE public."Budget" OWNER TO postgres;
+
+--
+-- Name: GlAccount; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public."GlAccount" (
+    id text NOT NULL,
+    code text NOT NULL,
+    description text NOT NULL,
+    keterangan text NOT NULL,
+    "isActive" boolean DEFAULT true NOT NULL,
+    "createdAt" timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    "updatedAt" timestamp(3) without time zone NOT NULL
+);
+
+
+ALTER TABLE public."GlAccount" OWNER TO postgres;
+
+--
+-- Name: ImprestFund; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public."ImprestFund" (
+    id text NOT NULL,
+    "kelompokKegiatan" text NOT NULL,
+    "regionalCode" text,
+    status text DEFAULT 'draft'::text NOT NULL,
+    "totalAmount" double precision DEFAULT 0 NOT NULL,
+    debit double precision DEFAULT 0 NOT NULL,
+    keterangan text,
+    "imprestFundCardId" text,
+    "noTiketMydx" text,
+    "tglSerahFinance" timestamp(3) without time zone,
+    "picFinance" text,
+    "noHpFinance" text,
+    "tglTransferVendor" timestamp(3) without time zone,
+    "nilaiTransfer" double precision,
+    "taskPengajuan" boolean DEFAULT true NOT NULL,
+    "taskTransferVendor" boolean DEFAULT false NOT NULL,
+    "taskTerimaBerkas" boolean DEFAULT false NOT NULL,
+    "taskUploadMydx" boolean DEFAULT false NOT NULL,
+    "taskSerahFinance" boolean DEFAULT false NOT NULL,
+    "taskVendorDibayar" boolean DEFAULT false NOT NULL,
+    "createdAt" timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    "updatedAt" timestamp(3) without time zone NOT NULL
+);
+
+
+ALTER TABLE public."ImprestFund" OWNER TO postgres;
+
+--
+-- Name: ImprestFundCard; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public."ImprestFundCard" (
+    id text NOT NULL,
+    "nomorKartu" text NOT NULL,
+    "user" text NOT NULL,
+    saldo double precision DEFAULT 0 NOT NULL,
+    pic text NOT NULL,
+    "isActive" boolean DEFAULT true NOT NULL,
+    "createdAt" timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    "updatedAt" timestamp(3) without time zone NOT NULL
+);
+
+
+ALTER TABLE public."ImprestFundCard" OWNER TO postgres;
+
+--
+-- Name: ImprestItem; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public."ImprestItem" (
+    id text NOT NULL,
+    "imprestFundId" text NOT NULL,
+    tanggal timestamp(3) without time zone NOT NULL,
+    uraian text NOT NULL,
+    "glAccountId" text NOT NULL,
+    jumlah double precision NOT NULL,
+    "createdAt" timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    "updatedAt" timestamp(3) without time zone NOT NULL
+);
+
+
+ALTER TABLE public."ImprestItem" OWNER TO postgres;
+
+--
+-- Name: MonthlyAllocation; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public."MonthlyAllocation" (
+    id text NOT NULL,
+    "glAccountId" text NOT NULL,
+    year integer NOT NULL,
+    "janAmount" double precision DEFAULT 0 NOT NULL,
+    "febAmount" double precision DEFAULT 0 NOT NULL,
+    "marAmount" double precision DEFAULT 0 NOT NULL,
+    "aprAmount" double precision DEFAULT 0 NOT NULL,
+    "mayAmount" double precision DEFAULT 0 NOT NULL,
+    "junAmount" double precision DEFAULT 0 NOT NULL,
+    "julAmount" double precision DEFAULT 0 NOT NULL,
+    "augAmount" double precision DEFAULT 0 NOT NULL,
+    "sepAmount" double precision DEFAULT 0 NOT NULL,
+    "octAmount" double precision DEFAULT 0 NOT NULL,
+    "novAmount" double precision DEFAULT 0 NOT NULL,
+    "decAmount" double precision DEFAULT 0 NOT NULL,
+    "createdAt" timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    "updatedAt" timestamp(3) without time zone NOT NULL
+);
+
+
+ALTER TABLE public."MonthlyAllocation" OWNER TO postgres;
+
+--
+-- Name: PicAnggaran; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public."PicAnggaran" (
+    id text NOT NULL,
+    unit text NOT NULL,
+    "namaPemegangImprest" text NOT NULL,
+    "nikPemegangImprest" text NOT NULL,
+    "namaPenanggungJawab" text NOT NULL,
+    "nikPenanggungJawab" text NOT NULL,
+    year integer NOT NULL,
+    "isActive" boolean DEFAULT true NOT NULL,
+    "createdAt" timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    "updatedAt" timestamp(3) without time zone NOT NULL
+);
+
+
+ALTER TABLE public."PicAnggaran" OWNER TO postgres;
+
+--
+-- Name: Regional; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public."Regional" (
+    id text NOT NULL,
+    code text NOT NULL,
+    name text NOT NULL,
+    "isActive" boolean DEFAULT true NOT NULL,
+    "createdAt" timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    "updatedAt" timestamp(3) without time zone NOT NULL
+);
+
+
+ALTER TABLE public."Regional" OWNER TO postgres;
+
+--
+-- Name: RegionalAllocation; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public."RegionalAllocation" (
+    id text NOT NULL,
+    "budgetId" text NOT NULL,
+    "regionalCode" text NOT NULL,
+    quarter integer NOT NULL,
+    amount double precision NOT NULL,
+    percentage double precision DEFAULT 0 NOT NULL,
+    "createdAt" timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    "updatedAt" timestamp(3) without time zone NOT NULL
+);
+
+
+ALTER TABLE public."RegionalAllocation" OWNER TO postgres;
+
+--
+-- Name: Transaction; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public."Transaction" (
+    id text NOT NULL,
+    "glAccountId" text NOT NULL,
+    quarter integer NOT NULL,
+    "regionalCode" text NOT NULL,
+    kegiatan text NOT NULL,
+    "regionalPengguna" text NOT NULL,
+    year integer NOT NULL,
+    "tanggalKwitansi" timestamp(3) without time zone,
+    "nilaiKwitansi" double precision DEFAULT 0 NOT NULL,
+    "jenisPajak" text,
+    "nilaiTanpaPPN" double precision DEFAULT 0 NOT NULL,
+    "nilaiPPN" double precision DEFAULT 0 NOT NULL,
+    keterangan text,
+    "jenisPengadaan" text,
+    "vendorId" text,
+    "tanggalEntry" timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    "noTiketMydx" text,
+    "tglSerahFinance" timestamp(3) without time zone,
+    "picFinance" text,
+    "noHpFinance" text,
+    "tglTransferVendor" timestamp(3) without time zone,
+    "nilaiTransfer" double precision,
+    "taskPengajuan" boolean DEFAULT true NOT NULL,
+    "taskTransferVendor" boolean DEFAULT false NOT NULL,
+    "taskTerimaBerkas" boolean DEFAULT false NOT NULL,
+    "taskUploadMydx" boolean DEFAULT false NOT NULL,
+    "taskSerahFinance" boolean DEFAULT false NOT NULL,
+    "taskVendorDibayar" boolean DEFAULT false NOT NULL,
+    status text DEFAULT 'Open'::text NOT NULL,
+    "imprestFundId" text,
+    "createdAt" timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    "updatedAt" timestamp(3) without time zone NOT NULL
+);
+
+
+ALTER TABLE public."Transaction" OWNER TO postgres;
+
+--
+-- Name: TransactionFile; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public."TransactionFile" (
+    id text NOT NULL,
+    "transactionId" text NOT NULL,
+    "fileName" text NOT NULL,
+    "originalName" text NOT NULL,
+    "fileSize" integer NOT NULL,
+    "mimeType" text NOT NULL,
+    "filePath" text NOT NULL,
+    "uploadedAt" timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+
+ALTER TABLE public."TransactionFile" OWNER TO postgres;
+
+--
+-- Name: User; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public."User" (
+    id text NOT NULL,
+    email text NOT NULL,
+    password text NOT NULL,
+    name text NOT NULL,
+    role text DEFAULT 'user'::text NOT NULL,
+    avatar text DEFAULT '/avatar.png'::text,
+    "createdAt" timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+
+ALTER TABLE public."User" OWNER TO postgres;
+
+--
+-- Name: Vendor; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public."Vendor" (
+    id text NOT NULL,
+    name text NOT NULL,
+    alamat text,
+    pic text,
+    phone text,
+    email text,
+    "isActive" boolean DEFAULT true NOT NULL,
+    "createdAt" timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    "updatedAt" timestamp(3) without time zone NOT NULL
+);
+
+
+ALTER TABLE public."Vendor" OWNER TO postgres;
+
+--
+-- Data for Name: Budget; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public."Budget" (id, "glAccountId", year, rkap, "releasePercent", "totalAmount", "q1Amount", "q2Amount", "q3Amount", "q4Amount", "createdAt", "updatedAt", "aprAmount", "augAmount", "decAmount", "febAmount", "janAmount", "julAmount", "junAmount", "marAmount", "mayAmount", "novAmount", "octAmount", "sepAmount") FROM stdin;
+cml2k3s9h0007qwu59ddilrlj	cml2jzidq00091cu5hdty8cnb	2026	610000000	70	427000000	106750000	106750000	106750000	106750000	2026-01-31 16:59:00.437	2026-02-02 08:27:57.848	35583333	35583333	35583334	35583333	35583333	35583333	35583334	35583334	35583333	35583333	35583333	35583334
+cml2k3s9n0008qwu57mr2y91p	cml2jzids000a1cu5osb6yvjq	2026	240000000	70	168000000	42000000	42000000	42000000	42000000	2026-01-31 16:59:00.443	2026-02-02 08:28:03.855	14000000	14000000	14000000	14000000	14000000	14000000	14000000	14000000	14000000	14000000	14000000	14000000
+cml2k3s9r0009qwu5p9ude87d	cml2jzidc00041cu5s258pet5	2026	49800000	70	34860000	8715000	8715000	8715000	8715000	2026-01-31 16:59:00.447	2026-02-02 08:28:09.293	2905000	2905000	2905000	2905000	2905000	2905000	2905000	2905000	2905000	2905000	2905000	2905000
+cml2k3s9u000aqwu545as9p4c	cml2jzidn00081cu5akud4fid	2026	379732300	70	265812610	66453152	66453152	66453152	66453154	2026-01-31 16:59:00.45	2026-02-02 08:28:14.884	22151050	22151050	22151052	22151050	22151050	22151050	22151052	22151052	22151050	22151051	22151051	22151052
+cml2k3s8t0002qwu5w32c9eog	cml2jzid600021cu5ggus1tkm	2026	31249431228	70	21874601859	5468650464	5468650464	5468650464	5468650467	2026-01-31 16:59:00.413	2026-02-02 08:26:57.735	1822883488	1822883488	1822883491	1822883488	1822883488	1822883488	1822883488	1822883488	1822883488	1822883488	1822883488	1822883488
+cml2k3s7d0001qwu5nqnice2e	cml2jzidg00061cu5bzvdrcej	2026	6302183600	70	4411528520	1102882128	1102882128	1102882128	1102882136	2026-01-31 16:59:00.361	2026-02-02 08:27:08.599	367627376	367627376	367627384	367627376	367627376	367627376	367627376	367627376	367627376	367627376	367627376	367627376
+cml2k3s8y0003qwu58bdrxwxi	cml2jzid100011cu59rgdxdtc	2026	17479999980	70	12235999986	3058999996	3058999996	3058999996	3058999998	2026-01-31 16:59:00.418	2026-02-02 08:27:29.38	1019666665	1019666665	1019666666	1019666665	1019666665	1019666665	1019666666	1019666666	1019666665	1019666666	1019666666	1019666666
+cml2k3s910004qwu54kao4aec	cml2jzid900031cu5leurjdd3	2026	16416681756	70	11491677229	2872919307	2872919307	2872919307	2872919308	2026-01-31 16:59:00.421	2026-02-02 08:27:39.947	957639769	957639769	957639770	957639769	957639769	957639769	957639769	957639769	957639769	957639769	957639769	957639769
+cml2k3s970005qwu5mkb36ddr	cml2jzidk00071cu5njpdx3qx	2026	103200000	70	72240000	18060000	18060000	18060000	18060000	2026-01-31 16:59:00.427	2026-02-02 08:27:45.938	6020000	6020000	6020000	6020000	6020000	6020000	6020000	6020000	6020000	6020000	6020000	6020000
+cml2k3s9c0006qwu55yetz6ub	cml2jzide00051cu568w8ddwq	2026	78000000	70	54600000	13650000	13650000	13650000	13650000	2026-01-31 16:59:00.432	2026-02-02 08:27:51.943	4550000	4550000	4550000	4550000	4550000	4550000	4550000	4550000	4550000	4550000	4550000	4550000
+\.
+
+
+--
+-- Data for Name: GlAccount; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public."GlAccount" (id, code, description, keterangan, "isActive", "createdAt", "updatedAt") FROM stdin;
+cml2jzid100011cu59rgdxdtc	51341002	BODP BBM Genset	Pembelian BBM CADA	t	2026-01-31 16:55:40.981	2026-01-31 16:55:40.981
+cml2jzid600021cu5ggus1tkm	51341001	BODP Catu Daya	Pemeliharaan Catu Daya Lokasi STO & Non-STO (Relokasi, Re-engginering, dan Regrouping)	t	2026-01-31 16:55:40.986	2026-01-31 16:55:40.986
+cml2jzid900031cu5leurjdd3	51344001	BODP Alat Perbaikan Instalasi/Perangkat	Perbaikan Alker Catu Daya IM dan Sertifikasi Kalibrasi	t	2026-01-31 16:55:40.989	2026-01-31 16:55:40.989
+cml2jzidc00041cu5s258pet5	51506002	Printing and copy	Pembayaran Sewa FC dan Lain-lain	t	2026-01-31 16:55:40.992	2026-01-31 16:55:40.992
+cml2jzide00051cu568w8ddwq	51346003	O&M office equipment	Perbaikan Sarana Kerja dan Pembelian Sarker	t	2026-01-31 16:55:40.994	2026-01-31 16:55:40.994
+cml2jzidg00061cu5bzvdrcej	51335006	O&M of fiber optic and submarine cable	Perbaikan Modul DWDM	t	2026-01-31 16:55:40.996	2026-01-31 16:55:40.996
+cml2jzidk00071cu5njpdx3qx	51346002	BODP PC (Stand Alone) & Printer	Perbaikan FC, Printer dan Lain-lain	t	2026-01-31 16:55:41	2026-01-31 16:55:41
+cml2jzidn00081cu5akud4fid	51512005	Meeting expenses	Support meeting expenses	t	2026-01-31 16:55:41.003	2026-01-31 16:55:41.003
+cml2jzidq00091cu5hdty8cnb	51351001	Domestic travelling for O&M	SPPD Rapat, Rekonsiliasi, Bantek dan Lain-lain	t	2026-01-31 16:55:41.006	2026-01-31 16:55:41.006
+cml2jzids000a1cu5osb6yvjq	51501001	Domestic travelling for general administration	SPPD Rapat, BC, dan Administrasi Lainnya	t	2026-01-31 16:55:41.008	2026-01-31 16:55:41.008
+\.
+
+
+--
+-- Data for Name: ImprestFund; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public."ImprestFund" (id, "kelompokKegiatan", "regionalCode", status, "totalAmount", debit, keterangan, "imprestFundCardId", "noTiketMydx", "tglSerahFinance", "picFinance", "noHpFinance", "tglTransferVendor", "nilaiTransfer", "taskPengajuan", "taskTransferVendor", "taskTerimaBerkas", "taskUploadMydx", "taskSerahFinance", "taskVendorDibayar", "createdAt", "updatedAt") FROM stdin;
+cml4lnm5j0012zou59inxepgd	Top Up	\N	close	0	5000000	Top Up	cml2k88wc002zqwu57h6imnkq	\N	\N	\N	\N	\N	\N	t	t	t	t	t	t	2026-02-02 03:17:57.606	2026-02-02 03:17:57.606
+cml4ltbls0013zou5fk5z3sq2	Kelompok 01	HO-TIF	close	7000000	0	\N	cml2k88wc002zqwu57h6imnkq	fafa	2026-02-10 17:00:00	fafa	afafa	2026-02-10 17:00:00	7000000	t	t	t	t	t	t	2026-02-02 03:22:23.84	2026-02-02 03:27:12.785
+cml4x4muh004hrou5hzew0gw4	Kelompok 02	HO-TIF	close	1100000	0	\N	cml2k88wc002zqwu57h6imnkq	afaf	2026-02-02 17:00:00	raefa	garrga	2026-02-18 17:00:00	1100000	t	t	t	t	t	t	2026-02-02 08:39:07.384	2026-02-02 08:42:25.055
+\.
+
+
+--
+-- Data for Name: ImprestFundCard; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public."ImprestFundCard" (id, "nomorKartu", "user", saldo, pic, "isActive", "createdAt", "updatedAt") FROM stdin;
+cml2k88wc002zqwu57h6imnkq	1234	DEFA-TIF	5000000	Nida Azizah	t	2026-01-31 17:02:28.62	2026-02-02 09:04:43.41
+\.
+
+
+--
+-- Data for Name: ImprestItem; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public."ImprestItem" (id, "imprestFundId", tanggal, uraian, "glAccountId", jumlah, "createdAt", "updatedAt") FROM stdin;
+cml4lzij80019zou5q8h4cb55	cml4ltbls0013zou5fk5z3sq2	2026-02-02 03:22:09.633	Kelompok 01 01	cml2jzidc00041cu5s258pet5	2000000	2026-02-02 03:27:12.785	2026-02-02 03:27:12.785
+cml4lzij8001azou59ch43txc	cml4ltbls0013zou5fk5z3sq2	2026-02-02 03:22:46.878	kelompok 01	cml2jzidn00081cu5akud4fid	5000000	2026-02-02 03:27:12.785	2026-02-02 03:27:12.785
+cml4x8vc3004srou5e7vbk6dw	cml4x4muh004hrou5hzew0gw4	2026-02-02 08:38:42.748	Kelompok 02	cml2jzidc00041cu5s258pet5	100000	2026-02-02 08:42:25.055	2026-02-02 08:42:25.055
+cml4x8vc3004trou5zczvd3in	cml4x4muh004hrou5hzew0gw4	2026-02-02 08:38:54.074	kelompok 02a	cml2jzidn00081cu5akud4fid	1000000	2026-02-02 08:42:25.055	2026-02-02 08:42:25.055
+\.
+
+
+--
+-- Data for Name: MonthlyAllocation; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public."MonthlyAllocation" (id, "glAccountId", year, "janAmount", "febAmount", "marAmount", "aprAmount", "mayAmount", "junAmount", "julAmount", "augAmount", "sepAmount", "octAmount", "novAmount", "decAmount", "createdAt", "updatedAt") FROM stdin;
+\.
+
+
+--
+-- Data for Name: PicAnggaran; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public."PicAnggaran" (id, unit, "namaPemegangImprest", "nikPemegangImprest", "namaPenanggungJawab", "nikPenanggungJawab", year, "isActive", "createdAt", "updatedAt") FROM stdin;
+cml4xd8cq004vrou5m7lcmgb4	DEFA HO	Nida Azizah	970266	Irwan Irawan, St	720335	2026	t	2026-02-02 08:45:48.554	2026-02-02 08:45:48.554
+\.
+
+
+--
+-- Data for Name: Regional; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public."Regional" (id, code, name, "isActive", "createdAt", "updatedAt") FROM stdin;
+cml2jzidv000b1cu5la2p6vyp	TREG-1	Regional 1	t	2026-01-31 16:55:41.011	2026-01-31 16:55:41.011
+cml2jzidy000c1cu57nzjt8xz	TREG-2	Regional 2	t	2026-01-31 16:55:41.014	2026-01-31 16:55:41.014
+cml2jzie0000d1cu5uzehjp9s	TREG-3	Regional 3	t	2026-01-31 16:55:41.016	2026-01-31 16:55:41.016
+cml2jzie2000e1cu5ll3x9tzp	TREG-4	Regional 4	t	2026-01-31 16:55:41.018	2026-01-31 16:55:41.018
+cml2jzie5000f1cu5zw7c7076	TREG-5	Regional 5	t	2026-01-31 16:55:41.021	2026-01-31 16:55:41.021
+cml2jzie8000g1cu5rwwt264d	TREG-6	Regional 6	t	2026-01-31 16:55:41.024	2026-01-31 16:55:41.024
+cml2jziea000h1cu5zfwms9tk	TREG-7	Regional 7	t	2026-01-31 16:55:41.026	2026-01-31 16:55:41.026
+cml2k1w6d0000qwu5uvuq4k5e	HO-TIF	DEFA HO TIF	t	2026-01-31 16:57:32.197	2026-01-31 16:57:32.197
+\.
+
+
+--
+-- Data for Name: RegionalAllocation; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public."RegionalAllocation" (id, "budgetId", "regionalCode", quarter, amount, percentage, "createdAt", "updatedAt") FROM stdin;
+cml2k6044000bqwu5w2svhrwi	cml2k3s7d0001qwu5nqnice2e	HO-TIF	1	137860266	12.5	2026-01-31 17:00:43.924	2026-01-31 17:00:43.924
+cml2k6045000cqwu53em2fzte	cml2k3s7d0001qwu5nqnice2e	TREG-1	1	137860266	12.5	2026-01-31 17:00:43.925	2026-01-31 17:00:43.925
+cml2k604e000lqwu5d30gozp1	cml2k3s7d0001qwu5nqnice2e	TREG-2	2	137860266	12.5	2026-01-31 17:00:43.934	2026-01-31 17:00:43.934
+cml2k6046000dqwu5xscwy279	cml2k3s7d0001qwu5nqnice2e	TREG-2	1	137860266	12.5	2026-01-31 17:00:43.926	2026-01-31 17:00:43.926
+cml2k604f000mqwu5dsyiuqzp	cml2k3s7d0001qwu5nqnice2e	TREG-3	2	137860266	12.5	2026-01-31 17:00:43.935	2026-01-31 17:00:43.935
+cml2k604h000nqwu5xdn6q5h8	cml2k3s7d0001qwu5nqnice2e	TREG-4	2	137860266	12.5	2026-01-31 17:00:43.937	2026-01-31 17:00:43.937
+cml2k604h000oqwu5mv8s3npw	cml2k3s7d0001qwu5nqnice2e	TREG-5	2	137860266	12.5	2026-01-31 17:00:43.937	2026-01-31 17:00:43.937
+cml2k6047000eqwu5rt9xd5xf	cml2k3s7d0001qwu5nqnice2e	TREG-3	1	137860266	12.5	2026-01-31 17:00:43.927	2026-01-31 17:00:43.927
+cml2k604i000pqwu5umtfh755	cml2k3s7d0001qwu5nqnice2e	TREG-6	2	137860266	12.5	2026-01-31 17:00:43.938	2026-01-31 17:00:43.938
+cml2k604i000qqwu5d4k8zzag	cml2k3s7d0001qwu5nqnice2e	TREG-7	2	137860268	12.5	2026-01-31 17:00:43.938	2026-01-31 17:00:43.938
+cml2k604j000rqwu5ig4lm5ln	cml2k3s7d0001qwu5nqnice2e	HO-TIF	3	137860266	12.5	2026-01-31 17:00:43.939	2026-01-31 17:00:43.939
+cml2k604k000sqwu5ea4jhtvr	cml2k3s7d0001qwu5nqnice2e	TREG-1	3	137860266	12.5	2026-01-31 17:00:43.94	2026-01-31 17:00:43.94
+cml2k604l000tqwu5h2teqshd	cml2k3s7d0001qwu5nqnice2e	TREG-2	3	137860266	12.5	2026-01-31 17:00:43.941	2026-01-31 17:00:43.941
+cml2k604l000uqwu51vx1zc77	cml2k3s7d0001qwu5nqnice2e	TREG-3	3	137860266	12.5	2026-01-31 17:00:43.941	2026-01-31 17:00:43.941
+cml2k604m000vqwu59hhvqfz6	cml2k3s7d0001qwu5nqnice2e	TREG-4	3	137860266	12.5	2026-01-31 17:00:43.942	2026-01-31 17:00:43.942
+cml2k604n000wqwu5kql6gvgw	cml2k3s7d0001qwu5nqnice2e	TREG-5	3	137860266	12.5	2026-01-31 17:00:43.943	2026-01-31 17:00:43.943
+cml2k604o000xqwu5yf1n5dnw	cml2k3s7d0001qwu5nqnice2e	TREG-6	3	137860266	12.5	2026-01-31 17:00:43.944	2026-01-31 17:00:43.944
+cml2k604p000yqwu5ytc5t2bc	cml2k3s7d0001qwu5nqnice2e	TREG-7	3	137860268	12.5	2026-01-31 17:00:43.945	2026-01-31 17:00:43.945
+cml2k604q000zqwu51uqd974y	cml2k3s7d0001qwu5nqnice2e	HO-TIF	4	137860266	12.5	2026-01-31 17:00:43.946	2026-01-31 17:00:43.946
+cml2k604r0010qwu5783eve6y	cml2k3s7d0001qwu5nqnice2e	TREG-1	4	137860266	12.5	2026-01-31 17:00:43.947	2026-01-31 17:00:43.947
+cml2k604s0011qwu5wf9guuig	cml2k3s7d0001qwu5nqnice2e	TREG-2	4	137860266	12.5	2026-01-31 17:00:43.948	2026-01-31 17:00:43.948
+cml2k604t0012qwu5ld6nq91w	cml2k3s7d0001qwu5nqnice2e	TREG-3	4	137860266	12.5	2026-01-31 17:00:43.949	2026-01-31 17:00:43.949
+cml2k604u0013qwu5x6sfl2j2	cml2k3s7d0001qwu5nqnice2e	TREG-4	4	137860266	12.5	2026-01-31 17:00:43.95	2026-01-31 17:00:43.95
+cml2k604v0014qwu5x5hbly9m	cml2k3s7d0001qwu5nqnice2e	TREG-5	4	137860266	12.5	2026-01-31 17:00:43.951	2026-01-31 17:00:43.951
+cml2k604w0015qwu5ce2loql7	cml2k3s7d0001qwu5nqnice2e	TREG-6	4	137860266	12.5	2026-01-31 17:00:43.952	2026-01-31 17:00:43.952
+cml2k604x0016qwu56nm7ewrc	cml2k3s7d0001qwu5nqnice2e	TREG-7	4	137860268	12.5	2026-01-31 17:00:43.953	2026-01-31 17:00:43.953
+cml2k6048000fqwu5g00mzhn1	cml2k3s7d0001qwu5nqnice2e	TREG-4	1	137860266	12.5	2026-01-31 17:00:43.928	2026-01-31 17:00:43.928
+cml2k6048000gqwu5ii5fqrzd	cml2k3s7d0001qwu5nqnice2e	TREG-5	1	137860266	12.5	2026-01-31 17:00:43.928	2026-01-31 17:00:43.928
+cml2k6049000hqwu58pe9swed	cml2k3s7d0001qwu5nqnice2e	TREG-6	1	137860266	12.5	2026-01-31 17:00:43.929	2026-01-31 17:00:43.929
+cml2k604a000iqwu5rn4eluyv	cml2k3s7d0001qwu5nqnice2e	TREG-7	1	137860268	12.5	2026-01-31 17:00:43.93	2026-01-31 17:00:43.93
+cml2k604b000jqwu52t1y3t38	cml2k3s7d0001qwu5nqnice2e	HO-TIF	2	137860266	12.5	2026-01-31 17:00:43.931	2026-01-31 17:00:43.931
+cml2k604d000kqwu5qkuysvfa	cml2k3s7d0001qwu5nqnice2e	TREG-1	2	137860266	12.5	2026-01-31 17:00:43.933	2026-01-31 17:00:43.933
+cml2k6jqi0018qwu5do6bloun	cml2k3s9r0009qwu5p9ude87d	TREG-1	1	0	0	2026-01-31 17:01:09.354	2026-01-31 17:01:09.354
+cml2k6jqg0017qwu5w099oh0n	cml2k3s9r0009qwu5p9ude87d	HO-TIF	1	8715000	100	2026-01-31 17:01:09.352	2026-01-31 17:01:09.352
+cml2k6jqj0019qwu5ihff0qwv	cml2k3s9r0009qwu5p9ude87d	TREG-2	1	0	0	2026-01-31 17:01:09.354	2026-01-31 17:01:09.354
+cml2k6jqj001aqwu5wgnabtrj	cml2k3s9r0009qwu5p9ude87d	TREG-3	1	0	0	2026-01-31 17:01:09.355	2026-01-31 17:01:09.355
+cml2k6jql001cqwu51zv17l7y	cml2k3s9r0009qwu5p9ude87d	TREG-5	1	0	0	2026-01-31 17:01:09.357	2026-01-31 17:01:09.357
+cml2k6jql001dqwu5adj1zefb	cml2k3s9r0009qwu5p9ude87d	TREG-6	1	0	0	2026-01-31 17:01:09.357	2026-01-31 17:01:09.357
+cml2k6jqm001eqwu5hoa3x4q3	cml2k3s9r0009qwu5p9ude87d	TREG-7	1	0	0	2026-01-31 17:01:09.358	2026-01-31 17:01:09.358
+cml2k6jqn001fqwu5qzsbsc3w	cml2k3s9r0009qwu5p9ude87d	HO-TIF	2	8715000	100	2026-01-31 17:01:09.359	2026-01-31 17:01:09.359
+cml2k6jqo001gqwu5vb6gixr5	cml2k3s9r0009qwu5p9ude87d	TREG-1	2	0	0	2026-01-31 17:01:09.36	2026-01-31 17:01:09.36
+cml2k6jqo001hqwu5lmigo5fy	cml2k3s9r0009qwu5p9ude87d	TREG-2	2	0	0	2026-01-31 17:01:09.36	2026-01-31 17:01:09.36
+cml2k6jqp001iqwu5iold9rm4	cml2k3s9r0009qwu5p9ude87d	TREG-3	2	0	0	2026-01-31 17:01:09.361	2026-01-31 17:01:09.361
+cml2k6jqq001jqwu55ivmt164	cml2k3s9r0009qwu5p9ude87d	TREG-4	2	0	0	2026-01-31 17:01:09.362	2026-01-31 17:01:09.362
+cml2k6jqr001kqwu5055cdx8r	cml2k3s9r0009qwu5p9ude87d	TREG-5	2	0	0	2026-01-31 17:01:09.363	2026-01-31 17:01:09.363
+cml2k6jqs001lqwu54gmr4ur1	cml2k3s9r0009qwu5p9ude87d	TREG-6	2	0	0	2026-01-31 17:01:09.364	2026-01-31 17:01:09.364
+cml2k6jqs001mqwu5m0q40w2m	cml2k3s9r0009qwu5p9ude87d	TREG-7	2	0	0	2026-01-31 17:01:09.364	2026-01-31 17:01:09.364
+cml2k6jqt001nqwu5sieob98b	cml2k3s9r0009qwu5p9ude87d	HO-TIF	3	8715000	100	2026-01-31 17:01:09.365	2026-01-31 17:01:09.365
+cml2k6jqu001oqwu5dqacy22y	cml2k3s9r0009qwu5p9ude87d	TREG-1	3	0	0	2026-01-31 17:01:09.366	2026-01-31 17:01:09.366
+cml2k6jqw001pqwu5urrfbxpp	cml2k3s9r0009qwu5p9ude87d	TREG-2	3	0	0	2026-01-31 17:01:09.368	2026-01-31 17:01:09.368
+cml2k6jqx001qqwu5c4az5ibv	cml2k3s9r0009qwu5p9ude87d	TREG-3	3	0	0	2026-01-31 17:01:09.369	2026-01-31 17:01:09.369
+cml2k6jqy001rqwu5pwg3fo1f	cml2k3s9r0009qwu5p9ude87d	TREG-4	3	0	0	2026-01-31 17:01:09.37	2026-01-31 17:01:09.37
+cml2k6jqz001sqwu505rqscvq	cml2k3s9r0009qwu5p9ude87d	TREG-5	3	0	0	2026-01-31 17:01:09.371	2026-01-31 17:01:09.371
+cml2k6jr0001tqwu5hp9nmiks	cml2k3s9r0009qwu5p9ude87d	TREG-6	3	0	0	2026-01-31 17:01:09.372	2026-01-31 17:01:09.372
+cml2k6jr1001uqwu5ddc75bb2	cml2k3s9r0009qwu5p9ude87d	TREG-7	3	0	0	2026-01-31 17:01:09.373	2026-01-31 17:01:09.373
+cml2k6jr2001vqwu5wat9u049	cml2k3s9r0009qwu5p9ude87d	HO-TIF	4	8715000	100	2026-01-31 17:01:09.374	2026-01-31 17:01:09.374
+cml2k6jr3001wqwu5dxwvh97r	cml2k3s9r0009qwu5p9ude87d	TREG-1	4	0	0	2026-01-31 17:01:09.375	2026-01-31 17:01:09.375
+cml2k6jr4001xqwu5y2f3eswy	cml2k3s9r0009qwu5p9ude87d	TREG-2	4	0	0	2026-01-31 17:01:09.376	2026-01-31 17:01:09.376
+cml2k6jr5001yqwu5d53f50qw	cml2k3s9r0009qwu5p9ude87d	TREG-3	4	0	0	2026-01-31 17:01:09.377	2026-01-31 17:01:09.377
+cml2k6jr6001zqwu5cx5wu9nt	cml2k3s9r0009qwu5p9ude87d	TREG-4	4	0	0	2026-01-31 17:01:09.378	2026-01-31 17:01:09.378
+cml2k6jr70020qwu5euuv3it9	cml2k3s9r0009qwu5p9ude87d	TREG-5	4	0	0	2026-01-31 17:01:09.379	2026-01-31 17:01:09.379
+cml2k6jr70021qwu5lgzaid3t	cml2k3s9r0009qwu5p9ude87d	TREG-6	4	0	0	2026-01-31 17:01:09.379	2026-01-31 17:01:09.379
+cml2k6jr80022qwu5j8vc2t77	cml2k3s9r0009qwu5p9ude87d	TREG-7	4	0	0	2026-01-31 17:01:09.38	2026-01-31 17:01:09.38
+cml2k6jqk001bqwu5k8idv41b	cml2k3s9r0009qwu5p9ude87d	TREG-4	1	0	0	2026-01-31 17:01:09.356	2026-01-31 17:01:09.356
+cml2k754c0023qwu5v35e477z	cml2k3s9u000aqwu545as9p4c	HO-TIF	1	66453152	100	2026-01-31 17:01:37.067	2026-01-31 17:01:37.067
+cml2k754d0025qwu5lxwr2sa6	cml2k3s9u000aqwu545as9p4c	TREG-2	1	0	0	2026-01-31 17:01:37.069	2026-01-31 17:01:37.069
+cml2k754d0024qwu59h1p9hq4	cml2k3s9u000aqwu545as9p4c	TREG-1	1	0	0	2026-01-31 17:01:37.068	2026-01-31 17:01:37.068
+cml2k754g0029qwu5zlhlg9ms	cml2k3s9u000aqwu545as9p4c	TREG-6	1	0	0	2026-01-31 17:01:37.072	2026-01-31 17:01:37.072
+cml2k754k002cqwu5n8zxtgws	cml2k3s9u000aqwu545as9p4c	TREG-1	2	0	0	2026-01-31 17:01:37.076	2026-01-31 17:01:37.076
+cml2k754l002eqwu5cutklmju	cml2k3s9u000aqwu545as9p4c	TREG-3	2	0	0	2026-01-31 17:01:37.077	2026-01-31 17:01:37.077
+cml2k754m002fqwu5x7j2iy0c	cml2k3s9u000aqwu545as9p4c	TREG-4	2	0	0	2026-01-31 17:01:37.078	2026-01-31 17:01:37.078
+cml2k754m002gqwu54mjc2l0x	cml2k3s9u000aqwu545as9p4c	TREG-5	2	0	0	2026-01-31 17:01:37.078	2026-01-31 17:01:37.078
+cml2k754n002hqwu5bkvqhbgw	cml2k3s9u000aqwu545as9p4c	TREG-6	2	0	0	2026-01-31 17:01:37.079	2026-01-31 17:01:37.079
+cml2k754p002jqwu5ieqv2l7m	cml2k3s9u000aqwu545as9p4c	HO-TIF	3	66453152	100	2026-01-31 17:01:37.081	2026-01-31 17:01:37.081
+cml2k754r002lqwu5cw10fmcw	cml2k3s9u000aqwu545as9p4c	TREG-2	3	0	0	2026-01-31 17:01:37.082	2026-01-31 17:01:37.082
+cml2k754s002mqwu55y76guu5	cml2k3s9u000aqwu545as9p4c	TREG-3	3	0	0	2026-01-31 17:01:37.084	2026-01-31 17:01:37.084
+cml2k754v002pqwu5nyarc230	cml2k3s9u000aqwu545as9p4c	TREG-6	3	0	0	2026-01-31 17:01:37.087	2026-01-31 17:01:37.087
+cml2k754y002sqwu5ugd7p0ux	cml2k3s9u000aqwu545as9p4c	TREG-1	4	0	0	2026-01-31 17:01:37.09	2026-01-31 17:01:37.09
+cml2k7553002uqwu5p8p5sn6g	cml2k3s9u000aqwu545as9p4c	TREG-3	4	0	0	2026-01-31 17:01:37.092	2026-01-31 17:01:37.092
+cml2k7553002vqwu5f3mnryu2	cml2k3s9u000aqwu545as9p4c	TREG-4	4	0	0	2026-01-31 17:01:37.095	2026-01-31 17:01:37.095
+cml2k7556002yqwu5zuhe2jmw	cml2k3s9u000aqwu545as9p4c	TREG-7	4	0	0	2026-01-31 17:01:37.098	2026-01-31 17:01:37.098
+cml2k754k002dqwu5b3r5sprr	cml2k3s9u000aqwu545as9p4c	TREG-2	2	0	0	2026-01-31 17:01:37.076	2026-01-31 17:01:37.076
+cml2k754e0026qwu589de0tl9	cml2k3s9u000aqwu545as9p4c	TREG-3	1	0	0	2026-01-31 17:01:37.07	2026-01-31 17:01:37.07
+cml2k754h002aqwu5xfnely4l	cml2k3s9u000aqwu545as9p4c	TREG-7	1	0	0	2026-01-31 17:01:37.073	2026-01-31 17:01:37.073
+cml2k754f0028qwu5a1jddl66	cml2k3s9u000aqwu545as9p4c	TREG-5	1	0	0	2026-01-31 17:01:37.071	2026-01-31 17:01:37.071
+cml2k754f0027qwu59o4o9k5j	cml2k3s9u000aqwu545as9p4c	TREG-4	1	0	0	2026-01-31 17:01:37.071	2026-01-31 17:01:37.071
+cml2k754o002iqwu5xh6ceadu	cml2k3s9u000aqwu545as9p4c	TREG-7	2	0	0	2026-01-31 17:01:37.08	2026-01-31 17:01:37.08
+cml2k754p002kqwu5sg213b3k	cml2k3s9u000aqwu545as9p4c	TREG-1	3	0	0	2026-01-31 17:01:37.081	2026-01-31 17:01:37.081
+cml2k754t002nqwu5ak1pzwyg	cml2k3s9u000aqwu545as9p4c	TREG-4	3	0	0	2026-01-31 17:01:37.085	2026-01-31 17:01:37.085
+cml2k754u002oqwu5vj56bt34	cml2k3s9u000aqwu545as9p4c	TREG-5	3	0	0	2026-01-31 17:01:37.086	2026-01-31 17:01:37.086
+cml2k754w002qqwu5uj6xc3mn	cml2k3s9u000aqwu545as9p4c	TREG-7	3	0	0	2026-01-31 17:01:37.088	2026-01-31 17:01:37.088
+cml2k754x002rqwu5bxxqohtd	cml2k3s9u000aqwu545as9p4c	HO-TIF	4	66453154	100	2026-01-31 17:01:37.089	2026-01-31 17:01:37.089
+cml2k754z002tqwu5ltcz2f3g	cml2k3s9u000aqwu545as9p4c	TREG-2	4	0	0	2026-01-31 17:01:37.091	2026-01-31 17:01:37.091
+cml2k7554002wqwu5b2nh8txy	cml2k3s9u000aqwu545as9p4c	TREG-5	4	0	0	2026-01-31 17:01:37.096	2026-01-31 17:01:37.096
+cml2k7555002xqwu549xrm777	cml2k3s9u000aqwu545as9p4c	TREG-6	4	0	0	2026-01-31 17:01:37.097	2026-01-31 17:01:37.097
+cml2k754i002bqwu5uvvi7mvl	cml2k3s9u000aqwu545as9p4c	HO-TIF	2	66453152	100	2026-01-31 17:01:37.074	2026-01-31 17:01:37.074
+cml4wrp300000rou5ilfo7o0t	cml2k3s9h0007qwu59ddilrlj	HO-TIF	1	106750000	100	2026-02-02 08:29:03.803	2026-02-02 08:29:03.803
+cml4wrp310001rou51wss9axm	cml2k3s9h0007qwu59ddilrlj	TREG-1	1	0	0	2026-02-02 08:29:03.805	2026-02-02 08:29:03.805
+cml4wrp320002rou5h1x8mmjj	cml2k3s9h0007qwu59ddilrlj	TREG-2	1	0	0	2026-02-02 08:29:03.806	2026-02-02 08:29:03.806
+cml4wrp320003rou513v3pxrj	cml2k3s9h0007qwu59ddilrlj	TREG-3	1	0	0	2026-02-02 08:29:03.806	2026-02-02 08:29:03.806
+cml4wrp39000arou5krezxav2	cml2k3s9h0007qwu59ddilrlj	TREG-2	2	0	0	2026-02-02 08:29:03.813	2026-02-02 08:29:03.813
+cml4wrp3a000brou5363kc518	cml2k3s9h0007qwu59ddilrlj	TREG-3	2	0	0	2026-02-02 08:29:03.814	2026-02-02 08:29:03.814
+cml4wrp3b000crou5pxxs0eqi	cml2k3s9h0007qwu59ddilrlj	TREG-4	2	0	0	2026-02-02 08:29:03.815	2026-02-02 08:29:03.815
+cml4wrp3c000drou5detacxi2	cml2k3s9h0007qwu59ddilrlj	TREG-5	2	0	0	2026-02-02 08:29:03.816	2026-02-02 08:29:03.816
+cml4wrp3d000erou5d28rfk05	cml2k3s9h0007qwu59ddilrlj	TREG-6	2	0	0	2026-02-02 08:29:03.817	2026-02-02 08:29:03.817
+cml4wrp3e000frou56guwyv6f	cml2k3s9h0007qwu59ddilrlj	TREG-7	2	0	0	2026-02-02 08:29:03.818	2026-02-02 08:29:03.818
+cml4wrp3f000grou5sv0fva3l	cml2k3s9h0007qwu59ddilrlj	HO-TIF	3	106750000	100	2026-02-02 08:29:03.819	2026-02-02 08:29:03.819
+cml4wrp3g000hrou5w8nre8qg	cml2k3s9h0007qwu59ddilrlj	TREG-1	3	0	0	2026-02-02 08:29:03.82	2026-02-02 08:29:03.82
+cml4wrp3h000irou5krairuom	cml2k3s9h0007qwu59ddilrlj	TREG-2	3	0	0	2026-02-02 08:29:03.821	2026-02-02 08:29:03.821
+cml4wrp3i000jrou5bwa56u27	cml2k3s9h0007qwu59ddilrlj	TREG-3	3	0	0	2026-02-02 08:29:03.822	2026-02-02 08:29:03.822
+cml4wrp3j000krou5185hsa7e	cml2k3s9h0007qwu59ddilrlj	TREG-4	3	0	0	2026-02-02 08:29:03.823	2026-02-02 08:29:03.823
+cml4wrp3k000lrou5dit8izbb	cml2k3s9h0007qwu59ddilrlj	TREG-5	3	0	0	2026-02-02 08:29:03.824	2026-02-02 08:29:03.824
+cml4wrp3l000mrou5pslecfks	cml2k3s9h0007qwu59ddilrlj	TREG-6	3	0	0	2026-02-02 08:29:03.825	2026-02-02 08:29:03.825
+cml4wrp3m000nrou5lunn6vb7	cml2k3s9h0007qwu59ddilrlj	TREG-7	3	0	0	2026-02-02 08:29:03.826	2026-02-02 08:29:03.826
+cml4wrp3n000orou5ku3sabq4	cml2k3s9h0007qwu59ddilrlj	HO-TIF	4	106750000	100	2026-02-02 08:29:03.827	2026-02-02 08:29:03.827
+cml4wrp3p000prou5quoe0eec	cml2k3s9h0007qwu59ddilrlj	TREG-1	4	0	0	2026-02-02 08:29:03.829	2026-02-02 08:29:03.829
+cml4wrp3q000qrou5gappmkz1	cml2k3s9h0007qwu59ddilrlj	TREG-2	4	0	0	2026-02-02 08:29:03.83	2026-02-02 08:29:03.83
+cml4wrp3r000rrou5a01vf7qn	cml2k3s9h0007qwu59ddilrlj	TREG-3	4	0	0	2026-02-02 08:29:03.83	2026-02-02 08:29:03.83
+cml4wrp3r000srou5x94ocmdu	cml2k3s9h0007qwu59ddilrlj	TREG-4	4	0	0	2026-02-02 08:29:03.831	2026-02-02 08:29:03.831
+cml4wrp3s000trou5uy3wrzao	cml2k3s9h0007qwu59ddilrlj	TREG-5	4	0	0	2026-02-02 08:29:03.832	2026-02-02 08:29:03.832
+cml4wrp3t000urou51t7jwkey	cml2k3s9h0007qwu59ddilrlj	TREG-6	4	0	0	2026-02-02 08:29:03.833	2026-02-02 08:29:03.833
+cml4wrp3t000vrou5qpwv2k72	cml2k3s9h0007qwu59ddilrlj	TREG-7	4	0	0	2026-02-02 08:29:03.833	2026-02-02 08:29:03.833
+cml4wrp330004rou5ioxnyymh	cml2k3s9h0007qwu59ddilrlj	TREG-4	1	0	0	2026-02-02 08:29:03.807	2026-02-02 08:29:03.807
+cml4wrp350005rou5omx67cht	cml2k3s9h0007qwu59ddilrlj	TREG-5	1	0	0	2026-02-02 08:29:03.809	2026-02-02 08:29:03.809
+cml4wrp360006rou5e9ai6yh0	cml2k3s9h0007qwu59ddilrlj	TREG-6	1	0	0	2026-02-02 08:29:03.81	2026-02-02 08:29:03.81
+cml4wrp370007rou5fn7f848d	cml2k3s9h0007qwu59ddilrlj	TREG-7	1	0	0	2026-02-02 08:29:03.811	2026-02-02 08:29:03.811
+cml4wrp390009rou5nm2a6uxg	cml2k3s9h0007qwu59ddilrlj	TREG-1	2	0	0	2026-02-02 08:29:03.813	2026-02-02 08:29:03.813
+cml4wrp380008rou5j1rmdyuz	cml2k3s9h0007qwu59ddilrlj	HO-TIF	2	106750000	100	2026-02-02 08:29:03.812	2026-02-02 08:29:03.812
+cml4wsmx9000wrou50v940ukd	cml2k3s9n0008qwu57mr2y91p	HO-TIF	1	42000000	100	2026-02-02 08:29:47.661	2026-02-02 08:29:47.661
+cml4wsmxb000xrou52qha72cu	cml2k3s9n0008qwu57mr2y91p	TREG-1	1	0	0	2026-02-02 08:29:47.663	2026-02-02 08:29:47.663
+cml4wsmxc000yrou5bpc71ccz	cml2k3s9n0008qwu57mr2y91p	TREG-2	1	0	0	2026-02-02 08:29:47.664	2026-02-02 08:29:47.664
+cml4wsmxd000zrou56jk34eay	cml2k3s9n0008qwu57mr2y91p	TREG-3	1	0	0	2026-02-02 08:29:47.665	2026-02-02 08:29:47.665
+cml4wsmxe0010rou55ixv9b0z	cml2k3s9n0008qwu57mr2y91p	TREG-4	1	0	0	2026-02-02 08:29:47.666	2026-02-02 08:29:47.666
+cml4wsmxk0016rou5dnjrr5uq	cml2k3s9n0008qwu57mr2y91p	TREG-2	2	0	0	2026-02-02 08:29:47.672	2026-02-02 08:29:47.672
+cml4wsmxn0017rou5f9ytdqkh	cml2k3s9n0008qwu57mr2y91p	TREG-3	2	0	0	2026-02-02 08:29:47.675	2026-02-02 08:29:47.675
+cml4wsmxo0018rou5vmmcbkxv	cml2k3s9n0008qwu57mr2y91p	TREG-4	2	0	0	2026-02-02 08:29:47.676	2026-02-02 08:29:47.676
+cml4wsmxp0019rou5dyhplcwt	cml2k3s9n0008qwu57mr2y91p	TREG-5	2	0	0	2026-02-02 08:29:47.677	2026-02-02 08:29:47.677
+cml4wsmxr001arou5f2mfs133	cml2k3s9n0008qwu57mr2y91p	TREG-6	2	0	0	2026-02-02 08:29:47.679	2026-02-02 08:29:47.679
+cml4wsmxu001brou54e2x6wwx	cml2k3s9n0008qwu57mr2y91p	TREG-7	2	0	0	2026-02-02 08:29:47.682	2026-02-02 08:29:47.682
+cml4wsmxw001crou5wfhsm626	cml2k3s9n0008qwu57mr2y91p	HO-TIF	3	42000000	100	2026-02-02 08:29:47.684	2026-02-02 08:29:47.684
+cml4wsmxy001drou5u5pi3rag	cml2k3s9n0008qwu57mr2y91p	TREG-1	3	0	0	2026-02-02 08:29:47.686	2026-02-02 08:29:47.686
+cml4wsmxz001erou525aw6wfl	cml2k3s9n0008qwu57mr2y91p	TREG-2	3	0	0	2026-02-02 08:29:47.687	2026-02-02 08:29:47.687
+cml4wsmxf0011rou5st1ggxit	cml2k3s9n0008qwu57mr2y91p	TREG-5	1	0	0	2026-02-02 08:29:47.667	2026-02-02 08:29:47.667
+cml4wsmxg0012rou5wdolvt7x	cml2k3s9n0008qwu57mr2y91p	TREG-6	1	0	0	2026-02-02 08:29:47.668	2026-02-02 08:29:47.668
+cml4wsmy0001frou5dvkry6l0	cml2k3s9n0008qwu57mr2y91p	TREG-3	3	0	0	2026-02-02 08:29:47.688	2026-02-02 08:29:47.688
+cml4wsmxi0014rou58o75nl23	cml2k3s9n0008qwu57mr2y91p	HO-TIF	2	42000000	100	2026-02-02 08:29:47.67	2026-02-02 08:29:47.67
+cml4wsmy1001grou5cvf92rse	cml2k3s9n0008qwu57mr2y91p	TREG-4	3	0	0	2026-02-02 08:29:47.689	2026-02-02 08:29:47.689
+cml4wsmxj0015rou501gtp1lo	cml2k3s9n0008qwu57mr2y91p	TREG-1	2	0	0	2026-02-02 08:29:47.671	2026-02-02 08:29:47.671
+cml4wsmxh0013rou5cmnyugba	cml2k3s9n0008qwu57mr2y91p	TREG-7	1	0	0	2026-02-02 08:29:47.669	2026-02-02 08:29:47.669
+cml4wsmy9001orou5mrq2scv7	cml2k3s9n0008qwu57mr2y91p	TREG-4	4	0	0	2026-02-02 08:29:47.697	2026-02-02 08:29:47.697
+cml4wsmy2001hrou5ipczrnnl	cml2k3s9n0008qwu57mr2y91p	TREG-5	3	0	0	2026-02-02 08:29:47.69	2026-02-02 08:29:47.69
+cml4wsmya001prou59wkz6qjx	cml2k3s9n0008qwu57mr2y91p	TREG-5	4	0	0	2026-02-02 08:29:47.698	2026-02-02 08:29:47.698
+cml4wsmy3001jrou5zagkwgcu	cml2k3s9n0008qwu57mr2y91p	TREG-7	3	0	0	2026-02-02 08:29:47.691	2026-02-02 08:29:47.691
+cml4wsmy5001lrou5kd1dimmo	cml2k3s9n0008qwu57mr2y91p	TREG-1	4	0	0	2026-02-02 08:29:47.693	2026-02-02 08:29:47.693
+cml4wsmy8001nrou50jux1sbr	cml2k3s9n0008qwu57mr2y91p	TREG-3	4	0	0	2026-02-02 08:29:47.695	2026-02-02 08:29:47.695
+cml4wsmyc001rrou5hrepqdyb	cml2k3s9n0008qwu57mr2y91p	TREG-7	4	0	0	2026-02-02 08:29:47.7	2026-02-02 08:29:47.7
+cml4wwb9q003jrou5cfvkqzbw	cml2k3s970005qwu5mkb36ddr	TREG-7	4	0	0	2026-02-02 08:32:39.182	2026-02-02 08:32:39.182
+cml4wwsre003krou5q6mxvtid	cml2k3s9c0006qwu55yetz6ub	HO-TIF	1	13650000	100	2026-02-02 08:33:01.849	2026-02-02 08:33:01.849
+cml4wwsrf003lrou5rp9bza95	cml2k3s9c0006qwu55yetz6ub	TREG-1	1	0	0	2026-02-02 08:33:01.851	2026-02-02 08:33:01.851
+cml4wwsrf003mrou5zh4x42ju	cml2k3s9c0006qwu55yetz6ub	TREG-2	1	0	0	2026-02-02 08:33:01.851	2026-02-02 08:33:01.851
+cml4wwsrg003nrou5osrhy6mj	cml2k3s9c0006qwu55yetz6ub	TREG-3	1	0	0	2026-02-02 08:33:01.852	2026-02-02 08:33:01.852
+cml4wwsrh003prou5bi2sa7xv	cml2k3s9c0006qwu55yetz6ub	TREG-5	1	0	0	2026-02-02 08:33:01.853	2026-02-02 08:33:01.853
+cml4wwsri003qrou5iww3d7vi	cml2k3s9c0006qwu55yetz6ub	TREG-6	1	0	0	2026-02-02 08:33:01.854	2026-02-02 08:33:01.854
+cml4wwsrj003rrou5ysiv4a83	cml2k3s9c0006qwu55yetz6ub	TREG-7	1	0	0	2026-02-02 08:33:01.855	2026-02-02 08:33:01.855
+cml4wwsrn003urou5kda1aaqc	cml2k3s9c0006qwu55yetz6ub	TREG-2	2	0	0	2026-02-02 08:33:01.858	2026-02-02 08:33:01.858
+cml4wwsrn003vrou5s92ue5w8	cml2k3s9c0006qwu55yetz6ub	TREG-3	2	0	0	2026-02-02 08:33:01.859	2026-02-02 08:33:01.859
+cml4wwsro003wrou5njjpm382	cml2k3s9c0006qwu55yetz6ub	TREG-4	2	0	0	2026-02-02 08:33:01.86	2026-02-02 08:33:01.86
+cml4wwsrq003xrou5fo97sl3f	cml2k3s9c0006qwu55yetz6ub	TREG-5	2	0	0	2026-02-02 08:33:01.861	2026-02-02 08:33:01.861
+cml4wwsrh003orou53ublpx15	cml2k3s9c0006qwu55yetz6ub	TREG-4	1	0	0	2026-02-02 08:33:01.853	2026-02-02 08:33:01.853
+cml4wwsrr003yrou5e2jlfxmp	cml2k3s9c0006qwu55yetz6ub	TREG-6	2	0	0	2026-02-02 08:33:01.863	2026-02-02 08:33:01.863
+cml4wwsrs003zrou5k9rhm4ry	cml2k3s9c0006qwu55yetz6ub	TREG-7	2	0	0	2026-02-02 08:33:01.864	2026-02-02 08:33:01.864
+cml4wwsrt0040rou5zzq61fdk	cml2k3s9c0006qwu55yetz6ub	HO-TIF	3	13650000	100	2026-02-02 08:33:01.865	2026-02-02 08:33:01.865
+cml4wwsrv0041rou5ptft1w0b	cml2k3s9c0006qwu55yetz6ub	TREG-1	3	0	0	2026-02-02 08:33:01.867	2026-02-02 08:33:01.867
+cml4wwsrw0042rou5nr50j0iq	cml2k3s9c0006qwu55yetz6ub	TREG-2	3	0	0	2026-02-02 08:33:01.868	2026-02-02 08:33:01.868
+cml4wwsrx0043rou5e8q3vjze	cml2k3s9c0006qwu55yetz6ub	TREG-3	3	0	0	2026-02-02 08:33:01.869	2026-02-02 08:33:01.869
+cml4wwsry0044rou519gx3jf2	cml2k3s9c0006qwu55yetz6ub	TREG-4	3	0	0	2026-02-02 08:33:01.869	2026-02-02 08:33:01.869
+cml4wwsrz0045rou5mb8ugrfu	cml2k3s9c0006qwu55yetz6ub	TREG-5	3	0	0	2026-02-02 08:33:01.871	2026-02-02 08:33:01.871
+cml4wwsrz0046rou5ywglsbx5	cml2k3s9c0006qwu55yetz6ub	TREG-6	3	0	0	2026-02-02 08:33:01.871	2026-02-02 08:33:01.871
+cml4wwss10047rou5yxls387s	cml2k3s9c0006qwu55yetz6ub	TREG-7	3	0	0	2026-02-02 08:33:01.873	2026-02-02 08:33:01.873
+cml4wwss20048rou51pkhdn7c	cml2k3s9c0006qwu55yetz6ub	HO-TIF	4	13650000	100	2026-02-02 08:33:01.874	2026-02-02 08:33:01.874
+cml4wwss30049rou5saqb8eea	cml2k3s9c0006qwu55yetz6ub	TREG-1	4	0	0	2026-02-02 08:33:01.875	2026-02-02 08:33:01.875
+cml4wwss4004arou5ctjp3o6q	cml2k3s9c0006qwu55yetz6ub	TREG-2	4	0	0	2026-02-02 08:33:01.876	2026-02-02 08:33:01.876
+cml4wwss5004brou5gjlzr7o9	cml2k3s9c0006qwu55yetz6ub	TREG-3	4	0	0	2026-02-02 08:33:01.877	2026-02-02 08:33:01.877
+cml4wwss5004crou53sfgbpto	cml2k3s9c0006qwu55yetz6ub	TREG-4	4	0	0	2026-02-02 08:33:01.877	2026-02-02 08:33:01.877
+cml4wwss6004drou5s83tc2sl	cml2k3s9c0006qwu55yetz6ub	TREG-5	4	0	0	2026-02-02 08:33:01.878	2026-02-02 08:33:01.878
+cml4wwss7004erou5c6ccz9cc	cml2k3s9c0006qwu55yetz6ub	TREG-6	4	0	0	2026-02-02 08:33:01.879	2026-02-02 08:33:01.879
+cml4wwss7004frou5l9dquzhq	cml2k3s9c0006qwu55yetz6ub	TREG-7	4	0	0	2026-02-02 08:33:01.879	2026-02-02 08:33:01.879
+cml4wwsrj003srou53dkttryz	cml2k3s9c0006qwu55yetz6ub	HO-TIF	2	13650000	100	2026-02-02 08:33:01.855	2026-02-02 08:33:01.855
+cml4wwsrl003trou5a1mpfy8j	cml2k3s9c0006qwu55yetz6ub	TREG-1	2	0	0	2026-02-02 08:33:01.857	2026-02-02 08:33:01.857
+cml4wsmy2001irou5wa99nn46	cml2k3s9n0008qwu57mr2y91p	TREG-6	3	0	0	2026-02-02 08:29:47.69	2026-02-02 08:29:47.69
+cml4wsmyb001qrou5yx0zkwuj	cml2k3s9n0008qwu57mr2y91p	TREG-6	4	0	0	2026-02-02 08:29:47.699	2026-02-02 08:29:47.699
+cml4wsmy4001krou5insh8i9g	cml2k3s9n0008qwu57mr2y91p	HO-TIF	4	42000000	100	2026-02-02 08:29:47.692	2026-02-02 08:29:47.692
+cml4wsmy6001mrou5kah07svs	cml2k3s9n0008qwu57mr2y91p	TREG-2	4	0	0	2026-02-02 08:29:47.694	2026-02-02 08:29:47.694
+cml4wvlp7001srou5awggyp2h	cml2k3s910004qwu54kao4aec	HO-TIF	1	1436459653	50	2026-02-02 08:32:06.043	2026-02-02 08:32:06.043
+cml4wvlp9001trou5j6mr6stm	cml2k3s910004qwu54kao4aec	TREG-1	1	205126438	7.14	2026-02-02 08:32:06.045	2026-02-02 08:32:06.045
+cml4wvlpa001urou56vt30r3i	cml2k3s910004qwu54kao4aec	TREG-2	1	205126438	7.14	2026-02-02 08:32:06.046	2026-02-02 08:32:06.046
+cml4wvlpb001vrou5p920fucd	cml2k3s910004qwu54kao4aec	TREG-3	1	205126438	7.14	2026-02-02 08:32:06.047	2026-02-02 08:32:06.047
+cml4wvlpc001wrou5t4no38m3	cml2k3s910004qwu54kao4aec	TREG-4	1	205126438	7.14	2026-02-02 08:32:06.048	2026-02-02 08:32:06.048
+cml4wvlpd001xrou5n62rj3o0	cml2k3s910004qwu54kao4aec	TREG-5	1	205126438	7.14	2026-02-02 08:32:06.049	2026-02-02 08:32:06.049
+cml4wvlpe001yrou5ecbwkv3j	cml2k3s910004qwu54kao4aec	TREG-6	1	205126438	7.14	2026-02-02 08:32:06.05	2026-02-02 08:32:06.05
+cml4wvlpe001zrou50u8g4p25	cml2k3s910004qwu54kao4aec	TREG-7	1	205701026	7.14	2026-02-02 08:32:06.05	2026-02-02 08:32:06.05
+cml4wvlpf0020rou5zkvbpjuq	cml2k3s910004qwu54kao4aec	HO-TIF	2	1436459653	50	2026-02-02 08:32:06.051	2026-02-02 08:32:06.051
+cml4wvlpg0021rou5yjy77zwa	cml2k3s910004qwu54kao4aec	TREG-1	2	205126438	7.14	2026-02-02 08:32:06.052	2026-02-02 08:32:06.052
+cml4wvlph0022rou5g9jdlcpx	cml2k3s910004qwu54kao4aec	TREG-2	2	205126438	7.14	2026-02-02 08:32:06.053	2026-02-02 08:32:06.053
+cml4wvlpi0023rou5i89s2liv	cml2k3s910004qwu54kao4aec	TREG-3	2	205126438	7.14	2026-02-02 08:32:06.054	2026-02-02 08:32:06.054
+cml4wvlpj0024rou5xlzbsrvs	cml2k3s910004qwu54kao4aec	TREG-4	2	205126438	7.14	2026-02-02 08:32:06.055	2026-02-02 08:32:06.055
+cml4wvlpj0025rou5qd1p5mvo	cml2k3s910004qwu54kao4aec	TREG-5	2	205126438	7.14	2026-02-02 08:32:06.055	2026-02-02 08:32:06.055
+cml4wvlpk0026rou52yx9nm7n	cml2k3s910004qwu54kao4aec	TREG-6	2	205126438	7.14	2026-02-02 08:32:06.056	2026-02-02 08:32:06.056
+cml4wvlpk0027rou5xo9lmh98	cml2k3s910004qwu54kao4aec	TREG-7	2	205701026	7.14	2026-02-02 08:32:06.056	2026-02-02 08:32:06.056
+cml4wvlpl0028rou56a03ve9y	cml2k3s910004qwu54kao4aec	HO-TIF	3	1436459653	50	2026-02-02 08:32:06.057	2026-02-02 08:32:06.057
+cml4wvlpm0029rou5bqehjrru	cml2k3s910004qwu54kao4aec	TREG-1	3	205126438	7.14	2026-02-02 08:32:06.058	2026-02-02 08:32:06.058
+cml4wvlpn002arou5fvgoe5tz	cml2k3s910004qwu54kao4aec	TREG-2	3	205126438	7.14	2026-02-02 08:32:06.059	2026-02-02 08:32:06.059
+cml4wvlpn002brou5u5zm1ikj	cml2k3s910004qwu54kao4aec	TREG-3	3	205126438	7.14	2026-02-02 08:32:06.059	2026-02-02 08:32:06.059
+cml4wvlpo002crou5zacyfhmr	cml2k3s910004qwu54kao4aec	TREG-4	3	205126438	7.14	2026-02-02 08:32:06.06	2026-02-02 08:32:06.06
+cml4wvlpp002drou5gr69pq7e	cml2k3s910004qwu54kao4aec	TREG-5	3	205126438	7.14	2026-02-02 08:32:06.061	2026-02-02 08:32:06.061
+cml4wvlpr002erou5iplaxkgv	cml2k3s910004qwu54kao4aec	TREG-6	3	205126438	7.14	2026-02-02 08:32:06.063	2026-02-02 08:32:06.063
+cml4wvlps002frou5i2mrkic9	cml2k3s910004qwu54kao4aec	TREG-7	3	205701026	7.14	2026-02-02 08:32:06.064	2026-02-02 08:32:06.064
+cml4wvlps002grou5ikorkbg6	cml2k3s910004qwu54kao4aec	HO-TIF	4	1436459654	50	2026-02-02 08:32:06.064	2026-02-02 08:32:06.064
+cml4wvlpt002hrou5l6ok00xs	cml2k3s910004qwu54kao4aec	TREG-1	4	205126438	7.14	2026-02-02 08:32:06.065	2026-02-02 08:32:06.065
+cml4wvlpu002irou5ekokx7f9	cml2k3s910004qwu54kao4aec	TREG-2	4	205126438	7.14	2026-02-02 08:32:06.066	2026-02-02 08:32:06.066
+cml4wvlpv002jrou5hlsrk1s4	cml2k3s910004qwu54kao4aec	TREG-3	4	205126438	7.14	2026-02-02 08:32:06.067	2026-02-02 08:32:06.067
+cml4wvlpv002krou5u3rawfwn	cml2k3s910004qwu54kao4aec	TREG-4	4	205126438	7.14	2026-02-02 08:32:06.067	2026-02-02 08:32:06.067
+cml4wvlpw002lrou5gmn8lvm6	cml2k3s910004qwu54kao4aec	TREG-5	4	205126438	7.14	2026-02-02 08:32:06.068	2026-02-02 08:32:06.068
+cml4wvlpy002mrou5x3ko4rs7	cml2k3s910004qwu54kao4aec	TREG-6	4	205126438	7.14	2026-02-02 08:32:06.07	2026-02-02 08:32:06.07
+cml4wvlpz002nrou5ko787dck	cml2k3s910004qwu54kao4aec	TREG-7	4	205701026	7.14	2026-02-02 08:32:06.07	2026-02-02 08:32:06.07
+cml4wwb8v002orou543120yd9	cml2k3s970005qwu5mkb36ddr	HO-TIF	1	18060000	100	2026-02-02 08:32:39.151	2026-02-02 08:32:39.151
+cml4wwb8x002prou5xfv6u1jq	cml2k3s970005qwu5mkb36ddr	TREG-1	1	0	0	2026-02-02 08:32:39.152	2026-02-02 08:32:39.152
+cml4wwb91002qrou5x9gux8vx	cml2k3s970005qwu5mkb36ddr	TREG-2	1	0	0	2026-02-02 08:32:39.157	2026-02-02 08:32:39.157
+cml4wwb92002rrou5ppyxi823	cml2k3s970005qwu5mkb36ddr	TREG-3	1	0	0	2026-02-02 08:32:39.158	2026-02-02 08:32:39.158
+cml4wwb93002srou51jmw39r1	cml2k3s970005qwu5mkb36ddr	TREG-4	1	0	0	2026-02-02 08:32:39.159	2026-02-02 08:32:39.159
+cml4wwb93002trou5v6hhzmvq	cml2k3s970005qwu5mkb36ddr	TREG-5	1	0	0	2026-02-02 08:32:39.159	2026-02-02 08:32:39.159
+cml4wwb94002urou54nzz9ld0	cml2k3s970005qwu5mkb36ddr	TREG-6	1	0	0	2026-02-02 08:32:39.16	2026-02-02 08:32:39.16
+cml4wwb94002vrou5kpanimtj	cml2k3s970005qwu5mkb36ddr	TREG-7	1	0	0	2026-02-02 08:32:39.16	2026-02-02 08:32:39.16
+cml4wwb95002wrou5qc8wzrtq	cml2k3s970005qwu5mkb36ddr	HO-TIF	2	18060000	100	2026-02-02 08:32:39.161	2026-02-02 08:32:39.161
+cml4wwb95002xrou5ahg02xmq	cml2k3s970005qwu5mkb36ddr	TREG-1	2	0	0	2026-02-02 08:32:39.161	2026-02-02 08:32:39.161
+cml4wwb96002yrou5ac80rfxn	cml2k3s970005qwu5mkb36ddr	TREG-2	2	0	0	2026-02-02 08:32:39.162	2026-02-02 08:32:39.162
+cml4wwb97002zrou53sxm0jld	cml2k3s970005qwu5mkb36ddr	TREG-3	2	0	0	2026-02-02 08:32:39.163	2026-02-02 08:32:39.163
+cml4wwb980030rou5jezhyle5	cml2k3s970005qwu5mkb36ddr	TREG-4	2	0	0	2026-02-02 08:32:39.164	2026-02-02 08:32:39.164
+cml4wwb990031rou5092twbwv	cml2k3s970005qwu5mkb36ddr	TREG-5	2	0	0	2026-02-02 08:32:39.165	2026-02-02 08:32:39.165
+cml4wwb9a0032rou5gwdn7y5d	cml2k3s970005qwu5mkb36ddr	TREG-6	2	0	0	2026-02-02 08:32:39.166	2026-02-02 08:32:39.166
+cml4wwb9a0033rou5hxzr84lf	cml2k3s970005qwu5mkb36ddr	TREG-7	2	0	0	2026-02-02 08:32:39.166	2026-02-02 08:32:39.166
+cml4wwb9f0034rou5meu4zmw1	cml2k3s970005qwu5mkb36ddr	HO-TIF	3	18060000	100	2026-02-02 08:32:39.171	2026-02-02 08:32:39.171
+cml4wwb9f0035rou53zwdlpnc	cml2k3s970005qwu5mkb36ddr	TREG-1	3	0	0	2026-02-02 08:32:39.171	2026-02-02 08:32:39.171
+cml4wwb9h0036rou5cm0knhqr	cml2k3s970005qwu5mkb36ddr	TREG-2	3	0	0	2026-02-02 08:32:39.173	2026-02-02 08:32:39.173
+cml4wwb9i0037rou545fr2art	cml2k3s970005qwu5mkb36ddr	TREG-3	3	0	0	2026-02-02 08:32:39.174	2026-02-02 08:32:39.174
+cml4wwb9j0038rou5dskx9mab	cml2k3s970005qwu5mkb36ddr	TREG-4	3	0	0	2026-02-02 08:32:39.175	2026-02-02 08:32:39.175
+cml4wwb9k0039rou57meutw69	cml2k3s970005qwu5mkb36ddr	TREG-5	3	0	0	2026-02-02 08:32:39.176	2026-02-02 08:32:39.176
+cml4wwb9k003arou5io90zlrj	cml2k3s970005qwu5mkb36ddr	TREG-6	3	0	0	2026-02-02 08:32:39.176	2026-02-02 08:32:39.176
+cml4wwb9l003brou5ij61m9d4	cml2k3s970005qwu5mkb36ddr	TREG-7	3	0	0	2026-02-02 08:32:39.177	2026-02-02 08:32:39.177
+cml4wwb9l003crou5pas66npp	cml2k3s970005qwu5mkb36ddr	HO-TIF	4	18060000	100	2026-02-02 08:32:39.177	2026-02-02 08:32:39.177
+cml4wwb9m003drou5t08rufee	cml2k3s970005qwu5mkb36ddr	TREG-1	4	0	0	2026-02-02 08:32:39.178	2026-02-02 08:32:39.178
+cml4wwb9n003erou5d5dy0vzm	cml2k3s970005qwu5mkb36ddr	TREG-2	4	0	0	2026-02-02 08:32:39.179	2026-02-02 08:32:39.179
+cml4wwb9n003frou5cf5mske0	cml2k3s970005qwu5mkb36ddr	TREG-3	4	0	0	2026-02-02 08:32:39.179	2026-02-02 08:32:39.179
+cml4wwb9o003grou55evgn4em	cml2k3s970005qwu5mkb36ddr	TREG-4	4	0	0	2026-02-02 08:32:39.18	2026-02-02 08:32:39.18
+cml4wwb9p003hrou5ecjrkw1s	cml2k3s970005qwu5mkb36ddr	TREG-5	4	0	0	2026-02-02 08:32:39.181	2026-02-02 08:32:39.181
+cml4wwb9p003irou57ksb1zq9	cml2k3s970005qwu5mkb36ddr	TREG-6	4	0	0	2026-02-02 08:32:39.181	2026-02-02 08:32:39.181
+\.
+
+
+--
+-- Data for Name: Transaction; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public."Transaction" (id, "glAccountId", quarter, "regionalCode", kegiatan, "regionalPengguna", year, "tanggalKwitansi", "nilaiKwitansi", "jenisPajak", "nilaiTanpaPPN", "nilaiPPN", keterangan, "jenisPengadaan", "vendorId", "tanggalEntry", "noTiketMydx", "tglSerahFinance", "picFinance", "noHpFinance", "tglTransferVendor", "nilaiTransfer", "taskPengajuan", "taskTransferVendor", "taskTerimaBerkas", "taskUploadMydx", "taskSerahFinance", "taskVendorDibayar", status, "imprestFundId", "createdAt", "updatedAt") FROM stdin;
+cml4lu5240017zou5ud7766pk	cml2jzidc00041cu5s258pet5	1	HO-TIF	Kelompok 01 01	HO-TIF	2026	2026-02-02 03:22:09.633	2000000	\N	2000000	0	\N	InpresFund	\N	2026-02-02 03:23:02.044	fafa	2026-02-10 17:00:00	fafa	afafa	2026-02-10 17:00:00	7000000	t	t	t	t	t	t	Close	cml4ltbls0013zou5fk5z3sq2	2026-02-02 03:23:02.044	2026-02-02 03:27:12.793
+cml4lu52c0018zou50g7vydgs	cml2jzidn00081cu5akud4fid	1	HO-TIF	kelompok 01	HO-TIF	2026	2026-02-02 03:22:46.878	5000000	\N	5000000	0	\N	InpresFund	\N	2026-02-02 03:23:02.052	fafa	2026-02-10 17:00:00	fafa	afafa	2026-02-10 17:00:00	7000000	t	t	t	t	t	t	Close	cml4ltbls0013zou5fk5z3sq2	2026-02-02 03:23:02.052	2026-02-02 03:27:12.793
+cml4x0nju004grou519prsq8d	cml2jzid900031cu5leurjdd3	1	TREG-1	Pembelian Komponen	Regional 1	2026	2026-02-01 17:00:00	20000000	TanpaPPN	20000000	0	Tes aja	PadiUMKM	cml2jziek000j1cu5e1gyjnlm	2026-02-02 08:36:01.722	rra	2026-02-03 17:00:00	fafa	aefa	2026-02-11 17:00:00	3434	t	t	t	t	t	t	Close	\N	2026-02-02 08:36:01.722	2026-02-02 08:38:08.06
+cml4x4uqz004mrou5g8lemar1	cml2jzidc00041cu5s258pet5	1	HO-TIF	Kelompok 02	HO-TIF	2026	2026-02-02 08:38:42.748	100000	\N	100000	0	\N	InpresFund	\N	2026-02-02 08:39:17.675	afaf	2026-02-02 17:00:00	raefa	garrga	2026-02-18 17:00:00	1100000	t	t	t	t	t	t	Close	cml4x4muh004hrou5hzew0gw4	2026-02-02 08:39:17.675	2026-02-02 08:42:25.066
+cml4x4ur4004nrou5w282vl92	cml2jzidn00081cu5akud4fid	1	HO-TIF	kelompok 02a	HO-TIF	2026	2026-02-02 08:38:54.074	1000000	\N	1000000	0	\N	InpresFund	\N	2026-02-02 08:39:17.68	afaf	2026-02-02 17:00:00	raefa	garrga	2026-02-18 17:00:00	1100000	t	t	t	t	t	t	Close	cml4x4muh004hrou5hzew0gw4	2026-02-02 08:39:17.68	2026-02-02 08:42:25.066
+\.
+
+
+--
+-- Data for Name: TransactionFile; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public."TransactionFile" (id, "transactionId", "fileName", "originalName", "fileSize", "mimeType", "filePath", "uploadedAt") FROM stdin;
+\.
+
+
+--
+-- Data for Name: User; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public."User" (id, email, password, name, role, avatar, "createdAt") FROM stdin;
+cml2jzibi00001cu5o5sqdbw8	admin@digiran.com	$2a$10$hm/Sra0L.BWIO8cO8y6rv.1Olqqt5zEHjHhJxJHzcIZWP99cI2wAC	Administrator	admin	/avatar.png	2026-01-31 16:55:40.924
+\.
+
+
+--
+-- Data for Name: Vendor; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public."Vendor" (id, name, alamat, pic, phone, email, "isActive", "createdAt", "updatedAt") FROM stdin;
+cml2jzieh000i1cu5ve9jxcjs	PT. Telkom Indonesia	Jakarta	John Doe	021-12345678	contact@telkom.co.id	t	2026-01-31 16:55:41.033	2026-01-31 16:55:41.033
+cml2jziek000j1cu5e1gyjnlm	CV. Mitra Teknologi	Bandung	Jane Smith	022-87654321	info@mitratek.com	t	2026-01-31 16:55:41.036	2026-01-31 16:55:41.036
+cml2jzieo000k1cu58n27r0do	PT. Solusi Digital	Surabaya	Bob Wilson	031-11223344	sales@solusidigital.com	t	2026-01-31 16:55:41.04	2026-01-31 16:55:41.04
+cml2jzieq000l1cu536r4s8jo	UD. Berkah Jaya	Yogyakarta	Ahmad Rahman	0274-556677	berkah@gmail.com	t	2026-01-31 16:55:41.042	2026-01-31 16:55:41.042
+cml2jziet000m1cu5njplz9j8	PT. Inovasi Mandiri	Medan	Siti Nurhaliza	061-998877	inovasi@mandiri.co.id	t	2026-01-31 16:55:41.045	2026-01-31 16:55:41.045
+\.
+
+
+--
+-- Name: Budget Budget_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public."Budget"
+    ADD CONSTRAINT "Budget_pkey" PRIMARY KEY (id);
+
+
+--
+-- Name: GlAccount GlAccount_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public."GlAccount"
+    ADD CONSTRAINT "GlAccount_pkey" PRIMARY KEY (id);
+
+
+--
+-- Name: ImprestFundCard ImprestFundCard_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public."ImprestFundCard"
+    ADD CONSTRAINT "ImprestFundCard_pkey" PRIMARY KEY (id);
+
+
+--
+-- Name: ImprestFund ImprestFund_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public."ImprestFund"
+    ADD CONSTRAINT "ImprestFund_pkey" PRIMARY KEY (id);
+
+
+--
+-- Name: ImprestItem ImprestItem_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public."ImprestItem"
+    ADD CONSTRAINT "ImprestItem_pkey" PRIMARY KEY (id);
+
+
+--
+-- Name: MonthlyAllocation MonthlyAllocation_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public."MonthlyAllocation"
+    ADD CONSTRAINT "MonthlyAllocation_pkey" PRIMARY KEY (id);
+
+
+--
+-- Name: PicAnggaran PicAnggaran_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public."PicAnggaran"
+    ADD CONSTRAINT "PicAnggaran_pkey" PRIMARY KEY (id);
+
+
+--
+-- Name: RegionalAllocation RegionalAllocation_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public."RegionalAllocation"
+    ADD CONSTRAINT "RegionalAllocation_pkey" PRIMARY KEY (id);
+
+
+--
+-- Name: Regional Regional_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public."Regional"
+    ADD CONSTRAINT "Regional_pkey" PRIMARY KEY (id);
+
+
+--
+-- Name: TransactionFile TransactionFile_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public."TransactionFile"
+    ADD CONSTRAINT "TransactionFile_pkey" PRIMARY KEY (id);
+
+
+--
+-- Name: Transaction Transaction_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public."Transaction"
+    ADD CONSTRAINT "Transaction_pkey" PRIMARY KEY (id);
+
+
+--
+-- Name: User User_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public."User"
+    ADD CONSTRAINT "User_pkey" PRIMARY KEY (id);
+
+
+--
+-- Name: Vendor Vendor_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public."Vendor"
+    ADD CONSTRAINT "Vendor_pkey" PRIMARY KEY (id);
+
+
+--
+-- Name: Budget_glAccountId_year_key; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE UNIQUE INDEX "Budget_glAccountId_year_key" ON public."Budget" USING btree ("glAccountId", year);
+
+
+--
+-- Name: GlAccount_code_key; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE UNIQUE INDEX "GlAccount_code_key" ON public."GlAccount" USING btree (code);
+
+
+--
+-- Name: ImprestFundCard_nomorKartu_key; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE UNIQUE INDEX "ImprestFundCard_nomorKartu_key" ON public."ImprestFundCard" USING btree ("nomorKartu");
+
+
+--
+-- Name: ImprestFund_createdAt_idx; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX "ImprestFund_createdAt_idx" ON public."ImprestFund" USING btree ("createdAt" DESC);
+
+
+--
+-- Name: ImprestFund_imprestFundCardId_idx; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX "ImprestFund_imprestFundCardId_idx" ON public."ImprestFund" USING btree ("imprestFundCardId");
+
+
+--
+-- Name: ImprestFund_status_idx; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX "ImprestFund_status_idx" ON public."ImprestFund" USING btree (status);
+
+
+--
+-- Name: MonthlyAllocation_glAccountId_year_key; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE UNIQUE INDEX "MonthlyAllocation_glAccountId_year_key" ON public."MonthlyAllocation" USING btree ("glAccountId", year);
+
+
+--
+-- Name: PicAnggaran_unit_year_key; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE UNIQUE INDEX "PicAnggaran_unit_year_key" ON public."PicAnggaran" USING btree (unit, year);
+
+
+--
+-- Name: RegionalAllocation_budgetId_regionalCode_quarter_key; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE UNIQUE INDEX "RegionalAllocation_budgetId_regionalCode_quarter_key" ON public."RegionalAllocation" USING btree ("budgetId", "regionalCode", quarter);
+
+
+--
+-- Name: Regional_code_key; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE UNIQUE INDEX "Regional_code_key" ON public."Regional" USING btree (code);
+
+
+--
+-- Name: User_email_key; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE UNIQUE INDEX "User_email_key" ON public."User" USING btree (email);
+
+
+--
+-- Name: Budget Budget_glAccountId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public."Budget"
+    ADD CONSTRAINT "Budget_glAccountId_fkey" FOREIGN KEY ("glAccountId") REFERENCES public."GlAccount"(id) ON UPDATE CASCADE ON DELETE RESTRICT;
+
+
+--
+-- Name: ImprestFund ImprestFund_imprestFundCardId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public."ImprestFund"
+    ADD CONSTRAINT "ImprestFund_imprestFundCardId_fkey" FOREIGN KEY ("imprestFundCardId") REFERENCES public."ImprestFundCard"(id) ON UPDATE CASCADE ON DELETE SET NULL;
+
+
+--
+-- Name: ImprestItem ImprestItem_glAccountId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public."ImprestItem"
+    ADD CONSTRAINT "ImprestItem_glAccountId_fkey" FOREIGN KEY ("glAccountId") REFERENCES public."GlAccount"(id) ON UPDATE CASCADE ON DELETE RESTRICT;
+
+
+--
+-- Name: ImprestItem ImprestItem_imprestFundId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public."ImprestItem"
+    ADD CONSTRAINT "ImprestItem_imprestFundId_fkey" FOREIGN KEY ("imprestFundId") REFERENCES public."ImprestFund"(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: MonthlyAllocation MonthlyAllocation_glAccountId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public."MonthlyAllocation"
+    ADD CONSTRAINT "MonthlyAllocation_glAccountId_fkey" FOREIGN KEY ("glAccountId") REFERENCES public."GlAccount"(id) ON UPDATE CASCADE ON DELETE RESTRICT;
+
+
+--
+-- Name: RegionalAllocation RegionalAllocation_budgetId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public."RegionalAllocation"
+    ADD CONSTRAINT "RegionalAllocation_budgetId_fkey" FOREIGN KEY ("budgetId") REFERENCES public."Budget"(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: TransactionFile TransactionFile_transactionId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public."TransactionFile"
+    ADD CONSTRAINT "TransactionFile_transactionId_fkey" FOREIGN KEY ("transactionId") REFERENCES public."Transaction"(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: Transaction Transaction_glAccountId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public."Transaction"
+    ADD CONSTRAINT "Transaction_glAccountId_fkey" FOREIGN KEY ("glAccountId") REFERENCES public."GlAccount"(id) ON UPDATE CASCADE ON DELETE RESTRICT;
+
+
+--
+-- Name: Transaction Transaction_imprestFundId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public."Transaction"
+    ADD CONSTRAINT "Transaction_imprestFundId_fkey" FOREIGN KEY ("imprestFundId") REFERENCES public."ImprestFund"(id) ON UPDATE CASCADE ON DELETE SET NULL;
+
+
+--
+-- Name: Transaction Transaction_vendorId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public."Transaction"
+    ADD CONSTRAINT "Transaction_vendorId_fkey" FOREIGN KEY ("vendorId") REFERENCES public."Vendor"(id) ON UPDATE CASCADE ON DELETE SET NULL;
+
+
+--
+-- Name: SCHEMA public; Type: ACL; Schema: -; Owner: postgres
+--
+
+REVOKE USAGE ON SCHEMA public FROM PUBLIC;
+
+
+--
+-- PostgreSQL database dump complete
+--
+
+\unrestrict gu938qQv6QU4zJ04Kkm0orGkfCvFnfTlOpIwOqjw51djbtkAWafRznWTHcLtvgy
+
