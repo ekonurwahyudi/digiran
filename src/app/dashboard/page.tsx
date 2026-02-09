@@ -46,6 +46,7 @@ interface Transaction {
   glAccountId: string
   quarter: number
   nilaiKwitansi: number
+  nilaiTanpaPPN: number
   tanggalKwitansi: string | null
   tglSerahFinance: string | null
   glAccount?: GlAccount
@@ -78,7 +79,7 @@ export default function DashboardPage() {
   const glAccountsCount = glAccounts.length
 
   const totalBudget = budgets.reduce((sum, b) => sum + b.totalAmount, 0)
-  const totalUsed = transactions.reduce((sum: number, t: Transaction) => sum + t.nilaiKwitansi, 0)
+  const totalUsed = transactions.reduce((sum: number, t: Transaction) => sum + t.nilaiTanpaPPN, 0)
 
   // Helper to get quarter from tanggalKwitansi
   const getQuarterFromDate = (dateStr: string | null): number | null => {
@@ -93,7 +94,7 @@ export default function DashboardPage() {
     const qBudget = budgets.reduce((sum, b) => sum + b[qKey], 0)
     const qUsed = transactions
       .filter(t => getQuarterFromDate(t.tanggalKwitansi) === quarter)
-      .reduce((sum, t) => sum + t.nilaiKwitansi, 0)
+      .reduce((sum, t) => sum + t.nilaiTanpaPPN, 0)
     return { budget: qBudget, used: qUsed, remaining: qBudget - qUsed }
   }
 
@@ -102,7 +103,7 @@ export default function DashboardPage() {
     const qBudget = budget[qKey]
     const qUsed = transactions
       .filter(t => t.glAccountId === budget.glAccountId && getQuarterFromDate(t.tanggalKwitansi) === quarter)
-      .reduce((sum, t) => sum + t.nilaiKwitansi, 0)
+      .reduce((sum, t) => sum + t.nilaiTanpaPPN, 0)
     return { budget: qBudget, used: qUsed, remaining: qBudget - qUsed }
   }
 
@@ -124,7 +125,7 @@ export default function DashboardPage() {
         const txDate = new Date(t.tanggalKwitansi)
         return txDate.getMonth() === month
       })
-      .reduce((sum, t) => sum + t.nilaiKwitansi, 0)
+      .reduce((sum, t) => sum + t.nilaiTanpaPPN, 0)
     
     return { budget: fallbackBudget, used: monthUsed, remaining: fallbackBudget - monthUsed }
   }
@@ -147,7 +148,7 @@ export default function DashboardPage() {
         const date = new Date(t.tanggalKwitansi)
         const month = date.getMonth()
         monthlyData[month].jumlahPencatatan += 1
-        monthlyData[month].totalNilai += t.nilaiKwitansi
+        monthlyData[month].totalNilai += t.nilaiTanpaPPN
       }
     })
 
@@ -190,7 +191,7 @@ export default function DashboardPage() {
       if (!regionalData[regional]) {
         regionalData[regional] = 0
       }
-      regionalData[regional] += t.nilaiKwitansi
+      regionalData[regional] += t.nilaiTanpaPPN
     })
     
     // Convert to array format for chart

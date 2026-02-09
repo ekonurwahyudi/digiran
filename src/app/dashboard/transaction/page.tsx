@@ -638,7 +638,7 @@ export default function TransactionPage() {
     { accessorKey: 'quarter', header: 'Kuartal', cell: ({ row }) => `Q${row.getValue('quarter')}` },
     { accessorKey: 'regionalCode', header: 'Regional', cell: ({ row }) => regionals.find((r: Regional) => r.code === row.original.regionalCode)?.name || row.original.regionalCode },
     { accessorKey: 'kegiatan', header: 'Kegiatan' },
-    { accessorKey: 'nilaiKwitansi', header: () => <div className="text-right">Nilai (Rp)</div>, cell: ({ row }) => <div className="text-right">{row.original.nilaiKwitansi.toLocaleString('id-ID')}</div> },
+    { accessorKey: 'nilaiTanpaPPN', header: () => <div className="text-right">Nilai (Rp)</div>, cell: ({ row }) => <div className="text-right">{row.original.nilaiTanpaPPN.toLocaleString('id-ID')}</div> },
     { accessorKey: 'jenisPengadaan', header: 'Pengadaan', cell: ({ row }) => JENIS_PENGADAAN.find(p => p.value === row.original.jenisPengadaan)?.label || '-' },
     { accessorKey: 'status', header: 'Status', cell: ({ row }) => <StatusBadge status={row.original.status} /> },
     { id: 'actions', header: 'Aksi', cell: ({ row }) => (

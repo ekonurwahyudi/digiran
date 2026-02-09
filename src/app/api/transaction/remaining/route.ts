@@ -38,6 +38,7 @@ export async function GET(req: NextRequest) {
     const endDate = new Date(year, quarterEndMonth + 1, 0, 23, 59, 59, 999) // Last day of quarter
 
     // Get total used for this regional based on tanggalKwitansi within the quarter
+    // Using nilaiTanpaPPN (Nilai Sebelum PPN) for budget calculation
     const transactions = await prisma.transaction.aggregate({
       where: { 
         glAccountId, 
@@ -48,10 +49,10 @@ export async function GET(req: NextRequest) {
           lte: endDate
         }
       },
-      _sum: { nilaiKwitansi: true },
+      _sum: { nilaiTanpaPPN: true },
     })
 
-    const used = transactions._sum.nilaiKwitansi || 0
+    const used = transactions._sum.nilaiTanpaPPN || 0
     const remaining = allocated - used
 
     return NextResponse.json({ allocated, used, remaining })
