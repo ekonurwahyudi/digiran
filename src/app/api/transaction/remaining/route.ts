@@ -30,9 +30,24 @@ export async function GET(req: NextRequest) {
 
     const allocated = allocation?.amount || 0
 
-    // Get total used for this regional and quarter
+    // Calculate date range for the quarter
+    const quarterStartMonth = (quarter - 1) * 3 // 0, 3, 6, 9
+    const quarterEndMonth = quarterStartMonth + 2 // 2, 5, 8, 11
+    
+    const startDate = new Date(year, quarterStartMonth, 1)
+    const endDate = new Date(year, quarterEndMonth + 1, 0, 23, 59, 59, 999) // Last day of quarter
+
+    // Get total used for this regional based on tanggalKwitansi within the quarter
     const transactions = await prisma.transaction.aggregate({
-      where: { glAccountId, quarter, regionalCode, year },
+      where: { 
+        glAccountId, 
+        regionalCode, 
+        year,
+        tanggalKwitansi: {
+          gte: startDate,
+          lte: endDate
+        }
+      },
       _sum: { nilaiKwitansi: true },
     })
 
