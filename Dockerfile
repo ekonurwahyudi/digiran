@@ -49,10 +49,10 @@ COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 
 USER nextjs
 
-EXPOSE 3000
+EXPOSE 8081
 
-ENV PORT=3000
+ENV PORT=8081
 ENV HOSTNAME="0.0.0.0"
 
 # Run migrations and start the app
-CMD ["sh", "-c", "npx prisma db push && node server.js"]
+CMD ["sh", "-c", "npx prisma db push || echo 'Prisma push skipped'; node server.js"]
