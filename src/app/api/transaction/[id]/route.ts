@@ -6,20 +6,21 @@ export const dynamic = 'force-dynamic'
 export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
   const data = await req.json()
 
-  // Calculate PPN values
-  const nilaiKwitansi = data.nilaiKwitansi || 0
-  let nilaiTanpaPPN = nilaiKwitansi
+  // New flow: nilaiKwitansi from frontend is "Nilai Sebelum PPN"
+  // We calculate nilaiPertanggungan (stored as nilaiKwitansi) and nilaiPPN
+  const nilaiSebelumPPN = data.nilaiKwitansi || 0
+  let nilaiPertanggungan = nilaiSebelumPPN
   let nilaiPPN = 0
 
   if (data.jenisPajak === 'PPN11') {
-    nilaiTanpaPPN = nilaiKwitansi / 1.11
-    nilaiPPN = nilaiKwitansi - nilaiTanpaPPN
+    nilaiPPN = nilaiSebelumPPN * 0.11
+    nilaiPertanggungan = nilaiSebelumPPN + nilaiPPN
   } else if (data.jenisPajak === 'PPNJasa2') {
-    nilaiPPN = nilaiKwitansi * 0.02
-    nilaiTanpaPPN = nilaiKwitansi - nilaiPPN
+    nilaiPPN = nilaiSebelumPPN * 0.02
+    nilaiPertanggungan = nilaiSebelumPPN + nilaiPPN
   } else if (data.jenisPajak === 'PPNInklaring1.1') {
-    nilaiPPN = nilaiKwitansi * 0.011
-    nilaiTanpaPPN = nilaiKwitansi - nilaiPPN
+    nilaiPPN = nilaiSebelumPPN * 0.011
+    nilaiPertanggungan = nilaiSebelumPPN + nilaiPPN
   }
 
   // Task values
@@ -44,7 +45,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     data.kegiatan &&
     data.regionalPengguna &&
     data.tanggalKwitansi &&
-    nilaiKwitansi > 0 &&
+    nilaiSebelumPPN > 0 &&
     data.jenisPajak &&
     data.jenisPengadaan &&
     data.vendorId &&
@@ -76,9 +77,9 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
       kegiatan: data.kegiatan,
       regionalPengguna: data.regionalPengguna,
       tanggalKwitansi: data.tanggalKwitansi ? new Date(data.tanggalKwitansi) : null,
-      nilaiKwitansi,
+      nilaiKwitansi: nilaiPertanggungan, // Nilai Pertanggungan
       jenisPajak: data.jenisPajak,
-      nilaiTanpaPPN,
+      nilaiTanpaPPN: nilaiSebelumPPN, // Nilai Sebelum PPN
       nilaiPPN,
       keterangan: data.keterangan,
       jenisPengadaan: data.jenisPengadaan,

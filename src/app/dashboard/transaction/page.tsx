@@ -60,12 +60,21 @@ const JENIS_PENGADAAN = [
   { value: 'Nopes', label: 'Nopes' }, { value: 'SPPD', label: 'SPPD' }, { value: 'Lainnya', label: 'Lainnya' },
 ]
 
-function calculatePPN(nilaiKwitansi: number, jenisPajak: string) {
-  let nilaiTanpaPPN = nilaiKwitansi, nilaiPPN = 0
-  if (jenisPajak === 'PPN11') { nilaiTanpaPPN = nilaiKwitansi / 1.11; nilaiPPN = nilaiKwitansi - nilaiTanpaPPN }
-  else if (jenisPajak === 'PPNJasa2') { nilaiPPN = nilaiKwitansi * 0.02; nilaiTanpaPPN = nilaiKwitansi - nilaiPPN }
-  else if (jenisPajak === 'PPNInklaring1.1') { nilaiPPN = nilaiKwitansi * 0.011; nilaiTanpaPPN = nilaiKwitansi - nilaiPPN }
-  return { nilaiTanpaPPN, nilaiPPN }
+function calculatePPN(nilaiSebelumPPN: number, jenisPajak: string) {
+  let nilaiPertanggungan = nilaiSebelumPPN, nilaiPPN = 0
+  if (jenisPajak === 'PPN11') { 
+    nilaiPPN = nilaiSebelumPPN * 0.11
+    nilaiPertanggungan = nilaiSebelumPPN + nilaiPPN 
+  }
+  else if (jenisPajak === 'PPNJasa2') { 
+    nilaiPPN = nilaiSebelumPPN * 0.02
+    nilaiPertanggungan = nilaiSebelumPPN + nilaiPPN 
+  }
+  else if (jenisPajak === 'PPNInklaring1.1') { 
+    nilaiPPN = nilaiSebelumPPN * 0.011
+    nilaiPertanggungan = nilaiSebelumPPN + nilaiPPN 
+  }
+  return { nilaiPertanggungan, nilaiPPN, nilaiSebelumPPN }
 }
 
 function StatusBadge({ status }: { status: string }) {
@@ -211,7 +220,7 @@ export default function TransactionPage() {
     setEditGl(t.glAccountId); setEditQuarter(t.quarter.toString()); setEditRegional(t.regionalCode)
     setEditKegiatan(t.kegiatan); setEditRegionalPengguna(t.regionalPengguna)
     setEditTanggalKwitansi(t.tanggalKwitansi ? new Date(t.tanggalKwitansi) : undefined)
-    setEditNilaiKwitansi(t.nilaiKwitansi); setEditJenisPajak(t.jenisPajak || 'TanpaPPN')
+    setEditNilaiKwitansi(t.nilaiTanpaPPN); setEditJenisPajak(t.jenisPajak || 'TanpaPPN')
     setEditKeterangan(t.keterangan || ''); setEditJenisPengadaan(t.jenisPengadaan || '')
     setEditVendorId(t.vendorId || ''); setEditNoTiketMydx(t.noTiketMydx || '')
     setEditTglSerahFinance(t.tglSerahFinance ? new Date(t.tglSerahFinance) : undefined)
@@ -706,7 +715,7 @@ export default function TransactionPage() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="space-y-2"><Label>Regional Pengguna</Label><Input value={regionalPengguna} onChange={e => setRegionalPengguna(e.target.value)} placeholder="Regional pengguna" required /></div>
                   <div className="space-y-2"><Label>Tanggal Kwitansi</Label><DatePicker date={tanggalKwitansi} onSelect={setTanggalKwitansi} placeholder="Pilih tanggal" /></div>
-                  <div className="space-y-2"><Label>Nilai Kwitansi</Label><CurrencyInput value={nilaiKwitansi} onChange={setNilaiKwitansi} /></div>
+                  <div className="space-y-2"><Label>Nilai Sebelum PPN</Label><CurrencyInput value={nilaiKwitansi} onChange={setNilaiKwitansi} /></div>
                 </div>
                 <Button type="submit" disabled={isSubmitDisabled || createTransaction.isPending}>
                   {createTransaction.isPending ? 'Menyimpan...' : 'Simpan'}
@@ -853,12 +862,12 @@ export default function TransactionPage() {
                 <div className="space-y-1.5"><Label className="text-sm text-muted-foreground">Kegiatan</Label><Input value={viewingTransaction.kegiatan} disabled className="bg-muted/50 font-medium" /></div>
                 <div className="grid grid-cols-3 gap-4">
                   <div className="space-y-1.5"><Label className="text-sm text-muted-foreground">Tanggal Kwitansi</Label><Input value={viewingTransaction.tanggalKwitansi ? format(new Date(viewingTransaction.tanggalKwitansi), 'dd MMMM yyyy', { locale: idLocale }) : '-'} disabled className="bg-muted/50 font-medium" /></div>
-                  <div className="space-y-1.5"><Label className="text-sm text-muted-foreground">Nilai Kwitansi</Label><div className="flex"><span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-input bg-muted text-muted-foreground text-sm">Rp</span><Input value={viewingTransaction.nilaiKwitansi.toLocaleString('id-ID')} disabled className="bg-muted/50 font-medium rounded-l-none" /></div></div>
+                  <div className="space-y-1.5"><Label className="text-sm text-muted-foreground">Nilai Sebelum PPN</Label><div className="flex"><span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-input bg-muted text-muted-foreground text-sm">Rp</span><Input value={viewingTransaction.nilaiTanpaPPN.toLocaleString('id-ID', { maximumFractionDigits: 0 })} disabled className="bg-muted/50 font-medium rounded-l-none" /></div></div>
                   <div className="space-y-1.5"><Label className="text-sm text-muted-foreground">Jenis Pajak</Label><Input value={JENIS_PAJAK.find(p => p.value === viewingTransaction.jenisPajak)?.label || 'Tanpa PPN'} disabled className="bg-muted/50 font-medium" /></div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1.5"><Label className="text-sm text-muted-foreground">{viewingTransaction.jenisPajak === 'TanpaPPN' ? 'Nilai Non PPN' : 'Nilai Tanpa PPN'}</Label><div className="flex"><span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-input bg-muted text-muted-foreground text-sm">Rp</span><Input value={viewingTransaction.nilaiTanpaPPN.toLocaleString('id-ID', { maximumFractionDigits: 0 })} disabled className="bg-muted/50 font-medium rounded-l-none" /></div></div>
-                  <div className="space-y-1.5"><Label className="text-sm text-muted-foreground">{viewingTransaction.jenisPajak === 'TanpaPPN' ? 'Nilai Non PPN' : viewingTransaction.jenisPajak === 'PPN11' ? 'Nilai PPN 11%' : viewingTransaction.jenisPajak === 'PPNJasa2' ? 'Nilai PPH Jasa 2%' : viewingTransaction.jenisPajak === 'PPNInklaring1.1' ? 'Nilai Inklaring 1.1%' : 'Nilai PPN'}</Label><div className="flex"><span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-input bg-muted text-muted-foreground text-sm">Rp</span><Input value={viewingTransaction.nilaiPPN.toLocaleString('id-ID', { maximumFractionDigits: 0 })} disabled className="bg-muted/50 font-medium rounded-l-none" /></div></div>
+                  <div className="space-y-1.5"><Label className="text-sm text-muted-foreground">Nilai Pertanggungan</Label><div className="flex"><span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-input bg-muted text-muted-foreground text-sm">Rp</span><Input value={viewingTransaction.nilaiKwitansi.toLocaleString('id-ID', { maximumFractionDigits: 0 })} disabled className="bg-muted/50 font-medium rounded-l-none" /></div></div>
+                  <div className="space-y-1.5"><Label className="text-sm text-muted-foreground">{viewingTransaction.jenisPajak === 'TanpaPPN' ? 'Nilai PPN' : viewingTransaction.jenisPajak === 'PPN11' ? 'Nilai PPN 11%' : viewingTransaction.jenisPajak === 'PPNJasa2' ? 'Nilai PPH Jasa 2%' : viewingTransaction.jenisPajak === 'PPNInklaring1.1' ? 'Nilai Inklaring 1.1%' : 'Nilai PPN'}</Label><div className="flex"><span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-input bg-muted text-muted-foreground text-sm">Rp</span><Input value={viewingTransaction.nilaiPPN.toLocaleString('id-ID', { maximumFractionDigits: 0 })} disabled className="bg-muted/50 font-medium rounded-l-none" /></div></div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1.5"><Label className="text-sm text-muted-foreground">Jenis Pengadaan</Label><Input value={JENIS_PENGADAAN.find(p => p.value === viewingTransaction.jenisPengadaan)?.label || '-'} disabled className="bg-muted/50 font-medium" /></div>
@@ -945,12 +954,12 @@ export default function TransactionPage() {
                 <div className="space-y-1.5"><Label className="text-sm text-muted-foreground">Kegiatan</Label><Input value={editKegiatan} onChange={e => setEditKegiatan(e.target.value)} /></div>
                 <div className="grid grid-cols-3 gap-4">
                   <div className="space-y-1.5"><Label className="text-sm text-muted-foreground">Tanggal Kwitansi</Label><DatePicker date={editTanggalKwitansi} onSelect={setEditTanggalKwitansi} /></div>
-                  <div className="space-y-1.5"><Label className="text-sm text-muted-foreground">Nilai Kwitansi</Label><CurrencyInput value={editNilaiKwitansi} onChange={setEditNilaiKwitansi} /></div>
+                  <div className="space-y-1.5"><Label className="text-sm text-muted-foreground">Nilai Sebelum PPN</Label><CurrencyInput value={editNilaiKwitansi} onChange={setEditNilaiKwitansi} /></div>
                   <div className="space-y-1.5"><Label className="text-sm text-muted-foreground">Jenis Pajak</Label><Select value={editJenisPajak} onValueChange={setEditJenisPajak}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{JENIS_PAJAK.map(p => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}</SelectContent></Select></div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1.5"><Label className="text-sm text-muted-foreground">{editJenisPajak === 'TanpaPPN' ? 'Nilai Non PPN' : 'Nilai Tanpa PPN'}</Label><div className="flex"><span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-input bg-muted text-muted-foreground text-sm">Rp</span><Input value={editPpnCalc.nilaiTanpaPPN.toLocaleString('id-ID', { maximumFractionDigits: 0 })} disabled className="bg-muted/50 font-medium rounded-l-none" /></div></div>
-                  <div className="space-y-1.5"><Label className="text-sm text-muted-foreground">{editJenisPajak === 'TanpaPPN' ? 'Nilai Non PPN' : editJenisPajak === 'PPN11' ? 'Nilai PPN 11%' : editJenisPajak === 'PPNJasa2' ? 'Nilai PPH Jasa 2%' : editJenisPajak === 'PPNInklaring1.1' ? 'Nilai Inklaring 1.1%' : 'Nilai PPN'}</Label><div className="flex"><span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-input bg-muted text-muted-foreground text-sm">Rp</span><Input value={editPpnCalc.nilaiPPN.toLocaleString('id-ID', { maximumFractionDigits: 0 })} disabled className="bg-muted/50 font-medium rounded-l-none" /></div></div>
+                  <div className="space-y-1.5"><Label className="text-sm text-muted-foreground">Nilai Pertanggungan</Label><div className="flex"><span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-input bg-muted text-muted-foreground text-sm">Rp</span><Input value={editPpnCalc.nilaiPertanggungan.toLocaleString('id-ID', { maximumFractionDigits: 0 })} disabled className="bg-muted/50 font-medium rounded-l-none" /></div></div>
+                  <div className="space-y-1.5"><Label className="text-sm text-muted-foreground">{editJenisPajak === 'TanpaPPN' ? 'Nilai PPN' : editJenisPajak === 'PPN11' ? 'Nilai PPN 11%' : editJenisPajak === 'PPNJasa2' ? 'Nilai PPH Jasa 2%' : editJenisPajak === 'PPNInklaring1.1' ? 'Nilai Inklaring 1.1%' : 'Nilai PPN'}</Label><div className="flex"><span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-input bg-muted text-muted-foreground text-sm">Rp</span><Input value={editPpnCalc.nilaiPPN.toLocaleString('id-ID', { maximumFractionDigits: 0 })} disabled className="bg-muted/50 font-medium rounded-l-none" /></div></div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1.5"><Label className="text-sm text-muted-foreground">Jenis Pengadaan</Label><Select value={editJenisPengadaan} onValueChange={setEditJenisPengadaan}><SelectTrigger><SelectValue placeholder="Pilih jenis" /></SelectTrigger><SelectContent>{JENIS_PENGADAAN.map(p => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}</SelectContent></Select></div>
