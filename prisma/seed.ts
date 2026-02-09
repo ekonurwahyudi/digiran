@@ -2,7 +2,13 @@ import { PrismaClient } from '@prisma/client'
 import { PrismaPg } from '@prisma/adapter-pg'
 import { Pool } from 'pg'
 import bcrypt from 'bcryptjs'
-import 'dotenv/config'
+
+// Only load dotenv in development
+try {
+  require('dotenv/config')
+} catch (e) {
+  // dotenv not available in production, use environment variables directly
+}
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL })
 const adapter = new PrismaPg(pool)
