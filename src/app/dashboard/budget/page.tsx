@@ -109,9 +109,42 @@ export default function BudgetPage() {
     return result
   }
 
-  // Auto calculate totalAmount
-  useEffect(() => { setTotalAmount(Math.floor(rkap * releasePercent / 100)) }, [rkap, releasePercent])
-  useEffect(() => { setEditTotal(Math.floor(editRkap * editReleasePercent / 100)) }, [editRkap, editReleasePercent])
+  // Auto calculate totalAmount from rkap and releasePercent
+  const handleRkapChange = (value: number) => {
+    setRkap(value)
+    setTotalAmount(Math.floor(value * releasePercent / 100))
+  }
+
+  const handleReleasePercentChange = (value: number) => {
+    setReleasePercent(value)
+    setTotalAmount(Math.floor(rkap * value / 100))
+  }
+
+  const handleTotalAmountChange = (value: number) => {
+    setTotalAmount(value)
+    if (rkap > 0) {
+      setReleasePercent(parseFloat(((value / rkap) * 100).toFixed(2)))
+    }
+  }
+
+  // Edit form handlers
+  const handleEditRkapChange = (value: number) => {
+    setEditRkap(value)
+    setEditTotal(Math.floor(value * editReleasePercent / 100))
+  }
+
+  const handleEditReleasePercentChange = (value: number) => {
+    setEditReleasePercent(value)
+    setEditTotal(Math.floor(editRkap * value / 100))
+  }
+
+  const handleEditTotalAmountChange = (value: number) => {
+    setEditTotal(value)
+    if (editRkap > 0) {
+      setEditReleasePercent(parseFloat(((value / editRkap) * 100).toFixed(2)))
+    }
+  }
+
   useEffect(() => { if (inputMode === 'month') setQuarters(calcQuartersFromMonths(months)) }, [months, inputMode])
   useEffect(() => { if (editInputMode === 'month') setEditQuarters(calcQuartersFromMonths(editMonths)) }, [editMonths, editInputMode])
 
@@ -413,17 +446,17 @@ export default function BudgetPage() {
                 <SelectContent>{glAccounts.map((gl: GlAccount) => <SelectItem key={gl.id} value={gl.id}>{gl.code} - {gl.description}</SelectItem>)}</SelectContent>
               </Select>
             </div>
-            <div className="flex-1 space-y-2"><Label>Nilai RKAP</Label><CurrencyInput value={rkap} onChange={setRkap} /></div>
+            <div className="flex-1 space-y-2"><Label>Nilai RKAP</Label><CurrencyInput value={rkap} onChange={handleRkapChange} /></div>
             <div className="space-y-2">
               <Label>Release</Label>
               <div className="flex h-10 w-20 rounded-md border border-input bg-background text-sm ring-offset-background overflow-hidden">
-                <input type="number" min={0} max={100} value={releasePercent} onChange={(e) => setReleasePercent(parseFloat(e.target.value) || 0)} className="w-12 px-2 py-2 text-right bg-transparent outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
+                <input type="number" min={0} max={100} value={releasePercent} onChange={(e) => handleReleasePercentChange(parseFloat(e.target.value) || 0)} className="w-12 px-2 py-2 text-right bg-transparent outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
                 <span className="flex items-center justify-center w-8 bg-muted text-muted-foreground border-l text-sm">%</span>
               </div>
             </div>
             <div className="flex-1 space-y-2">
               <Label>Anggaran Release</Label>
-              <CurrencyInput value={totalAmount} onChange={() => {}} disabled className="bg-muted/50" />
+              <CurrencyInput value={totalAmount} onChange={handleTotalAmountChange} />
             </div>
           </div>
 
@@ -563,16 +596,16 @@ export default function BudgetPage() {
               <Label className="text-sm text-muted-foreground">GL Account</Label>
               <Input value={editingBudget ? `${editingBudget.glAccount.code} - ${editingBudget.glAccount.description}` : ''} disabled className="bg-muted/50 font-medium" />
             </div>
-            <div className="space-y-1.5"><Label className="text-sm text-muted-foreground">Nilai RKAP</Label><CurrencyInput value={editRkap} onChange={setEditRkap} /></div>
+            <div className="space-y-1.5"><Label className="text-sm text-muted-foreground">Nilai RKAP</Label><CurrencyInput value={editRkap} onChange={handleEditRkapChange} /></div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <Label className="text-sm text-muted-foreground">Release</Label>
                 <div className="flex h-10 w-full rounded-md border border-input bg-background text-sm ring-offset-background overflow-hidden">
-                  <input type="number" min={0} max={100} value={editReleasePercent} onChange={(e) => setEditReleasePercent(parseFloat(e.target.value) || 0)} className="flex-1 px-3 py-2 text-right bg-transparent outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
+                  <input type="number" min={0} max={100} value={editReleasePercent} onChange={(e) => handleEditReleasePercentChange(parseFloat(e.target.value) || 0)} className="flex-1 px-3 py-2 text-right bg-transparent outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
                   <span className="flex items-center justify-center px-3 bg-muted text-muted-foreground border-l">%</span>
                 </div>
               </div>
-              <div className="space-y-1.5"><Label className="text-sm text-muted-foreground">Anggaran Release</Label><CurrencyInput value={editTotal} onChange={() => {}} disabled className="bg-muted/50" /></div>
+              <div className="space-y-1.5"><Label className="text-sm text-muted-foreground">Anggaran Release</Label><CurrencyInput value={editTotal} onChange={handleEditTotalAmountChange} /></div>
             </div>
             <div className="flex items-center gap-2 pt-2">
               <Label className="text-sm text-muted-foreground">Input berdasarkan:</Label>
