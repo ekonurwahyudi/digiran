@@ -10,11 +10,14 @@ RUN npm ci
 FROM node:20-alpine AS builder
 WORKDIR /app
 
+# Accept DATABASE_URL as build arg for prisma generate
+ARG DATABASE_URL
+ENV DATABASE_URL=${DATABASE_URL:-postgresql://dummy:dummy@localhost:5432/dummy}
+
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Generate Prisma Client (needs dummy DATABASE_URL for generation)
-ENV DATABASE_URL="postgresql://dummy:dummy@localhost:5432/dummy"
+# Generate Prisma Client
 RUN npx prisma generate
 
 # Build the application
@@ -34,6 +37,7 @@ RUN adduser --system --uid 1001 nextjs
 # Copy necessary files
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/prisma.config.ts ./prisma.config.ts
 
 # Set correct permissions for prerender cache
 RUN mkdir .next
@@ -54,5 +58,5 @@ EXPOSE 8081
 ENV PORT=8081
 ENV HOSTNAME="0.0.0.0"
 
-# Run migrations and start the app
-CMD ["sh", "-c", "npx prisma db push || echo 'Prisma push skipped'; node server.js"]
+# Start the app (skip prisma push, do it manually or via migration)
+CMD ["node", "server.js"]
