@@ -73,10 +73,20 @@ export default function DashboardPage() {
   const totalBudget = budgets.reduce((sum, b) => sum + b.totalAmount, 0)
   const totalUsed = transactions.reduce((sum, t) => sum + t.nilaiKwitansi, 0)
 
+  // Helper to get quarter from tanggalKwitansi
+  const getQuarterFromDate = (dateStr: string | null): number | null => {
+    if (!dateStr) return null
+    const date = new Date(dateStr)
+    const month = date.getMonth() // 0-11
+    return Math.ceil((month + 1) / 3) // 1-4
+  }
+
   const getQuarterData = (quarter: number) => {
     const qKey = `q${quarter}Amount` as 'q1Amount' | 'q2Amount' | 'q3Amount' | 'q4Amount'
     const qBudget = budgets.reduce((sum, b) => sum + b[qKey], 0)
-    const qUsed = transactions.filter(t => t.quarter === quarter).reduce((sum, t) => sum + t.nilaiKwitansi, 0)
+    const qUsed = transactions
+      .filter(t => getQuarterFromDate(t.tanggalKwitansi) === quarter)
+      .reduce((sum, t) => sum + t.nilaiKwitansi, 0)
     return { budget: qBudget, used: qUsed, remaining: qBudget - qUsed }
   }
 
@@ -84,7 +94,7 @@ export default function DashboardPage() {
     const qKey = `q${quarter}Amount` as 'q1Amount' | 'q2Amount' | 'q3Amount' | 'q4Amount'
     const qBudget = budget[qKey]
     const qUsed = transactions
-      .filter(t => t.glAccountId === budget.glAccountId && t.quarter === quarter)
+      .filter(t => t.glAccountId === budget.glAccountId && getQuarterFromDate(t.tanggalKwitansi) === quarter)
       .reduce((sum, t) => sum + t.nilaiKwitansi, 0)
     return { budget: qBudget, used: qUsed, remaining: qBudget - qUsed }
   }
@@ -103,22 +113,9 @@ export default function DashboardPage() {
     const monthUsed = transactions
       .filter(t => {
         if (t.glAccountId !== budget.glAccountId) return false
-        
-        // Try to get month from tanggalKwitansi first, then tglSerahFinance
-        const txDateStr = t.tanggalKwitansi || t.tglSerahFinance
-        if (txDateStr) {
-          const txDate = new Date(txDateStr)
-          return txDate.getMonth() === month
-        }
-        
-        // If no date available, check if transaction is in the same quarter
-        // and distribute to first month of quarter
-        if (t.quarter === quarter) {
-          const quarterStartMonth = (quarter - 1) * 3
-          return month === quarterStartMonth
-        }
-        
-        return false
+        if (!t.tanggalKwitansi) return false
+        const txDate = new Date(t.tanggalKwitansi)
+        return txDate.getMonth() === month
       })
       .reduce((sum, t) => sum + t.nilaiKwitansi, 0)
     
@@ -139,8 +136,8 @@ export default function DashboardPage() {
       : transactions.filter(t => t.glAccountId === selectedGlAccount)
 
     filteredTransactions.forEach(t => {
-      if (t.tglSerahFinance) {
-        const date = new Date(t.tglSerahFinance)
+      if (t.tanggalKwitansi) {
+        const date = new Date(t.tanggalKwitansi)
         const month = date.getMonth()
         monthlyData[month].jumlahPencatatan += 1
         monthlyData[month].totalNilai += t.nilaiKwitansi
