@@ -571,5 +571,4 @@ ALTER TABLE ONLY public."Transaction"
 -- PostgreSQL database dump complete
 --
 
-\unrestrict 2KnyZDbWhNk8Nma2epYyIEKp7IjkY0PV6Fb1cNEnnqF7Vq3cLrMb8sM7hJp7AbI
 

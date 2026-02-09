@@ -430,5 +430,4 @@ cml2jzibi00001cu5o5sqdbw8	admin@digiran.com	$2a$10$hm/Sra0L.BWIO8cO8y6rv.1Olqqt5
 -- PostgreSQL database dump complete
 --
 
-\unrestrict M7gdlcVam7dCXUeT332etfCznqrQUBAbhNA8CjZcvNROBWvQdBqJyapnvlW6kNc
 
