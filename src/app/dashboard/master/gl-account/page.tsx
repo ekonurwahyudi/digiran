@@ -67,7 +67,7 @@ export default function GlAccountPage() {
     try {
       await deleteGlAccount.mutateAsync(deleteId)
       setDeleteId(null)
-      showMessage('GL Account berhasil dinonaktifkan!')
+      showMessage('GL Account berhasil dihapus!')
     } catch { showMessage('Gagal menghapus GL Account') }
   }
 
@@ -81,7 +81,7 @@ export default function GlAccountPage() {
     { id: 'actions', header: 'Aksi', cell: ({ row }) => (
       <div className="flex gap-1">
         <Button variant="outline" size="sm" onClick={() => openDialog(row.original)}><Pencil className="h-4 w-4" /></Button>
-        <Button variant="outline" size="sm" onClick={() => setDeleteId(row.original.id)} disabled={!row.original.isActive}><Trash2 className="h-4 w-4 text-red-500" /></Button>
+        <Button variant="outline" size="sm" onClick={() => setDeleteId(row.original.id)}><Trash2 className="h-4 w-4 text-red-500" /></Button>
       </div>
     )},
   ]
@@ -118,10 +118,10 @@ export default function GlAccountPage() {
       </Dialog>
       <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
         <AlertDialogContent>
-          <AlertDialogHeader><AlertDialogTitle>Nonaktifkan GL Account?</AlertDialogTitle><AlertDialogDescription>GL Account akan dinonaktifkan dan tidak akan muncul di pilihan input.</AlertDialogDescription></AlertDialogHeader>
+          <AlertDialogHeader><AlertDialogTitle>Hapus GL Account?</AlertDialogTitle><AlertDialogDescription>GL Account akan dihapus permanen dari database.</AlertDialogDescription></AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Batal</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} disabled={deleteGlAccount.isPending} className="bg-red-500 hover:bg-red-600">{deleteGlAccount.isPending ? 'Menghapus...' : 'Nonaktifkan'}</AlertDialogAction>
+            <AlertDialogAction onClick={handleDelete} disabled={deleteGlAccount.isPending} className="bg-red-500 hover:bg-red-600">{deleteGlAccount.isPending ? 'Menghapus...' : 'Hapus'}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

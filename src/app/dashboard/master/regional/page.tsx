@@ -49,7 +49,7 @@ export default function RegionalPage() {
 
   const handleDelete = async () => {
     if (!deleteId) return
-    try { await deleteRegional.mutateAsync(deleteId); setDeleteId(null); showMessage('Regional berhasil dinonaktifkan!') }
+    try { await deleteRegional.mutateAsync(deleteId); setDeleteId(null); showMessage('Regional berhasil dihapus!') }
     catch { showMessage('Gagal menghapus Regional') }
   }
 
@@ -60,7 +60,7 @@ export default function RegionalPage() {
     { id: 'actions', header: 'Aksi', cell: ({ row }) => (
       <div className="flex gap-1">
         <Button variant="outline" size="sm" onClick={() => openDialog(row.original)}><Pencil className="h-4 w-4" /></Button>
-        <Button variant="outline" size="sm" onClick={() => setDeleteId(row.original.id)} disabled={!row.original.isActive}><Trash2 className="h-4 w-4 text-red-500" /></Button>
+        <Button variant="outline" size="sm" onClick={() => setDeleteId(row.original.id)}><Trash2 className="h-4 w-4 text-red-500" /></Button>
       </div>
     )},
   ]
@@ -94,10 +94,10 @@ export default function RegionalPage() {
       </Dialog>
       <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
         <AlertDialogContent>
-          <AlertDialogHeader><AlertDialogTitle>Nonaktifkan Regional?</AlertDialogTitle><AlertDialogDescription>Regional akan dinonaktifkan dan tidak akan muncul di pilihan input.</AlertDialogDescription></AlertDialogHeader>
+          <AlertDialogHeader><AlertDialogTitle>Hapus Regional?</AlertDialogTitle><AlertDialogDescription>Regional akan dihapus permanen dari database.</AlertDialogDescription></AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Batal</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} disabled={deleteRegional.isPending} className="bg-red-500 hover:bg-red-600">{deleteRegional.isPending ? 'Menghapus...' : 'Nonaktifkan'}</AlertDialogAction>
+            <AlertDialogAction onClick={handleDelete} disabled={deleteRegional.isPending} className="bg-red-500 hover:bg-red-600">{deleteRegional.isPending ? 'Menghapus...' : 'Hapus'}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

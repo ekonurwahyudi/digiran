@@ -87,7 +87,7 @@ export default function VendorPage() {
     try {
       await deleteVendor.mutateAsync(deleteId)
       setDeleteId(null)
-      setMessage('Vendor berhasil dinonaktifkan!')
+      setMessage('Vendor berhasil dihapus!')
     } catch (error) {
       setMessage('Terjadi kesalahan!')
     }
@@ -117,7 +117,7 @@ export default function VendorPage() {
           <Button variant="outline" size="sm" onClick={() => openDialog(row.original)}>
             <Pencil className="h-4 w-4" />
           </Button>
-          <Button variant="outline" size="sm" onClick={() => setDeleteId(row.original.id)} disabled={!row.original.isActive}>
+          <Button variant="outline" size="sm" onClick={() => setDeleteId(row.original.id)}>
             <Trash2 className="h-4 w-4 text-red-500" />
           </Button>
         </div>
@@ -211,15 +211,15 @@ export default function VendorPage() {
       <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Nonaktifkan Vendor?</AlertDialogTitle>
+            <AlertDialogTitle>Hapus Vendor?</AlertDialogTitle>
             <AlertDialogDescription>
-              Vendor akan dinonaktifkan dan tidak akan muncul di pilihan input.
+              Vendor akan dihapus permanen dari database.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Batal</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete} className="bg-red-500 hover:bg-red-600">
-              {deleteVendor.isPending ? 'Memproses...' : 'Nonaktifkan'}
+              {deleteVendor.isPending ? 'Menghapus...' : 'Hapus'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

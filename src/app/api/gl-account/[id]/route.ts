@@ -20,10 +20,8 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
 }
 
 export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
-  // Soft delete - set isActive to false
-  await prisma.glAccount.update({
+  await prisma.glAccount.delete({
     where: { id: params.id },
-    data: { isActive: false },
   })
 
   return NextResponse.json({ success: true })
