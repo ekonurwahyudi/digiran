@@ -65,13 +65,20 @@ export default function DashboardPage() {
   // TanStack Query hooks
   const { data: glAccounts = [], isLoading: loadingGl } = useDashboardGlAccounts()
   const { data: budgets = [], isLoading: loadingBudgets } = useDashboardBudgets(year)
-  const { data: transactions = [], isLoading: loadingTransactions } = useDashboardTransactions(year)
+  const { data: rawTransactions = [], isLoading: loadingTransactions } = useDashboardTransactions(year)
+
+  // Filter transactions by year from tanggalKwitansi
+  const transactions = rawTransactions.filter((t: Transaction) => {
+    if (!t.tanggalKwitansi) return false
+    const txYear = new Date(t.tanggalKwitansi).getFullYear()
+    return txYear === year
+  })
 
   const isLoading = loadingGl || loadingBudgets || loadingTransactions
   const glAccountsCount = glAccounts.length
 
   const totalBudget = budgets.reduce((sum, b) => sum + b.totalAmount, 0)
-  const totalUsed = transactions.reduce((sum, t) => sum + t.nilaiKwitansi, 0)
+  const totalUsed = transactions.reduce((sum: number, t: Transaction) => sum + t.nilaiKwitansi, 0)
 
   // Helper to get quarter from tanggalKwitansi
   const getQuarterFromDate = (dateStr: string | null): number | null => {
