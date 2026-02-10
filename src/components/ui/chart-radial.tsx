@@ -43,10 +43,10 @@ export function ChartRadial({ quarter, percentage, anggaran, terpakai, sisa }: C
 
   return (
     <Card className="flex flex-col border">
-      <CardHeader className="items-center pb-0">
-        <CardTitle className="text-sm font-medium">Kuartal {quarter}</CardTitle>
+      <CardHeader className="items-center pb-0 p-2 md:p-6 md:pb-0">
+        <CardTitle className="text-xs md:text-sm font-medium">Kuartal {quarter}</CardTitle>
       </CardHeader>
-      <CardContent className="flex-1 pb-4">
+      <CardContent className="flex-1 pb-2 md:pb-4 p-2 md:p-6 pt-0 md:pt-0">
         <ChartContainer
           config={chartConfig}
           className="mx-auto aspect-square max-h-[200px]"
@@ -80,14 +80,14 @@ export function ChartRadial({ quarter, percentage, anggaran, terpakai, sisa }: C
                         <tspan
                           x={viewBox.cx}
                           y={viewBox.cy}
-                          className="fill-foreground text-3xl font-bold"
+                          className="fill-foreground text-xl md:text-3xl font-bold"
                         >
                           {percentage.toFixed(1)}%
                         </tspan>
                         <tspan
                           x={viewBox.cx}
-                          y={(viewBox.cy || 0) + 20}
-                          className="fill-muted-foreground text-xs"
+                          y={(viewBox.cy || 0) + 16}
+                          className="fill-muted-foreground text-[8px] md:text-xs"
                         >
                           Outlook
                         </tspan>
@@ -99,18 +99,18 @@ export function ChartRadial({ quarter, percentage, anggaran, terpakai, sisa }: C
             </PolarRadiusAxis>
           </RadialBarChart>
         </ChartContainer>
-        <div className="mt-2 space-y-1">
-          <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Anggaran (Rp)</span>
-            <span className="text-blue-600 font-medium">{anggaran.toLocaleString('id-ID')}</span>
+        <div className="mt-1 md:mt-2 space-y-0.5 md:space-y-1">
+          <div className="flex justify-between text-[12px] md:text-sm gap-1">
+            <span className="text-muted-foreground shrink-0">Anggaran</span>
+            <span className="text-blue-600 font-medium truncate">{anggaran.toLocaleString('id-ID')}</span>
           </div>
-          <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Terpakai (Rp)</span>
-            <span className="text-red-600 font-medium">{terpakai.toLocaleString('id-ID')}</span>
+          <div className="flex justify-between text-[12px] md:text-sm gap-1">
+            <span className="text-muted-foreground shrink-0">Terpakai</span>
+            <span className="text-red-600 font-medium truncate">{terpakai.toLocaleString('id-ID')}</span>
           </div>
-          <div className="flex justify-between text-sm border-t pt-1">
-            <span className="font-medium">Sisa (Rp)</span>
-            <span className={`font-bold ${sisa >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+          <div className="flex justify-between text-[12px] md:text-sm border-t pt-0.5 md:pt-1 gap-1">
+            <span className="font-medium shrink-0">Sisa</span>
+            <span className={`font-bold truncate ${sisa >= 0 ? 'text-green-600' : 'text-red-600'}`}>
               {sisa.toLocaleString('id-ID')}
             </span>
           </div>
