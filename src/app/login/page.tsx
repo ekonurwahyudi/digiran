@@ -37,9 +37,9 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200">
-      <Card className="w-[400px] shadow-lg">
-        <CardHeader className="text-center">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200 p-4">
+      <Card className="w-full max-w-[400px] shadow-lg">
+        <CardHeader className="text-center p-4 md:p-6">
           <div className="flex justify-center mb-2">
             <Image 
               src="/logo.png" 
@@ -47,20 +47,20 @@ export default function LoginPage() {
               width={180} 
               height={60} 
               priority
-              className="h-12 w-auto"
+              className="h-10 md:h-12 w-auto"
             />
           </div>
-          <CardDescription>Masuk ke sistem untuk melanjutkan</CardDescription>
+          <CardDescription className="text-xs md:text-sm">Masuk ke sistem untuk melanjutkan</CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-4 md:p-6 pt-0 md:pt-0">
           <form onSubmit={handleSubmit} className="space-y-4">
             {error && (
-              <div className="bg-destructive/15 text-destructive text-sm p-3 rounded-md">
+              <div className="bg-destructive/15 text-destructive text-xs md:text-sm p-2 md:p-3 rounded-md">
                 {error}
               </div>
             )}
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email" className="text-xs md:text-sm">Email</Label>
               <Input
                 id="email"
                 type="email"
@@ -71,7 +71,7 @@ export default function LoginPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password" className="text-xs md:text-sm">Password</Label>
               <div className="relative">
                 <Input
                   id="password"

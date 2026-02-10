@@ -658,9 +658,9 @@ export default function TransactionPage() {
 
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div><h1 className="text-2xl font-bold">Input Pencatatan Anggaran</h1><p className="text-muted-foreground text-sm">Catat penggunaan anggaran per kegiatan</p></div>
+    <div className="space-y-4 md:space-y-6">
+      <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3">
+        <div><h1 className="text-xl md:text-2xl font-bold">Input Pencatatan Anggaran</h1><p className="text-muted-foreground text-xs md:text-sm">Catat penggunaan anggaran per kegiatan</p></div>
         <div className="flex items-center gap-2">
           <Label className="text-sm">Tahun:</Label>
           <Select value={year.toString()} onValueChange={(v) => setYear(parseInt(v))}>
@@ -670,101 +670,103 @@ export default function TransactionPage() {
         </div>
       </div>
 
-      {message && <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl flex items-center gap-2"><CheckCircle className="h-4 w-4" />{message}</div>}
+      {message && <div className="bg-green-50 border border-green-200 text-green-700 px-3 py-2 md:px-4 md:py-3 rounded-xl flex items-center gap-2 text-sm"><CheckCircle className="h-4 w-4" />{message}</div>}
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 md:gap-6">
         <div className="lg:col-span-3">
           <Card className="border">
-            <CardHeader>
-              <CardTitle>Form Pencatatan</CardTitle>
-              <CardDescription>Isi detail kegiatan dan nilai anggaran</CardDescription>
+            <CardHeader className="p-4 md:p-6">
+              <CardTitle className="text-base md:text-lg">Form Pencatatan</CardTitle>
+              <CardDescription className="text-xs md:text-sm">Isi detail kegiatan dan nilai anggaran</CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-4 md:p-6 pt-0 md:pt-0">
               <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="grid grid-cols-[1fr_100px_1fr_1fr] gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
                   <div className="space-y-2">
-                    <Label>GL Account</Label>
+                    <Label className="text-xs md:text-sm">GL Account</Label>
                     <Select value={selectedGl} onValueChange={setSelectedGl}>
                       <SelectTrigger><SelectValue placeholder="Pilih GL Account" /></SelectTrigger>
                       <SelectContent>{glAccounts.map((gl: GlAccount) => <SelectItem key={gl.id} value={gl.id}>{gl.code} - {gl.description}</SelectItem>)}</SelectContent>
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label>Kuartal</Label>
+                    <Label className="text-xs md:text-sm">Kuartal</Label>
                     <Select value={quarter} onValueChange={setQuarter}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>{[1,2,3,4].map(q => <SelectItem key={q} value={q.toString()}>Q{q}</SelectItem>)}</SelectContent>
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label>Alokasi Regional</Label>
+                    <Label className="text-xs md:text-sm">Alokasi Regional</Label>
                     <Select value={regional} onValueChange={setRegional}>
                       <SelectTrigger><SelectValue placeholder="Pilih Regional" /></SelectTrigger>
                       <SelectContent>{regionals.map((r: Regional) => <SelectItem key={r.id} value={r.code}>{r.name}</SelectItem>)}</SelectContent>
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label>Jenis Pengadaan</Label>
+                    <Label className="text-xs md:text-sm">Jenis Pengadaan</Label>
                     <Select value={jenisPengadaan} onValueChange={setJenisPengadaan}>
                       <SelectTrigger><SelectValue placeholder="Pilih jenis" /></SelectTrigger>
                       <SelectContent>{JENIS_PENGADAAN.map(p => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}</SelectContent>
                     </Select>
                   </div>
                 </div>
-                <div className="space-y-2"><Label>Kegiatan</Label><Input value={kegiatan} onChange={e => setKegiatan(e.target.value)} placeholder="Deskripsi kegiatan" required /></div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="space-y-2"><Label>Regional Pengguna</Label><Input value={regionalPengguna} onChange={e => setRegionalPengguna(e.target.value)} placeholder="Regional pengguna" required /></div>
-                  <div className="space-y-2"><Label>Tanggal Kwitansi</Label><DatePicker date={tanggalKwitansi} onSelect={setTanggalKwitansi} placeholder="Pilih tanggal" /></div>
-                  <div className="space-y-2"><Label>Nilai Sebelum PPN</Label><CurrencyInput value={nilaiKwitansi} onChange={setNilaiKwitansi} /></div>
+                <div className="space-y-2"><Label className="text-xs md:text-sm">Kegiatan</Label><Input value={kegiatan} onChange={e => setKegiatan(e.target.value)} placeholder="Deskripsi kegiatan" required /></div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
+                  <div className="space-y-2"><Label className="text-xs md:text-sm">Regional Pengguna</Label><Input value={regionalPengguna} onChange={e => setRegionalPengguna(e.target.value)} placeholder="Regional pengguna" required /></div>
+                  <div className="space-y-2"><Label className="text-xs md:text-sm">Tanggal Kwitansi</Label><DatePicker date={tanggalKwitansi} onSelect={setTanggalKwitansi} placeholder="Pilih tanggal" /></div>
+                  <div className="space-y-2"><Label className="text-xs md:text-sm">Nilai Sebelum PPN</Label><CurrencyInput value={nilaiKwitansi} onChange={setNilaiKwitansi} /></div>
                 </div>
-                <Button type="submit" disabled={isSubmitDisabled || createTransaction.isPending}>
+                <Button type="submit" disabled={isSubmitDisabled || createTransaction.isPending} size="sm">
                   {createTransaction.isPending ? 'Menyimpan...' : 'Simpan'}
                 </Button>
-                {remaining !== null && remaining !== undefined && remaining.remaining <= 0 && <p className="text-sm text-red-500 flex items-center gap-1"><AlertTriangle className="h-4 w-4" />Sisa anggaran 0</p>}
+                {remaining !== null && remaining !== undefined && remaining.remaining <= 0 && <p className="text-xs md:text-sm text-red-500 flex items-center gap-1"><AlertTriangle className="h-4 w-4" />Sisa anggaran 0</p>}
               </form>
             </CardContent>
           </Card>
         </div>
         <Card className="border">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2"><Wallet className="h-5 w-5" />Info Sisa Anggaran</CardTitle>
-            <CardDescription>{regionals.find((r: Regional) => r.code === regional)?.name || regional} - Q{quarter}</CardDescription>
+          <CardHeader className="p-4 md:p-6">
+            <CardTitle className="flex items-center gap-2 text-base md:text-lg"><Wallet className="h-4 w-4 md:h-5 md:w-5" />Info Sisa Anggaran</CardTitle>
+            <CardDescription className="text-xs md:text-sm">{regionals.find((r: Regional) => r.code === regional)?.name || regional} - Q{quarter}</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-4 md:p-6 pt-0 md:pt-0">
             {remaining ? (
-              <div className="space-y-4">
-                <div className="flex items-center justify-between"><span className="text-sm text-muted-foreground">Alokasi (Rp)</span><span className="text-lg font-semibold text-blue-600 flex items-center gap-1"><TrendingUp className="h-4 w-4" />{remaining.allocated.toLocaleString('id-ID')}</span></div>
-                <div className="flex items-center justify-between"><span className="text-sm text-muted-foreground">Terpakai (Rp)</span><span className="text-lg font-semibold text-red-600 flex items-center gap-1"><TrendingDown className="h-4 w-4" />{remaining.used.toLocaleString('id-ID')}</span></div>
-                <div className="border-t pt-4"><div className="flex items-center justify-between"><span className="text-sm font-medium">Sisa (Rp)</span><span className={`text-xl font-bold ${remaining.remaining >= 0 ? 'text-green-600' : 'text-red-600'}`}>{remaining.remaining.toLocaleString('id-ID')}</span></div></div>
+              <div className="space-y-3 md:space-y-4">
+                <div className="flex items-center justify-between"><span className="text-xs md:text-sm text-muted-foreground">Alokasi (Rp)</span><span className="text-sm md:text-lg font-semibold text-blue-600 flex items-center gap-1"><TrendingUp className="h-3 w-3 md:h-4 md:w-4" />{remaining.allocated.toLocaleString('id-ID')}</span></div>
+                <div className="flex items-center justify-between"><span className="text-xs md:text-sm text-muted-foreground">Terpakai (Rp)</span><span className="text-sm md:text-lg font-semibold text-red-600 flex items-center gap-1"><TrendingDown className="h-3 w-3 md:h-4 md:w-4" />{remaining.used.toLocaleString('id-ID')}</span></div>
+                <div className="border-t pt-3 md:pt-4"><div className="flex items-center justify-between"><span className="text-xs md:text-sm font-medium">Sisa (Rp)</span><span className={`text-lg md:text-xl font-bold ${remaining.remaining >= 0 ? 'text-green-600' : 'text-red-600'}`}>{remaining.remaining.toLocaleString('id-ID')}</span></div></div>
               </div>
-            ) : <p className="text-muted-foreground text-sm">Pilih GL Account untuk melihat sisa anggaran</p>}
+            ) : <p className="text-muted-foreground text-xs md:text-sm">Pilih GL Account untuk melihat sisa anggaran</p>}
           </CardContent>
         </Card>
       </div>
 
       {/* Transaction List with Tabs */}
       <Card className="border">
-        <CardHeader>
-          <CardTitle>Riwayat Pencatatan Anggaran Tahun {year}</CardTitle>
-          <CardDescription>Data transaksi dan pencatatan anggaran</CardDescription>
+        <CardHeader className="p-4 md:p-6">
+          <CardTitle className="text-base md:text-lg">Riwayat Pencatatan Anggaran Tahun {year}</CardTitle>
+          <CardDescription className="text-xs md:text-sm">Data transaksi dan pencatatan anggaran</CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-4 md:p-6 pt-0 md:pt-0">
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <div className="flex items-center justify-between mb-4">
-              <TabsList>
-                <TabsTrigger value="all">Semua ({transactions.length})</TabsTrigger>
-                <TabsTrigger value="Open">Open ({openCount})</TabsTrigger>
-                <TabsTrigger value="Proses">Proses ({prosesCount})</TabsTrigger>
-                <TabsTrigger value="Close">Selesai ({closeCount})</TabsTrigger>
-              </TabsList>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+              <div className="overflow-x-auto">
+                <TabsList className="w-max">
+                  <TabsTrigger value="all" className="text-xs md:text-sm">Semua ({transactions.length})</TabsTrigger>
+                  <TabsTrigger value="Open" className="text-xs md:text-sm">Open ({openCount})</TabsTrigger>
+                  <TabsTrigger value="Proses" className="text-xs md:text-sm">Proses ({prosesCount})</TabsTrigger>
+                  <TabsTrigger value="Close" className="text-xs md:text-sm">Selesai ({closeCount})</TabsTrigger>
+                </TabsList>
+              </div>
               
               <div className="flex items-center gap-2">
-                <Input placeholder="Cari kegiatan..." className="w-[250px] h-9" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
+                <Input placeholder="Cari kegiatan..." className="w-full sm:w-[200px] md:w-[250px] h-9 text-sm" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
                 
                 <Popover>
                   <PopoverTrigger asChild>
-                    <Button variant="outline" size="sm" className="gap-2 h-9">
-                      <Filter className="h-4 w-4" />Filter
+                    <Button variant="outline" size="sm" className="gap-2 h-9 flex-shrink-0">
+                      <Filter className="h-4 w-4" /><span className="hidden sm:inline">Filter</span>
                       {(filterGl || filterQuarter || filterRegional || filterPengadaan) && (
                         <Badge variant="secondary" className="ml-1 h-5 w-5 p-0 flex items-center justify-center text-xs">
                           {[filterGl, filterQuarter, filterRegional, filterPengadaan].filter(Boolean).length}

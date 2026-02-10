@@ -75,8 +75,8 @@ export function DataTable<TData, TValue>({
           className="max-w-sm"
         />
       )}
-      <div className="rounded-md border">
-        <Table>
+      <div className="rounded-md border overflow-x-auto">
+        <Table className="min-w-[800px]">
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
@@ -111,16 +111,17 @@ export function DataTable<TData, TValue>({
           </TableBody>
         </Table>
       </div>
-      <div className="flex items-center justify-between">
-        <div className="text-sm text-muted-foreground">
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-2">
+        <div className="text-xs sm:text-sm text-muted-foreground">
           Halaman {table.getState().pagination.pageIndex + 1} dari {table.getPageCount()}
         </div>
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-1 sm:space-x-2">
           <Button
             variant="outline"
             size="sm"
             onClick={() => table.setPageIndex(0)}
             disabled={!table.getCanPreviousPage()}
+            className="h-8 w-8 p-0"
           >
             <ChevronsLeft className="h-4 w-4" />
           </Button>
@@ -129,6 +130,7 @@ export function DataTable<TData, TValue>({
             size="sm"
             onClick={() => table.previousPage()}
             disabled={!table.getCanPreviousPage()}
+            className="h-8 w-8 p-0"
           >
             <ChevronLeft className="h-4 w-4" />
           </Button>
@@ -137,6 +139,7 @@ export function DataTable<TData, TValue>({
             size="sm"
             onClick={() => table.nextPage()}
             disabled={!table.getCanNextPage()}
+            className="h-8 w-8 p-0"
           >
             <ChevronRight className="h-4 w-4" />
           </Button>
@@ -145,6 +148,7 @@ export function DataTable<TData, TValue>({
             size="sm"
             onClick={() => table.setPageIndex(table.getPageCount() - 1)}
             disabled={!table.getCanNextPage()}
+            className="h-8 w-8 p-0"
           >
             <ChevronsRight className="h-4 w-4" />
           </Button>

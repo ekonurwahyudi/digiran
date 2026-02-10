@@ -100,9 +100,9 @@ export default function ReportPage() {
   if (isLoading) return <TableSkeleton title="Laporan Anggaran" showFilters={true} showActions={false} rows={10} columns={8} />
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div><h1 className="text-2xl font-bold">Laporan Anggaran</h1><p className="text-muted-foreground text-sm">Tahun {year}</p></div>
+    <div className="space-y-4 md:space-y-6">
+      <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3">
+        <div><h1 className="text-xl md:text-2xl font-bold">Laporan Anggaran</h1><p className="text-muted-foreground text-xs md:text-sm">Tahun {year}</p></div>
         <div className="flex items-center gap-2">
           <Label className="text-sm">Tahun:</Label>
           <Select value={year.toString()} onValueChange={(v) => setYear(parseInt(v))}>
@@ -112,11 +112,11 @@ export default function ReportPage() {
         </div>
       </div>
       <Card className="border">
-        <CardHeader><CardTitle>Filter</CardTitle><CardDescription>Pilih kriteria untuk menampilkan laporan</CardDescription></CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <CardHeader className="p-4 md:p-6"><CardTitle className="text-base md:text-lg">Filter</CardTitle><CardDescription className="text-xs md:text-sm">Pilih kriteria untuk menampilkan laporan</CardDescription></CardHeader>
+        <CardContent className="p-4 md:p-6 pt-0 md:pt-0">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
             <div className="space-y-2">
-              <Label>GL Account</Label>
+              <Label className="text-xs md:text-sm">GL Account</Label>
               <Select value={filterGl} onValueChange={setFilterGl}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -126,7 +126,7 @@ export default function ReportPage() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Kuartal</Label>
+              <Label className="text-xs md:text-sm">Kuartal</Label>
               <Select value={filterQuarter} onValueChange={setFilterQuarter}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -136,7 +136,7 @@ export default function ReportPage() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Regional</Label>
+              <Label className="text-xs md:text-sm">Regional</Label>
               <Select value={filterRegional} onValueChange={setFilterRegional}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -149,12 +149,12 @@ export default function ReportPage() {
         </CardContent>
       </Card>
       <Card className="border">
-        <CardHeader><CardTitle>Ringkasan Sisa Anggaran</CardTitle><CardDescription>Rekapitulasi alokasi dan penggunaan anggaran per GL Account</CardDescription></CardHeader>
-        <CardContent><DataTable columns={summaryColumns} data={summaryData()} searchKey="glCode" searchPlaceholder="Cari GL Account..." /></CardContent>
+        <CardHeader className="p-4 md:p-6"><CardTitle className="text-base md:text-lg">Ringkasan Sisa Anggaran</CardTitle><CardDescription className="text-xs md:text-sm">Rekapitulasi alokasi dan penggunaan anggaran per GL Account</CardDescription></CardHeader>
+        <CardContent className="p-4 md:p-6 pt-0 md:pt-0"><DataTable columns={summaryColumns} data={summaryData()} searchKey="glCode" searchPlaceholder="Cari GL Account..." /></CardContent>
       </Card>
       <Card className="border">
-        <CardHeader><CardTitle>Daftar Transaksi</CardTitle><CardDescription>Riwayat pencatatan anggaran berdasarkan filter</CardDescription></CardHeader>
-        <CardContent><DataTable columns={transactionColumns} data={filteredTransactions} searchKey="kegiatan" searchPlaceholder="Cari kegiatan..." /></CardContent>
+        <CardHeader className="p-4 md:p-6"><CardTitle className="text-base md:text-lg">Daftar Transaksi</CardTitle><CardDescription className="text-xs md:text-sm">Riwayat pencatatan anggaran berdasarkan filter</CardDescription></CardHeader>
+        <CardContent className="p-4 md:p-6 pt-0 md:pt-0"><DataTable columns={transactionColumns} data={filteredTransactions} searchKey="kegiatan" searchPlaceholder="Cari kegiatan..." /></CardContent>
       </Card>
     </div>
   )

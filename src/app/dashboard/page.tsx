@@ -209,11 +209,11 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
+    <div className="space-y-4 md:space-y-6">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
         <div>
-          <h1 className="text-2xl font-bold">Dashboard</h1>
-          <p className="text-muted-foreground text-sm">Lacak anggaran dan pantau penggunaan penting</p>
+          <h1 className="text-xl md:text-2xl font-bold">Dashboard</h1>
+          <p className="text-muted-foreground text-xs md:text-sm">Lacak anggaran dan pantau penggunaan penting</p>
         </div>
         <div className="flex items-center gap-2">
           <Label className="text-sm">Tahun:</Label>
@@ -230,54 +230,54 @@ export default function DashboardPage() {
         </div>
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
         <Card className="border">
-          <CardContent className="p-5">
+          <CardContent className="p-3 md:p-5">
             <div className="flex items-start justify-between">
-              <div className="space-y-2">
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">TOTAL GL ACCOUNT</p>
-                <p className="text-2xl font-bold">{glAccountsCount}</p>
+              <div className="space-y-1 md:space-y-2 min-w-0 flex-1">
+                <p className="text-[10px] md:text-xs font-medium text-muted-foreground uppercase tracking-wide">TOTAL GL ACCOUNT</p>
+                <p className="text-lg md:text-2xl font-bold">{glAccountsCount}</p>
               </div>
-              <div className="h-10 w-10 rounded-xl bg-amber-50 flex items-center justify-center">
-                <FileText className="h-5 w-5 text-amber-500" />
+              <div className="h-8 w-8 md:h-10 md:w-10 rounded-xl bg-amber-50 flex items-center justify-center flex-shrink-0">
+                <FileText className="h-4 w-4 md:h-5 md:w-5 text-amber-500" />
               </div>
             </div>
           </CardContent>
         </Card>
         <Card className="border">
-          <CardContent className="p-5">
+          <CardContent className="p-3 md:p-5">
             <div className="flex items-start justify-between">
-              <div className="space-y-2">
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">TOTAL ANGGARAN (Rp)</p>
-                <p className="text-2xl font-bold">{totalBudget.toLocaleString('id-ID')}</p>
+              <div className="space-y-1 md:space-y-2 min-w-0 flex-1">
+                <p className="text-[10px] md:text-xs font-medium text-muted-foreground uppercase tracking-wide">TOTAL ANGGARAN</p>
+                <p className="text-sm md:text-2xl font-bold truncate">{totalBudget.toLocaleString('id-ID')}</p>
               </div>
-              <div className="h-10 w-10 rounded-xl bg-green-50 flex items-center justify-center">
-                <Wallet className="h-5 w-5 text-green-500" />
+              <div className="h-8 w-8 md:h-10 md:w-10 rounded-xl bg-green-50 flex items-center justify-center flex-shrink-0">
+                <Wallet className="h-4 w-4 md:h-5 md:w-5 text-green-500" />
               </div>
             </div>
           </CardContent>
         </Card>
         <Card className="border">
-          <CardContent className="p-5">
+          <CardContent className="p-3 md:p-5">
             <div className="flex items-start justify-between">
-              <div className="space-y-2">
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">TOTAL TERPAKAI (Rp)</p>
-                <p className="text-2xl font-bold">{totalUsed.toLocaleString('id-ID')}</p>
+              <div className="space-y-1 md:space-y-2 min-w-0 flex-1">
+                <p className="text-[10px] md:text-xs font-medium text-muted-foreground uppercase tracking-wide">TOTAL TERPAKAI</p>
+                <p className="text-sm md:text-2xl font-bold truncate">{totalUsed.toLocaleString('id-ID')}</p>
               </div>
-              <div className="h-10 w-10 rounded-xl bg-blue-50 flex items-center justify-center">
-                <TrendingDown className="h-5 w-5 text-blue-500" />
+              <div className="h-8 w-8 md:h-10 md:w-10 rounded-xl bg-blue-50 flex items-center justify-center flex-shrink-0">
+                <TrendingDown className="h-4 w-4 md:h-5 md:w-5 text-blue-500" />
               </div>
             </div>
           </CardContent>
         </Card>
         <Card className="border">
-          <CardContent className="p-5">
+          <CardContent className="p-3 md:p-5">
             <div className="flex items-start justify-between">
-              <div className="space-y-2">
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">SISA ANGGARAN (Rp)</p>
-                <p className="text-2xl font-bold">{(totalBudget - totalUsed).toLocaleString('id-ID')}</p>
+              <div className="space-y-1 md:space-y-2 min-w-0 flex-1">
+                <p className="text-[10px] md:text-xs font-medium text-muted-foreground uppercase tracking-wide">SISA ANGGARAN</p>
+                <p className="text-sm md:text-2xl font-bold truncate">{(totalBudget - totalUsed).toLocaleString('id-ID')}</p>
               </div>
-              <div className="h-10 w-10 rounded-xl bg-purple-50 flex items-center justify-center">
+              <div className="h-8 w-8 md:h-10 md:w-10 rounded-xl bg-purple-50 flex items-center justify-center flex-shrink-0">
                 <Clock className="h-5 w-5 text-purple-500" />
               </div>
             </div>
@@ -286,7 +286,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Ringkasan per Kuartal dengan Radial Chart */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
         {[1, 2, 3, 4].map((q) => {
           const data = getQuarterData(q)
           const penyerapan = data.budget > 0 ? (data.used / data.budget) * 100 : 0
@@ -304,14 +304,14 @@ export default function DashboardPage() {
       </div>
 
       <Card className="border">
-        <CardHeader>
-          <div className="flex justify-between items-center">
+        <CardHeader className="p-4 md:p-6">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
             <div>
-              <CardTitle>Ringkasan Anggaran per GL Account</CardTitle>
-              <CardDescription>Detail penggunaan anggaran per {periodType === 'quarter' ? 'kuartal' : 'bulan'} tahun {year}</CardDescription>
+              <CardTitle className="text-base md:text-lg">Ringkasan Anggaran per GL Account</CardTitle>
+              <CardDescription className="text-xs md:text-sm">Detail penggunaan anggaran per {periodType === 'quarter' ? 'kuartal' : 'bulan'} tahun {year}</CardDescription>
             </div>
             <div className="flex items-center gap-2">
-              <Label className="text-sm text-muted-foreground">Filter:</Label>
+              <Label className="text-xs md:text-sm text-muted-foreground">Filter:</Label>
               <Select value={periodType} onValueChange={(v: 'quarter' | 'month') => {
                 setPeriodType(v)
                 // Set active tab to current month or quarter
@@ -321,7 +321,7 @@ export default function DashboardPage() {
                   setActiveTab(monthKeys[currentMonth])
                 }
               }}>
-                <SelectTrigger className="w-[150px]">
+                <SelectTrigger className="w-[130px] md:w-[150px]">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -332,7 +332,7 @@ export default function DashboardPage() {
             </div>
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-4 md:p-6 pt-0 md:pt-0">
           {periodType === 'quarter' ? (
             <Tabs value={activeTab} onValueChange={setActiveTab}>
               <TabsList className="grid w-full grid-cols-4">
@@ -343,7 +343,8 @@ export default function DashboardPage() {
               </TabsList>
               {[1, 2, 3, 4].map((q) => (
                 <TabsContent key={q} value={`q${q}`}>
-                  <Table>
+                  <div className="overflow-x-auto">
+                    <Table className="min-w-[700px]">
                     <TableHeader>
                       <TableRow>
                         <TableHead>GL Account</TableHead>
@@ -393,31 +394,35 @@ export default function DashboardPage() {
                       )}
                     </TableBody>
                   </Table>
+                  </div>
                 </TabsContent>
               ))}
             </Tabs>
           ) : (
             <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsList className="grid w-full grid-cols-12 h-auto">
-                <TabsTrigger value="jan" className="text-xs">Jan</TabsTrigger>
-                <TabsTrigger value="feb" className="text-xs">Feb</TabsTrigger>
-                <TabsTrigger value="mar" className="text-xs">Mar</TabsTrigger>
-                <TabsTrigger value="apr" className="text-xs">Apr</TabsTrigger>
-                <TabsTrigger value="mei" className="text-xs">Mei</TabsTrigger>
-                <TabsTrigger value="jun" className="text-xs">Jun</TabsTrigger>
-                <TabsTrigger value="jul" className="text-xs">Jul</TabsTrigger>
-                <TabsTrigger value="agu" className="text-xs">Agu</TabsTrigger>
-                <TabsTrigger value="sep" className="text-xs">Sep</TabsTrigger>
-                <TabsTrigger value="okt" className="text-xs">Okt</TabsTrigger>
-                <TabsTrigger value="nov" className="text-xs">Nov</TabsTrigger>
-                <TabsTrigger value="des" className="text-xs">Des</TabsTrigger>
-              </TabsList>
+              <div className="overflow-x-auto pb-2">
+                <TabsList className="grid w-max grid-cols-12 h-auto">
+                  <TabsTrigger value="jan" className="text-xs px-2 md:px-3">Jan</TabsTrigger>
+                  <TabsTrigger value="feb" className="text-xs px-2 md:px-3">Feb</TabsTrigger>
+                  <TabsTrigger value="mar" className="text-xs px-2 md:px-3">Mar</TabsTrigger>
+                  <TabsTrigger value="apr" className="text-xs px-2 md:px-3">Apr</TabsTrigger>
+                  <TabsTrigger value="mei" className="text-xs px-2 md:px-3">Mei</TabsTrigger>
+                  <TabsTrigger value="jun" className="text-xs px-2 md:px-3">Jun</TabsTrigger>
+                  <TabsTrigger value="jul" className="text-xs px-2 md:px-3">Jul</TabsTrigger>
+                  <TabsTrigger value="agu" className="text-xs px-2 md:px-3">Agu</TabsTrigger>
+                  <TabsTrigger value="sep" className="text-xs px-2 md:px-3">Sep</TabsTrigger>
+                  <TabsTrigger value="okt" className="text-xs px-2 md:px-3">Okt</TabsTrigger>
+                  <TabsTrigger value="nov" className="text-xs px-2 md:px-3">Nov</TabsTrigger>
+                  <TabsTrigger value="des" className="text-xs px-2 md:px-3">Des</TabsTrigger>
+                </TabsList>
+              </div>
               {['jan', 'feb', 'mar', 'apr', 'mei', 'jun', 'jul', 'agu', 'sep', 'okt', 'nov', 'des'].map((monthKey, monthIndex) => {
                 const monthNames = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember']
                 const monthAmountKeys = ['janAmount', 'febAmount', 'marAmount', 'aprAmount', 'mayAmount', 'junAmount', 'julAmount', 'augAmount', 'sepAmount', 'octAmount', 'novAmount', 'decAmount'] as const
                 return (
                   <TabsContent key={monthKey} value={monthKey}>
-                    <Table>
+                    <div className="overflow-x-auto">
+                      <Table className="min-w-[700px]">
                       <TableHeader>
                         <TableRow>
                           <TableHead>GL Account</TableHead>
@@ -471,6 +476,7 @@ export default function DashboardPage() {
                         )}
                       </TableBody>
                     </Table>
+                    </div>
                   </TabsContent>
                 )
               })}
@@ -481,16 +487,16 @@ export default function DashboardPage() {
 
       {/* Monitoring Penggunaan Anggaran */}
       <Card className="border">
-        <CardHeader>
-          <div className="flex justify-between items-center">
+        <CardHeader className="p-4 md:p-6">
+          <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3">
             <div>
-              <CardTitle>Monitoring Penggunaan Anggaran</CardTitle>
-              <CardDescription>Tren penggunaan anggaran per bulan tahun {year}</CardDescription>
+              <CardTitle className="text-base md:text-lg">Monitoring Penggunaan Anggaran</CardTitle>
+              <CardDescription className="text-xs md:text-sm">Tren penggunaan anggaran per bulan tahun {year}</CardDescription>
             </div>
             <div className="flex items-center gap-2">
-              <Label className="text-sm text-muted-foreground">GL Account:</Label>
+              <Label className="text-xs md:text-sm text-muted-foreground">GL Account:</Label>
               <Select value={selectedGlAccount} onValueChange={setSelectedGlAccount}>
-                <SelectTrigger className="w-[300px]">
+                <SelectTrigger className="w-full sm:w-[250px] md:w-[300px]">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -505,8 +511,8 @@ export default function DashboardPage() {
             </div>
           </div>
         </CardHeader>
-        <CardContent>
-          <ChartContainer config={chartConfig} className="h-[400px] w-full">
+        <CardContent className="p-4 md:p-6 pt-0 md:pt-0">
+          <ChartContainer config={chartConfig} className="h-[300px] md:h-[400px] w-full">
             <LineChart
               accessibilityLayer
               data={getMonthlyData()}
@@ -629,11 +635,11 @@ export default function DashboardPage() {
 
       {/* Monitoring SPPD per Regional Pengguna */}
       <Card className="border">
-        <CardHeader>
-          <CardTitle>Monitoring SPPD HO TIF DEFA</CardTitle>
-          <CardDescription>Total penggunaan SPPD berdasarkan Anggaran DEFA {year}</CardDescription>
+        <CardHeader className="p-4 md:p-6">
+          <CardTitle className="text-base md:text-lg">Monitoring SPPD HO TIF DEFA</CardTitle>
+          <CardDescription className="text-xs md:text-sm">Total penggunaan SPPD berdasarkan Anggaran DEFA {year}</CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-4 md:p-6 pt-0 md:pt-0">
           {getSPPDData().length > 0 ? (
             <div className="space-y-3">
               {getSPPDData().map((item, index) => {

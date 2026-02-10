@@ -79,14 +79,14 @@ export default function PicAnggaranPage() {
   if (isLoading) return <TableSkeleton title="Master PIC Anggaran" showFilters={false} showActions={true} rows={6} columns={7} />
 
   return (
-    <div className="space-y-6">
-      <div><h1 className="text-2xl font-bold">PIC Anggaran</h1><p className="text-muted-foreground text-sm">Kelola data PIC Anggaran</p></div>
-      {message && (<div className="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg flex items-center gap-2"><CheckCircle className="h-5 w-5" />{message}</div>)}
+    <div className="space-y-4 md:space-y-6">
+      <div><h1 className="text-xl md:text-2xl font-bold">PIC Anggaran</h1><p className="text-muted-foreground text-xs md:text-sm">Kelola data PIC Anggaran</p></div>
+      {message && (<div className="bg-green-50 border border-green-200 text-green-800 px-3 py-2 md:px-4 md:py-3 rounded-lg flex items-center gap-2 text-sm"><CheckCircle className="h-4 w-4 md:h-5 md:w-5" />{message}</div>)}
       <Card>
-        <CardHeader>
-          <div className="flex justify-between items-center">
-            <div><CardTitle>Daftar PIC Anggaran</CardTitle><CardDescription>Data PIC Anggaran per unit dan tahun</CardDescription></div>
-            <Button onClick={() => openDialog()}><Plus className="h-4 w-4 mr-2" />Tambah PIC Anggaran</Button>
+        <CardHeader className="p-4 md:p-6">
+          <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3">
+            <div><CardTitle className="text-base md:text-lg">Daftar PIC Anggaran</CardTitle><CardDescription className="text-xs md:text-sm">Data PIC Anggaran per unit dan tahun</CardDescription></div>
+            <Button onClick={() => openDialog()} size="sm" className="w-full sm:w-auto"><Plus className="h-4 w-4 mr-2" />Tambah PIC Anggaran</Button>
           </div>
         </CardHeader>
         <CardContent><DataTable columns={columns} data={picData as PicAnggaran[]} /></CardContent>

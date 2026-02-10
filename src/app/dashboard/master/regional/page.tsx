@@ -68,13 +68,13 @@ export default function RegionalPage() {
   if (isLoading) return <TableSkeleton title="Master Regional" showFilters={false} showActions={true} rows={6} columns={4} />
 
   return (
-    <div className="space-y-6">
-      <div><h1 className="text-3xl font-bold">Regional</h1><p className="text-muted-foreground">Kelola data Regional</p></div>
-      {message && (<div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-md flex items-center gap-2"><CheckCircle className="h-4 w-4" />{message}</div>)}
+    <div className="space-y-4 md:space-y-6">
+      <div><h1 className="text-xl md:text-3xl font-bold">Regional</h1><p className="text-muted-foreground text-xs md:text-sm">Kelola data Regional</p></div>
+      {message && (<div className="bg-green-50 border border-green-200 text-green-700 px-3 py-2 md:px-4 md:py-3 rounded-md flex items-center gap-2 text-sm"><CheckCircle className="h-4 w-4" />{message}</div>)}
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <div><CardTitle>Daftar Regional</CardTitle><CardDescription>Kelola data regional untuk alokasi anggaran</CardDescription></div>
-          <Button onClick={() => openDialog()}><Plus className="h-4 w-4 mr-2" />Tambah Regional</Button>
+        <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 md:p-6">
+          <div><CardTitle className="text-base md:text-lg">Daftar Regional</CardTitle><CardDescription className="text-xs md:text-sm">Kelola data regional untuk alokasi anggaran</CardDescription></div>
+          <Button onClick={() => openDialog()} size="sm" className="w-full sm:w-auto"><Plus className="h-4 w-4 mr-2" />Tambah Regional</Button>
         </CardHeader>
         <CardContent><DataTable columns={columns} data={regionals as Regional[]} searchKey="code" searchPlaceholder="Cari kode Regional..." /></CardContent>
       </Card>

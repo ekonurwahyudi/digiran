@@ -391,13 +391,13 @@ export default function BudgetPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div><h1 className="text-2xl font-bold">Input Anggaran Tahunan</h1><p className="text-muted-foreground text-sm">Kelola anggaran per GL Account dan alokasi regional</p></div>
-        <div className="flex items-center gap-4">
+    <div className="space-y-4 md:space-y-6">
+      <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3">
+        <div><h1 className="text-xl md:text-2xl font-bold">Input Anggaran Tahunan</h1><p className="text-muted-foreground text-xs md:text-sm">Kelola anggaran per GL Account dan alokasi regional</p></div>
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-4">
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={downloadTemplate}><Download className="h-4 w-4 mr-2" />Template</Button>
-            <Button size="sm" onClick={() => fileInputRef.current?.click()} disabled={importBudget.isPending} className="bg-green-500 hover:bg-green-600 text-white hover:text-white border-0">
+            <Button variant="outline" size="sm" onClick={downloadTemplate} className="flex-1 sm:flex-none"><Download className="h-4 w-4 mr-2" />Template</Button>
+            <Button size="sm" onClick={() => fileInputRef.current?.click()} disabled={importBudget.isPending} className="bg-green-500 hover:bg-green-600 text-white hover:text-white border-0 flex-1 sm:flex-none">
               <Upload className="h-4 w-4 mr-2" />{importBudget.isPending ? 'Importing...' : 'Import'}
             </Button>
             <input ref={fileInputRef} type="file" accept=".xlsx,.xls" onChange={handleImport} className="hidden" />
@@ -419,14 +419,14 @@ export default function BudgetPage() {
       )}
 
       <Card className="border">
-        <CardHeader>
-          <div className="flex justify-between items-center">
+        <CardHeader className="p-4 md:p-6">
+          <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3">
             <div>
-              <CardTitle>Form Input Anggaran</CardTitle>
-              <CardDescription>Masukkan anggaran per GL Account dan pembagian {inputMode === 'quarter' ? 'kuartal' : 'bulan'}</CardDescription>
+              <CardTitle className="text-base md:text-lg">Form Input Anggaran</CardTitle>
+              <CardDescription className="text-xs md:text-sm">Masukkan anggaran per GL Account dan pembagian {inputMode === 'quarter' ? 'kuartal' : 'bulan'}</CardDescription>
             </div>
             <div className="flex items-center gap-2">
-              <Label className="text-sm text-muted-foreground">Input berdasarkan:</Label>
+              <Label className="text-xs md:text-sm text-muted-foreground">Input berdasarkan:</Label>
               <Select value={inputMode} onValueChange={(v: InputMode) => handleInputModeChange(v)}>
                 <SelectTrigger className="w-[120px]"><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -437,52 +437,52 @@ export default function BudgetPage() {
             </div>
           </div>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex gap-4 items-end">
-            <div className="flex-1 space-y-2">
-              <Label>GL Account</Label>
+        <CardContent className="space-y-4 p-4 md:p-6 pt-0 md:pt-0">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 items-end">
+            <div className="space-y-2">
+              <Label className="text-xs md:text-sm">GL Account</Label>
               <Select value={selectedGl} onValueChange={setSelectedGl}>
                 <SelectTrigger><SelectValue placeholder="Pilih GL Account" /></SelectTrigger>
                 <SelectContent>{glAccounts.map((gl: GlAccount) => <SelectItem key={gl.id} value={gl.id}>{gl.code} - {gl.description}</SelectItem>)}</SelectContent>
               </Select>
             </div>
-            <div className="flex-1 space-y-2"><Label>Nilai RKAP</Label><CurrencyInput value={rkap} onChange={handleRkapChange} /></div>
+            <div className="space-y-2"><Label className="text-xs md:text-sm">Nilai RKAP</Label><CurrencyInput value={rkap} onChange={handleRkapChange} /></div>
             <div className="space-y-2">
-              <Label>Release</Label>
+              <Label className="text-xs md:text-sm">Release</Label>
               <div className="flex h-10 w-20 rounded-md border border-input bg-background text-sm ring-offset-background overflow-hidden">
                 <input type="number" min={0} max={100} value={releasePercent} onChange={(e) => handleReleasePercentChange(parseFloat(e.target.value) || 0)} className="w-12 px-2 py-2 text-right bg-transparent outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
                 <span className="flex items-center justify-center w-8 bg-muted text-muted-foreground border-l text-sm">%</span>
               </div>
             </div>
-            <div className="flex-1 space-y-2">
-              <Label>Anggaran Release</Label>
+            <div className="space-y-2">
+              <Label className="text-xs md:text-sm">Anggaran Release</Label>
               <CurrencyInput value={totalAmount} onChange={handleTotalAmountChange} />
             </div>
           </div>
 
           {inputMode === 'quarter' ? (
-            <div className="grid grid-cols-5 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4">
               {(['q1', 'q2', 'q3', 'q4'] as const).map((q, i) => (
-                <div key={q} className="space-y-2"><Label>Kuartal (Q{i + 1})</Label><CurrencyInput value={quarters[q]} onChange={(v) => setQuarters({ ...quarters, [q]: v })} /></div>
+                <div key={q} className="space-y-2"><Label className="text-xs md:text-sm">Kuartal (Q{i + 1})</Label><CurrencyInput value={quarters[q]} onChange={(v) => setQuarters({ ...quarters, [q]: v })} /></div>
               ))}
-              <div className="flex items-end"><Button onClick={autoSplitQuarters} className="w-full"><Calculator className="h-4 w-4 mr-2" />Bagi Otomatis</Button></div>
+              <div className="flex items-end col-span-2 sm:col-span-1"><Button onClick={autoSplitQuarters} className="w-full" size="sm"><Calculator className="h-4 w-4 mr-2" />Bagi Otomatis</Button></div>
             </div>
           ) : (
             <div className="space-y-4">
-              <div className="grid grid-cols-4 gap-4">
-                {monthKeys.slice(0, 4).map((m) => (<div key={m} className="space-y-2"><Label>{monthLabels[m]}</Label><CurrencyInput value={months[m]} onChange={(v) => setMonths({ ...months, [m]: v })} /></div>))}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 md:gap-4">
+                {monthKeys.slice(0, 4).map((m) => (<div key={m} className="space-y-2"><Label className="text-xs md:text-sm">{monthLabels[m]}</Label><CurrencyInput value={months[m]} onChange={(v) => setMonths({ ...months, [m]: v })} /></div>))}
               </div>
-              <div className="grid grid-cols-4 gap-4">
-                {monthKeys.slice(4, 8).map((m) => (<div key={m} className="space-y-2"><Label>{monthLabels[m]}</Label><CurrencyInput value={months[m]} onChange={(v) => setMonths({ ...months, [m]: v })} /></div>))}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 md:gap-4">
+                {monthKeys.slice(4, 8).map((m) => (<div key={m} className="space-y-2"><Label className="text-xs md:text-sm">{monthLabels[m]}</Label><CurrencyInput value={months[m]} onChange={(v) => setMonths({ ...months, [m]: v })} /></div>))}
               </div>
-              <div className="grid grid-cols-5 gap-4">
-                {monthKeys.slice(8, 12).map((m) => (<div key={m} className="space-y-2"><Label>{monthLabels[m]}</Label><CurrencyInput value={months[m]} onChange={(v) => setMonths({ ...months, [m]: v })} /></div>))}
-                <div className="flex items-end"><Button onClick={autoSplitMonths} className="w-full"><Calculator className="h-4 w-4 mr-2" />Bagi Otomatis</Button></div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4">
+                {monthKeys.slice(8, 12).map((m) => (<div key={m} className="space-y-2"><Label className="text-xs md:text-sm">{monthLabels[m]}</Label><CurrencyInput value={months[m]} onChange={(v) => setMonths({ ...months, [m]: v })} /></div>))}
+                <div className="flex items-end col-span-2 sm:col-span-1"><Button onClick={autoSplitMonths} className="w-full" size="sm"><Calculator className="h-4 w-4 mr-2" />Bagi Otomatis</Button></div>
               </div>
               <div className="pt-4 border-t">
-                <Label className="text-sm text-muted-foreground mb-2 block">Hasil Perhitungan Kuartal:</Label>
-                <div className="grid grid-cols-4 gap-4">
-                  {(['q1', 'q2', 'q3', 'q4'] as const).map((q, i) => (<div key={q} className="p-3 bg-muted/50 rounded-lg"><p className="text-xs text-muted-foreground">Q{i + 1}</p><p className="font-semibold">Rp {quarters[q].toLocaleString('id-ID')}</p></div>))}
+                <Label className="text-xs md:text-sm text-muted-foreground mb-2 block">Hasil Perhitungan Kuartal:</Label>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 md:gap-4">
+                  {(['q1', 'q2', 'q3', 'q4'] as const).map((q, i) => (<div key={q} className="p-2 md:p-3 bg-muted/50 rounded-lg"><p className="text-xs text-muted-foreground">Q{i + 1}</p><p className="font-semibold">Rp {quarters[q].toLocaleString('id-ID')}</p></div>))}
                 </div>
               </div>
             </div>

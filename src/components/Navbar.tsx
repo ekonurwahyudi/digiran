@@ -11,7 +11,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { LayoutDashboard, Wallet, BarChart3, LogOut, Database, ChevronDown, Building2, FileCode, Settings, FolderOpen, Users, UserCog, CreditCard } from 'lucide-react'
+import { LayoutDashboard, Wallet, BarChart3, LogOut, Database, ChevronDown, Building2, FileCode, Settings, FolderOpen, Users, UserCog, CreditCard, Menu, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 // Weather icon component using custom images
@@ -33,6 +33,7 @@ export default function Navbar() {
   const [userAvatar, setUserAvatar] = useState('/avatar.png')
   const [userName, setUserName] = useState('')
   const [userEmail, setUserEmail] = useState('')
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   useEffect(() => {
     // Load user profile (avatar, name, email)
@@ -75,6 +76,11 @@ export default function Navbar() {
       .catch(() => {})
   }, [])
 
+  // Close mobile menu when route changes
+  useEffect(() => {
+    setMobileMenuOpen(false)
+  }, [pathname])
+
   const navItems = [
     { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/dashboard/budget', label: 'Anggaran', icon: FolderOpen },
@@ -83,12 +89,28 @@ export default function Navbar() {
     { href: '/dashboard/report', label: 'Laporan', icon: BarChart3 },
   ]
 
+  const masterItems = [
+    { href: '/dashboard/master/gl-account', label: 'GL Account', icon: FileCode },
+    { href: '/dashboard/master/regional', label: 'Regional', icon: Building2 },
+    { href: '/dashboard/master/vendor', label: 'Vendor', icon: Users },
+    { href: '/dashboard/master/pic-anggaran', label: 'PIC Anggaran', icon: UserCog },
+    { href: '/dashboard/master/imprest-fund-card', label: 'Imprest Fund Card', icon: CreditCard },
+  ]
+
   return (
     <nav className="bg-white">
-      {/* Top Header - Full width border */}
+      {/* Top Header */}
       <div className="border-b">
-        <div className="px-[120px] flex justify-between items-center h-14">
-          <div className="flex items-center gap-6">
+        <div className="px-4 md:px-[120px] flex justify-between items-center h-14">
+          <div className="flex items-center gap-4">
+            {/* Mobile Menu Button */}
+            <button 
+              className="md:hidden p-2 -ml-2 rounded-lg hover:bg-gray-100"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            >
+              {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            </button>
+            
             <Link href="/dashboard" className="flex items-center">
               <Image 
                 src="/logo.png" 
@@ -96,14 +118,14 @@ export default function Navbar() {
                 width={120} 
                 height={40} 
                 priority
-                className="h-8 w-auto"
+                className="h-6 md:h-8 w-auto"
               />
             </Link>
           </div>
           
-          <div className="flex items-center gap-4">
-            {/* Weather & Date */}
-            <div className="flex items-center gap-3 px-3 py-1.5 bg-gray-50 rounded-lg">
+          <div className="flex items-center gap-2 md:gap-4">
+            {/* Weather & Date - Hidden on mobile */}
+            <div className="hidden md:flex items-center gap-3 px-3 py-1.5 bg-gray-50 rounded-lg">
               {weather && (
                 <div className="flex items-center gap-2">
                   <WeatherIcon code={weather.code} className="h-6 w-6" />
@@ -113,23 +135,31 @@ export default function Navbar() {
               <div className="h-4 w-px bg-gray-300" />
               <span className="text-sm text-muted-foreground">{currentDate}</span>
             </div>
+
+            {/* Weather only on mobile */}
+            {weather && (
+              <div className="md:hidden flex items-center gap-1 px-2 py-1 bg-gray-50 rounded-lg">
+                <WeatherIcon code={weather.code} className="h-5 w-5" />
+                <span className="text-xs font-medium">{weather.temp}°C</span>
+              </div>
+            )}
             
             {/* User Dropdown */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="flex items-center gap-3 hover:bg-gray-50 rounded-lg px-2 py-1 transition-colors">
+                <button className="flex items-center gap-2 md:gap-3 hover:bg-gray-50 rounded-lg px-2 py-1 transition-colors">
                   <Image 
                     src={userAvatar} 
                     alt="Avatar" 
                     width={36} 
                     height={36} 
-                    className="rounded-lg"
+                    className="rounded-lg w-8 h-8 md:w-9 md:h-9"
                   />
-                  <div className="text-left">
+                  <div className="hidden md:block text-left">
                     <p className="font-medium text-sm">{userName || session?.user?.name}</p>
                     <p className="text-xs text-muted-foreground">{userEmail || session?.user?.email}</p>
                   </div>
-                  <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                  <ChevronDown className="hidden md:block h-4 w-4 text-muted-foreground" />
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
@@ -150,8 +180,8 @@ export default function Navbar() {
         </div>
       </div>
       
-      {/* Navigation Tabs - Full width border */}
-      <div className="border-b">
+      {/* Desktop Navigation Tabs */}
+      <div className="hidden md:block border-b">
         <div className="px-[120px] py-2">
           <div className="flex items-center gap-1 bg-gray-100 rounded-full p-1 w-fit">
             {navItems.map((item) => {
@@ -188,41 +218,68 @@ export default function Navbar() {
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start" className="w-48">
-                <DropdownMenuItem asChild>
-                  <Link href="/dashboard/master/gl-account" className="flex items-center gap-2 cursor-pointer">
-                    <FileCode className="h-4 w-4" />
-                    GL Account
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link href="/dashboard/master/regional" className="flex items-center gap-2 cursor-pointer">
-                    <Building2 className="h-4 w-4" />
-                    Regional
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link href="/dashboard/master/vendor" className="flex items-center gap-2 cursor-pointer">
-                    <Users className="h-4 w-4" />
-                    Vendor
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link href="/dashboard/master/pic-anggaran" className="flex items-center gap-2 cursor-pointer">
-                    <UserCog className="h-4 w-4" />
-                    PIC Anggaran
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link href="/dashboard/master/imprest-fund-card" className="flex items-center gap-2 cursor-pointer">
-                    <CreditCard className="h-4 w-4" />
-                    Imprest Fund Card
-                  </Link>
-                </DropdownMenuItem>
+                {masterItems.map((item) => (
+                  <DropdownMenuItem key={item.href} asChild>
+                    <Link href={item.href} className="flex items-center gap-2 cursor-pointer">
+                      <item.icon className="h-4 w-4" />
+                      {item.label}
+                    </Link>
+                  </DropdownMenuItem>
+                ))}
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
         </div>
       </div>
+
+      {/* Mobile Navigation Menu */}
+      {mobileMenuOpen && (
+        <div className="md:hidden border-b bg-white">
+          <div className="px-4 py-3 space-y-1">
+            {navItems.map((item) => {
+              const isActive = pathname === item.href
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={cn(
+                    "flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-all",
+                    isActive 
+                      ? "bg-gray-100 text-gray-900" 
+                      : "text-gray-600 hover:bg-gray-50"
+                  )}
+                >
+                  <item.icon className="h-4 w-4" />
+                  {item.label}
+                </Link>
+              )
+            })}
+            
+            {/* Master Data Section */}
+            <div className="pt-2 border-t mt-2">
+              <p className="px-3 py-2 text-xs font-semibold text-gray-400 uppercase">Master Data</p>
+              {masterItems.map((item) => {
+                const isActive = pathname === item.href
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={cn(
+                      "flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-all",
+                      isActive 
+                        ? "bg-gray-100 text-gray-900" 
+                        : "text-gray-600 hover:bg-gray-50"
+                    )}
+                  >
+                    <item.icon className="h-4 w-4" />
+                    {item.label}
+                  </Link>
+                )
+              })}
+            </div>
+          </div>
+        </div>
+      )}
     </nav>
   )
 }

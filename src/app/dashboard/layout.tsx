@@ -10,7 +10,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar />
-      <main className="px-[120px] py-6">{children}</main>
+      <main className="px-4 md:px-[120px] py-4 md:py-6">{children}</main>
     </div>
   )
 }

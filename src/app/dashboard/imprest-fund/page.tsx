@@ -446,19 +446,19 @@ export default function ImprestFundPage() {
 
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
+    <div className="space-y-4 md:space-y-6">
+      <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3">
         <div>
-          <h1 className="text-2xl font-bold">Imprest Fund</h1>
-          <p className="text-muted-foreground text-sm">Kelola dana imprest dan pencatatan penggunaan</p>
+          <h1 className="text-xl md:text-2xl font-bold">Imprest Fund</h1>
+          <p className="text-muted-foreground text-xs md:text-sm">Kelola dana imprest dan pencatatan penggunaan</p>
         </div>
-        <Button onClick={() => setShowTopUpDialog(true)} className="gap-2" variant="default">
+        <Button onClick={() => setShowTopUpDialog(true)} className="gap-2 w-full sm:w-auto" variant="default" size="sm">
           <Plus className="h-4 w-4" />Top Up
         </Button>
       </div>
 
       {message && (
-        <div className={`border px-4 py-3 rounded-xl flex items-center gap-2 ${
+        <div className={`border px-3 py-2 md:px-4 md:py-3 rounded-xl flex items-center gap-2 text-sm ${
           message.includes('otomatis') ? 'bg-blue-50 border-blue-200 text-blue-700' : 
           message.includes('berhasil') || message.includes('ditambahkan') ? 'bg-green-50 border-green-200 text-green-700' : 'bg-red-50 border-red-200 text-red-700'
         }`}>
@@ -467,34 +467,34 @@ export default function ImprestFundPage() {
       )}
 
       {autoSaving && (
-        <div className="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-3 rounded-xl flex items-center gap-2">
+        <div className="bg-blue-50 border border-blue-200 text-blue-700 px-3 py-2 md:px-4 md:py-3 rounded-xl flex items-center gap-2 text-sm">
           <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-700"></div>Menyimpan draft...
         </div>
       )}
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4">
         <Card className="border">
-          <CardContent className="pt-6">
+          <CardContent className="p-4 md:pt-6">
             <div className="flex items-center justify-between">
-              <div><p className="text-sm text-muted-foreground">Saldo IF</p><p className="text-2xl font-bold text-blue-600">Rp {(5000000).toLocaleString('id-ID')}</p></div>
-              <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center"><CreditCard className="h-6 w-6 text-blue-600" /></div>
+              <div><p className="text-xs md:text-sm text-muted-foreground">Saldo IF</p><p className="text-lg md:text-2xl font-bold text-blue-600">Rp {(5000000).toLocaleString('id-ID')}</p></div>
+              <div className="w-10 h-10 md:w-12 md:h-12 bg-blue-100 rounded-full flex items-center justify-center"><CreditCard className="h-5 w-5 md:h-6 md:w-6 text-blue-600" /></div>
             </div>
           </CardContent>
         </Card>
         <Card className="border">
-          <CardContent className="pt-6">
+          <CardContent className="p-4 md:pt-6">
             <div className="flex items-center justify-between">
-              <div><p className="text-sm text-muted-foreground">Sisa Saldo</p><p className="text-2xl font-bold text-green-600">Rp {(imprestFundCards.reduce((sum: number, card: ImprestFundCard) => sum + card.saldo, 0)).toLocaleString('id-ID')}</p></div>
-              <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center"><CheckCircle className="h-6 w-6 text-green-600" /></div>
+              <div><p className="text-xs md:text-sm text-muted-foreground">Sisa Saldo</p><p className="text-lg md:text-2xl font-bold text-green-600">Rp {(imprestFundCards.reduce((sum: number, card: ImprestFundCard) => sum + card.saldo, 0)).toLocaleString('id-ID')}</p></div>
+              <div className="w-10 h-10 md:w-12 md:h-12 bg-green-100 rounded-full flex items-center justify-center"><CheckCircle className="h-5 w-5 md:h-6 md:w-6 text-green-600" /></div>
             </div>
           </CardContent>
         </Card>
         <Card className="border">
-          <CardContent className="pt-6">
+          <CardContent className="p-4 md:pt-6">
             <div className="flex items-center justify-between">
-              <div><p className="text-sm text-muted-foreground">Belum Refund</p><p className="text-2xl font-bold text-orange-600">Rp {imprestFunds.filter((i: ImprestFund) => i.status === 'open' || i.status === 'proses').reduce((sum: number, i: ImprestFund) => sum + i.totalAmount, 0).toLocaleString('id-ID')}</p></div>
-              <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center"><Hourglass className="h-6 w-6 text-orange-600" /></div>
+              <div><p className="text-xs md:text-sm text-muted-foreground">Belum Refund</p><p className="text-lg md:text-2xl font-bold text-orange-600">Rp {imprestFunds.filter((i: ImprestFund) => i.status === 'open' || i.status === 'proses').reduce((sum: number, i: ImprestFund) => sum + i.totalAmount, 0).toLocaleString('id-ID')}</p></div>
+              <div className="w-10 h-10 md:w-12 md:h-12 bg-orange-100 rounded-full flex items-center justify-center"><Hourglass className="h-5 w-5 md:h-6 md:w-6 text-orange-600" /></div>
             </div>
           </CardContent>
         </Card>
@@ -502,22 +502,22 @@ export default function ImprestFundPage() {
 
       {/* Input Form */}
       <Card className="border">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2"><CreditCard className="h-5 w-5" />Input Imprest Fund</CardTitle>
-          <CardDescription>Buat pencatatan imprest fund baru</CardDescription>
+        <CardHeader className="p-4 md:p-6">
+          <CardTitle className="flex items-center gap-2 text-base md:text-lg"><CreditCard className="h-4 w-4 md:h-5 md:w-5" />Input Imprest Fund</CardTitle>
+          <CardDescription className="text-xs md:text-sm">Buat pencatatan imprest fund baru</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="grid grid-cols-3 gap-4">
-            <div className="space-y-2"><Label>Kelompok Kegiatan</Label><Input value={kelompokKegiatan} onChange={(e) => setKelompokKegiatan(e.target.value)} placeholder="Masukkan kelompok kegiatan" required /></div>
+        <CardContent className="space-y-4 md:space-y-6 p-4 md:p-6 pt-0 md:pt-0">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
+            <div className="space-y-2"><Label className="text-xs md:text-sm">Kelompok Kegiatan</Label><Input value={kelompokKegiatan} onChange={(e) => setKelompokKegiatan(e.target.value)} placeholder="Masukkan kelompok kegiatan" required /></div>
             <div className="space-y-2">
-              <Label>Imprest Fund Card (User)</Label>
+              <Label className="text-xs md:text-sm">Imprest Fund Card (User)</Label>
               <Select value={selectedInputCardId} onValueChange={setSelectedInputCardId}>
                 <SelectTrigger><SelectValue placeholder="Pilih kartu" /></SelectTrigger>
                 <SelectContent>{imprestFundCards.map((card: ImprestFundCard) => <SelectItem key={card.id} value={card.id}>{card.user}</SelectItem>)}</SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Alokasi Anggaran Regional</Label>
+              <Label className="text-xs md:text-sm">Alokasi Anggaran Regional</Label>
               <Select value={selectedRegionalCode} onValueChange={setSelectedRegionalCode}>
                 <SelectTrigger><SelectValue placeholder="Pilih regional" /></SelectTrigger>
                 <SelectContent>{regionals.map((r: Regional) => <SelectItem key={r.id} value={r.code}>{r.name}</SelectItem>)}</SelectContent>
@@ -526,32 +526,42 @@ export default function ImprestFundPage() {
           </div>
 
           <div className="space-y-4">
-            <div className="flex justify-end"><Button onClick={addItem} className="gap-2"><Plus className="h-4 w-4" />Tambah Uraian</Button></div>
+            <div className="flex justify-end"><Button onClick={addItem} className="gap-2" size="sm"><Plus className="h-4 w-4" />Tambah Uraian</Button></div>
             {items.length === 0 ? (
-              <div className="text-center py-8 bg-gray-50 rounded-lg border-2 border-dashed border-gray-200">
+              <div className="text-center py-6 md:py-8 bg-gray-50 rounded-lg border-2 border-dashed border-gray-200">
                 <div className="flex flex-col items-center gap-2">
-                  <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center"><FileText className="h-6 w-6 text-gray-400" /></div>
-                  <p className="text-sm text-muted-foreground">Belum ada uraian penggunaan</p>
+                  <div className="w-10 h-10 md:w-12 md:h-12 bg-gray-100 rounded-full flex items-center justify-center"><FileText className="h-5 w-5 md:h-6 md:w-6 text-gray-400" /></div>
+                  <p className="text-xs md:text-sm text-muted-foreground">Belum ada uraian penggunaan</p>
                   <p className="text-xs text-muted-foreground">Klik "Tambah Uraian" untuk menambah item</p>
                 </div>
               </div>
             ) : (
               <div className="space-y-4">
-                <div className="grid grid-cols-12 gap-4 p-3 bg-gray-50 rounded-lg font-medium text-sm text-gray-700">
+                <div className="hidden md:grid grid-cols-12 gap-4 p-3 bg-gray-50 rounded-lg font-medium text-sm text-gray-700">
                   <div className="col-span-2">Tanggal</div><div className="col-span-4">Uraian</div><div className="col-span-3">GL Account</div><div className="col-span-2">Jumlah (Rp)</div><div className="col-span-1">Aksi</div>
                 </div>
                 {items.map((item) => (
-                  <div key={item.id} className="grid grid-cols-12 gap-4 p-3 border rounded-lg bg-white border-gray-200">
-                    <div className="col-span-2"><DatePicker date={item.tanggal} onSelect={(date) => date && updateItem(item.id, 'tanggal', date)} placeholder="Pilih tanggal" /></div>
-                    <div className="col-span-4"><Textarea value={item.uraian} onChange={(e) => updateItem(item.id, 'uraian', e.target.value)} placeholder="Masukkan uraian penggunaan" className="min-h-[40px] resize-none" /></div>
-                    <div className="col-span-3">
+                  <div key={item.id} className="grid grid-cols-1 md:grid-cols-12 gap-3 md:gap-4 p-3 border rounded-lg bg-white border-gray-200">
+                    <div className="md:col-span-2">
+                      <Label className="md:hidden text-xs text-muted-foreground mb-1 block">Tanggal</Label>
+                      <DatePicker date={item.tanggal} onSelect={(date) => date && updateItem(item.id, 'tanggal', date)} placeholder="Pilih tanggal" />
+                    </div>
+                    <div className="md:col-span-4">
+                      <Label className="md:hidden text-xs text-muted-foreground mb-1 block">Uraian</Label>
+                      <Textarea value={item.uraian} onChange={(e) => updateItem(item.id, 'uraian', e.target.value)} placeholder="Masukkan uraian penggunaan" className="min-h-[40px] resize-none" />
+                    </div>
+                    <div className="md:col-span-3">
+                      <Label className="md:hidden text-xs text-muted-foreground mb-1 block">GL Account</Label>
                       <Select value={item.glAccountId} onValueChange={(value) => updateItem(item.id, 'glAccountId', value)}>
                         <SelectTrigger><SelectValue placeholder="Pilih GL Account" /></SelectTrigger>
                         <SelectContent>{glAccounts.map((gl: GlAccount) => <SelectItem key={gl.id} value={gl.id}>{gl.code} - {gl.description}</SelectItem>)}</SelectContent>
                       </Select>
                     </div>
-                    <div className="col-span-2"><CurrencyInput value={item.jumlah} onChange={(value) => updateItem(item.id, 'jumlah', value)} /></div>
-                    <div className="col-span-1 flex justify-center"><Button variant="outline" size="sm" onClick={() => { setDeleteItemId(item.id); setShowDeleteDialog(true) }} className="text-red-500 hover:text-red-700"><Trash2 className="h-4 w-4" /></Button></div>
+                    <div className="md:col-span-2">
+                      <Label className="md:hidden text-xs text-muted-foreground mb-1 block">Jumlah (Rp)</Label>
+                      <CurrencyInput value={item.jumlah} onChange={(value) => updateItem(item.id, 'jumlah', value)} />
+                    </div>
+                    <div className="md:col-span-1 flex md:justify-center"><Button variant="outline" size="sm" onClick={() => { setDeleteItemId(item.id); setShowDeleteDialog(true) }} className="text-red-500 hover:text-red-700"><Trash2 className="h-4 w-4" /></Button></div>
                   </div>
                 ))}
                 <div className="flex justify-end">

@@ -81,14 +81,14 @@ export default function ImprestFundCardPage() {
   if (isLoading) return <TableSkeleton title="Master Imprest Fund Card" showFilters={false} showActions={true} rows={5} columns={4} />
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div><h1 className="text-2xl font-bold">Master Imprest Fund Card</h1><p className="text-muted-foreground text-sm">Kelola data kartu imprest fund</p></div>
-        <Button onClick={() => setShowAddDialog(true)} className="gap-2"><Plus className="h-4 w-4" />Tambah Kartu</Button>
+    <div className="space-y-4 md:space-y-6">
+      <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3">
+        <div><h1 className="text-xl md:text-2xl font-bold">Master Imprest Fund Card</h1><p className="text-muted-foreground text-xs md:text-sm">Kelola data kartu imprest fund</p></div>
+        <Button onClick={() => setShowAddDialog(true)} size="sm" className="gap-2 w-full sm:w-auto"><Plus className="h-4 w-4" />Tambah Kartu</Button>
       </div>
-      {message && (<div className={`border px-4 py-3 rounded-xl flex items-center gap-2 ${message.includes('berhasil') ? 'bg-green-50 border-green-200 text-green-700' : 'bg-red-50 border-red-200 text-red-700'}`}><CheckCircle className="h-4 w-4" />{message}</div>)}
+      {message && (<div className={`border px-3 py-2 md:px-4 md:py-3 rounded-xl flex items-center gap-2 text-sm ${message.includes('berhasil') ? 'bg-green-50 border-green-200 text-green-700' : 'bg-red-50 border-red-200 text-red-700'}`}><CheckCircle className="h-4 w-4" />{message}</div>)}
       <Card className="border">
-        <CardHeader><CardTitle className="flex items-center gap-2"><CreditCard className="h-5 w-5" />Daftar Imprest Fund Card</CardTitle><CardDescription>Data kartu imprest fund yang terdaftar</CardDescription></CardHeader>
+        <CardHeader className="p-4 md:p-6"><CardTitle className="flex items-center gap-2 text-base md:text-lg"><CreditCard className="h-4 w-4 md:h-5 md:w-5" />Daftar Imprest Fund Card</CardTitle><CardDescription className="text-xs md:text-sm">Data kartu imprest fund yang terdaftar</CardDescription></CardHeader>
         <CardContent><DataTable columns={columns} data={cards as ImprestFundCard[]} /></CardContent>
       </Card>
       <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>

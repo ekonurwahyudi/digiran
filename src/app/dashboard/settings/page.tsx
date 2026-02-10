@@ -165,34 +165,34 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Pengaturan</h1>
-        <p className="text-muted-foreground text-sm">Kelola profil dan keamanan akun Anda</p>
+        <h1 className="text-xl md:text-2xl font-bold">Pengaturan</h1>
+        <p className="text-muted-foreground text-xs md:text-sm">Kelola profil dan keamanan akun Anda</p>
       </div>
 
       {message && (
-        <div className="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg flex items-center gap-2">
-          <CheckCircle className="h-5 w-5" />
+        <div className="bg-green-50 border border-green-200 text-green-800 px-3 py-2 md:px-4 md:py-3 rounded-lg flex items-center gap-2 text-sm">
+          <CheckCircle className="h-4 w-4 md:h-5 md:w-5" />
           {message}
         </div>
       )}
 
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg flex items-center gap-2">
-          <CheckCircle className="h-5 w-5" />
+        <div className="bg-red-50 border border-red-200 text-red-800 px-3 py-2 md:px-4 md:py-3 rounded-lg flex items-center gap-2 text-sm">
+          <CheckCircle className="h-4 w-4 md:h-5 md:w-5" />
           {error}
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
         {/* Profile Card */}
         <Card className="lg:col-span-1 h-fit">
-          <CardHeader>
-            <CardTitle>Profil</CardTitle>
-            <CardDescription>Informasi akun Anda</CardDescription>
+          <CardHeader className="p-4 md:p-6">
+            <CardTitle className="text-base md:text-lg">Profil</CardTitle>
+            <CardDescription className="text-xs md:text-sm">Informasi akun Anda</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-4 p-4 md:p-6 pt-0 md:pt-0">
             <div className="flex flex-col items-center gap-4">
               <div className="relative group">
                 <Image 
@@ -200,7 +200,7 @@ export default function SettingsPage() {
                   alt="Avatar" 
                   width={100} 
                   height={100} 
-                  className="rounded-full border-4 border-gray-100"
+                  className="rounded-full border-4 border-gray-100 w-20 h-20 md:w-[100px] md:h-[100px]"
                 />
                 <label 
                   htmlFor="avatar-upload" 
@@ -243,10 +243,10 @@ export default function SettingsPage() {
                 </label>
               </div>
               <div className="text-center">
-                <h3 className="font-semibold text-lg">{name || session?.user?.name}</h3>
-                <p className="text-sm text-muted-foreground">{email || session?.user?.email}</p>
+                <h3 className="font-semibold text-base md:text-lg">{name || session?.user?.name}</h3>
+                <p className="text-xs md:text-sm text-muted-foreground">{email || session?.user?.email}</p>
                 <div className="mt-2">
-                  <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
+                  <span className="inline-flex items-center gap-1 px-2 md:px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
                     <Shield className="h-3 w-3" />
                     {role === 'admin' ? 'Administrator' : 'User'}
                   </span>
@@ -257,14 +257,14 @@ export default function SettingsPage() {
         </Card>
 
         {/* Settings Forms */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="lg:col-span-2 space-y-4 md:space-y-6">
           {/* Update Profile */}
           <Card>
-            <CardHeader>
-              <CardTitle>Informasi Profil</CardTitle>
-              <CardDescription>Update informasi dasar akun Anda</CardDescription>
+            <CardHeader className="p-4 md:p-6">
+              <CardTitle className="text-base md:text-lg">Informasi Profil</CardTitle>
+              <CardDescription className="text-xs md:text-sm">Update informasi dasar akun Anda</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-4 p-4 md:p-6 pt-0 md:pt-0">
               {loading ? (
                 <div className="text-center py-8 text-muted-foreground">
                   Memuat data...
@@ -326,11 +326,11 @@ export default function SettingsPage() {
 
           {/* Change Password */}
           <Card>
-            <CardHeader>
-              <CardTitle>Ubah Password</CardTitle>
-              <CardDescription>Update password untuk keamanan akun Anda</CardDescription>
+            <CardHeader className="p-4 md:p-6">
+              <CardTitle className="text-base md:text-lg">Ubah Password</CardTitle>
+              <CardDescription className="text-xs md:text-sm">Update password untuk keamanan akun Anda</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-4 p-4 md:p-6 pt-0 md:pt-0">
               <div className="space-y-2">
                 <Label htmlFor="newPassword" className="flex items-center gap-2">
                   <Lock className="h-4 w-4" />
