@@ -212,11 +212,14 @@ export default function DashboardPage() {
   const getAreaUsageData = (glFilter: string = 'all') => {
     // Initialize all regionals with 0 so we can see which ones have no usage
     const areaData: Record<string, number> = {}
+    const regionalNames = regionals.map((r: any) => r.name)
+    
     regionals.forEach((r: any) => {
       areaData[r.name] = 0
     })
     
     // Sum up transactions by regionalPengguna - only with tanggalKwitansi in selected year
+    // Only include transactions where regionalPengguna is a valid regional name (not a person's name)
     transactions.forEach(t => {
       if (!t.tanggalKwitansi) return
       const txYear = new Date(t.tanggalKwitansi).getFullYear()
@@ -226,6 +229,10 @@ export default function DashboardPage() {
       if (glFilter !== 'all' && t.glAccountId !== glFilter) return
       
       const area = t.regionalPengguna || 'Tidak Diketahui'
+      
+      // Only include if area is a valid regional name (skip person names)
+      if (!regionalNames.includes(area)) return
+      
       if (!areaData[area]) {
         areaData[area] = 0
       }
