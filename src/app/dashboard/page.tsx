@@ -207,20 +207,25 @@ export default function DashboardPage() {
     return result
   }
 
-  // Data untuk penggunaan anggaran per Area (Regional)
+  // Data untuk penggunaan anggaran per Area (Regional Pengguna)
   const getAreaUsageData = () => {
-    // Initialize all regionals with 0
+    // Initialize all regionals with 0 so we can see which ones have no usage
     const areaData: Record<string, number> = {}
     regionals.forEach((r: any) => {
       areaData[r.name] = 0
     })
     
-    // Sum up transactions by regionalCode
+    // Sum up transactions by regionalPengguna - only with tanggalKwitansi in selected year
     transactions.forEach(t => {
-      const regional = regionals.find((r: any) => r.code === t.regionalCode)
-      if (regional) {
-        areaData[regional.name] += t.nilaiTanpaPPN
+      if (!t.tanggalKwitansi) return
+      const txYear = new Date(t.tanggalKwitansi).getFullYear()
+      if (txYear !== year) return
+      
+      const area = t.regionalPengguna || 'Tidak Diketahui'
+      if (!areaData[area]) {
+        areaData[area] = 0
       }
+      areaData[area] += t.nilaiTanpaPPN
     })
     
     // Convert to array format for chart
