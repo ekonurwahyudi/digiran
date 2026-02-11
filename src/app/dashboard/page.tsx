@@ -59,6 +59,7 @@ interface Transaction {
 export default function DashboardPage() {
   const [year, setYear] = useState(new Date().getFullYear())
   const [selectedGlAccount, setSelectedGlAccount] = useState<string>('all')
+  const [selectedAreaGlAccount, setSelectedAreaGlAccount] = useState<string>('all')
   const [periodType, setPeriodType] = useState<'quarter' | 'month'>('quarter')
   const currentMonth = new Date().getMonth()
   const currentQuarter = Math.ceil((currentMonth + 1) / 3)
@@ -208,7 +209,7 @@ export default function DashboardPage() {
   }
 
   // Data untuk penggunaan anggaran per Area (Regional Pengguna)
-  const getAreaUsageData = () => {
+  const getAreaUsageData = (glFilter: string = 'all') => {
     // Initialize all regionals with 0 so we can see which ones have no usage
     const areaData: Record<string, number> = {}
     regionals.forEach((r: any) => {
@@ -220,6 +221,9 @@ export default function DashboardPage() {
       if (!t.tanggalKwitansi) return
       const txYear = new Date(t.tanggalKwitansi).getFullYear()
       if (txYear !== year) return
+      
+      // Filter by GL Account if specified
+      if (glFilter !== 'all' && t.glAccountId !== glFilter) return
       
       const area = t.regionalPengguna || 'Tidak Diketahui'
       if (!areaData[area]) {
@@ -672,16 +676,36 @@ export default function DashboardPage() {
       {/* Penggunaan Anggaran per Area */}
       <Card className="border">
         <CardHeader className="p-4 md:p-6">
-          <CardTitle className="text-base md:text-lg">Penggunaan Anggaran Area</CardTitle>
-          <CardDescription className="text-xs md:text-sm">Total penggunaan anggaran berdasarkan alokasi regional tahun {year}</CardDescription>
+          <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3">
+            <div>
+              <CardTitle className="text-base md:text-lg">Penggunaan Anggaran Area</CardTitle>
+              <CardDescription className="text-xs md:text-sm">Total penggunaan anggaran berdasarkan alokasi regional tahun {year}</CardDescription>
+            </div>
+            <div className="flex items-center gap-2">
+              <Label className="text-xs md:text-sm text-muted-foreground">GL Account:</Label>
+              <Select value={selectedAreaGlAccount} onValueChange={setSelectedAreaGlAccount}>
+                <SelectTrigger className="w-full sm:w-[250px] md:w-[300px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All</SelectItem>
+                  {glAccounts.map((gl) => (
+                    <SelectItem key={gl.id} value={gl.id}>
+                      {gl.code} - {gl.description}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
         </CardHeader>
         <CardContent className="p-4 md:p-6 pt-0 md:pt-0">
-          {getAreaUsageData().length > 0 ? (
+          {getAreaUsageData(selectedAreaGlAccount).length > 0 ? (
             <ChartContainer config={{
               total: { label: "Total Penggunaan", color: "#3b82f6" }
             }} className="h-[300px] md:h-[400px] w-full">
               <BarChart
-                data={getAreaUsageData()}
+                data={getAreaUsageData(selectedAreaGlAccount)}
                 layout="vertical"
                 margin={{ top: 5, right: 80, left: 10, bottom: 5 }}
               >
@@ -709,7 +733,7 @@ export default function DashboardPage() {
                   }}
                 />
                 <Bar dataKey="total" radius={[0, 4, 4, 0]}>
-                  {getAreaUsageData().map((entry, index) => (
+                  {getAreaUsageData(selectedAreaGlAccount).map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={AREA_COLORS[index % AREA_COLORS.length]} />
                   ))}
                   <LabelList 
