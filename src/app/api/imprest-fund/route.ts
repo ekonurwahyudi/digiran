@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
     
     const where = status ? { status } : {}
     
-    const imprestFunds = await prisma.imprestFund.findMany({
+    const imprestFunds = await (prisma as any).imprestFund.findMany({
       where,
       select: {
         id: true,
@@ -49,6 +49,7 @@ export async function GET(request: NextRequest) {
             uraian: true,
             jumlah: true,
             glAccountId: true,
+            areaPengguna: true,
             glAccount: {
               select: {
                 id: true,
@@ -109,43 +110,8 @@ export async function POST(request: NextRequest) {
     // Calculate total amount
     const totalAmount = items.reduce((sum: number, item: any) => sum + (item.jumlah || 0), 0)
 
-    // If status is 'open' and regionalCode is provided, check and reduce allocation
-    if (status === 'open' && regionalCode) {
-      const currentYear = new Date().getFullYear()
-      const currentQuarter = Math.ceil((new Date().getMonth() + 1) / 3)
-
-      // Group items by GL Account and sum amounts
-      const glAccountTotals = items.reduce((acc: any, item: any) => {
-        if (!acc[item.glAccountId]) {
-          acc[item.glAccountId] = 0
-        }
-        acc[item.glAccountId] += item.jumlah
-        return acc
-      }, {})
-
-      // Check and reduce allocation for each GL Account
-      for (const [glAccountId, amount] of Object.entries(glAccountTotals)) {
-        const response = await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/budget/allocation`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            regionalCode,
-            glAccountId,
-            amount,
-            year: currentYear,
-            quarter: currentQuarter
-          })
-        })
-
-        if (!response.ok) {
-          const error = await response.json()
-          return NextResponse.json({ error: error.error || 'Failed to update allocation' }, { status: 400 })
-        }
-      }
-    }
-
-    // Create imprest fund with items
-    const imprestFund = await prisma.imprestFund.create({
+    // Create imprest fund with items first
+    const imprestFund = await (prisma as any).imprestFund.create({
       data: {
         kelompokKegiatan,
         ...(regionalCode && { regionalCode }),
@@ -157,6 +123,7 @@ export async function POST(request: NextRequest) {
             tanggal: new Date(item.tanggal),
             uraian: item.uraian,
             glAccountId: item.glAccountId,
+            areaPengguna: item.areaPengguna || null,
             jumlah: item.jumlah
           }))
         }
@@ -177,44 +144,44 @@ export async function POST(request: NextRequest) {
       const currentQuarter = Math.ceil((new Date().getMonth() + 1) / 3)
 
       for (const item of items) {
-        await prisma.transaction.create({
+        await (prisma as any).transaction.create({
           data: {
             glAccountId: item.glAccountId,
             quarter: currentQuarter,
-            regionalCode: regionalCode || 'HO', // Use provided regional code or default
+            regionalCode: regionalCode || 'HO', // Alokasi Anggaran Regional - untuk potong budget
             kegiatan: item.uraian,
-            regionalPengguna: regionalCode || 'Head Office',
+            regionalPengguna: item.areaPengguna || 'Head Office', // Area Pengguna dari item - hanya informasi
             year: currentYear,
-            tanggalKwitansi: new Date(item.tanggal), // Use item date as kwitansi date
+            tanggalKwitansi: new Date(item.tanggal),
             nilaiKwitansi: item.jumlah,
             nilaiTanpaPPN: item.jumlah,
             status: 'Open',
             imprestFundId: imprestFund.id,
-            jenisPengadaan: 'InpresFund' // Auto set to Imprest Fund
-          } as any
-        })
-      }
-    }
-
-    // If status is 'open' and imprestFundCardId is provided, reduce card saldo
-    if (status === 'open' && imprestFundCardId) {
-      const card = await prisma.imprestFundCard.findUnique({
-        where: { id: imprestFundCardId }
-      })
-
-      if (card) {
-        await prisma.imprestFundCard.update({
-          where: { id: imprestFundCardId },
-          data: {
-            saldo: card.saldo - totalAmount
+            jenisPengadaan: 'InpresFund'
           }
         })
+      }
+
+      // Reduce card saldo if imprestFundCardId is provided
+      if (imprestFundCardId) {
+        const card = await (prisma as any).imprestFundCard.findUnique({
+          where: { id: imprestFundCardId }
+        })
+
+        if (card) {
+          await (prisma as any).imprestFundCard.update({
+            where: { id: imprestFundCardId },
+            data: {
+              saldo: card.saldo - totalAmount
+            }
+          })
+        }
       }
     }
 
     return NextResponse.json(imprestFund)
   } catch (error) {
     console.error('Error creating imprest fund:', error)
-    return NextResponse.json({ error: 'Failed to create imprest fund' }, { status: 500 })
+    return NextResponse.json({ error: 'Failed to create imprest fund', details: String(error) }, { status: 500 })
   }
 }

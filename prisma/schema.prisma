@@ -249,6 +249,7 @@ model ImprestItem {
   uraian        String
   glAccountId   String
   glAccount     GlAccount   @relation(fields: [glAccountId], references: [id])
+  areaPengguna  String?
   jumlah        Float
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt

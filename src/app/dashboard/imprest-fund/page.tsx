@@ -44,7 +44,7 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 interface GlAccount { id: string; code: string; description: string }
-interface ImprestItem { id: string; tanggal: Date; uraian: string; glAccountId: string; glAccount?: GlAccount; jumlah: number }
+interface ImprestItem { id: string; tanggal: Date; uraian: string; glAccountId: string; glAccount?: GlAccount; areaPengguna: string; jumlah: number }
 interface ImprestFundCard { id: string; nomorKartu: string; user: string; saldo: number; pic: string; isActive: boolean }
 interface Vendor { id: string; name: string; alamat?: string; pic?: string; phone?: string; email?: string }
 interface Transaction { id: string; glAccountId: string; glAccount: GlAccount; quarter: number; regionalCode: string; kegiatan: string; regionalPengguna: string; year: number; status: string; imprestFundId?: string }
@@ -126,7 +126,7 @@ export default function ImprestFundPage() {
   }, [imprestFundCards, selectedInputCardId])
 
   const addItem = () => {
-    const newItem: ImprestItem = { id: Date.now().toString(), tanggal: new Date(), uraian: '', glAccountId: '', glAccount: undefined, jumlah: 0 }
+    const newItem: ImprestItem = { id: Date.now().toString(), tanggal: new Date(), uraian: '', glAccountId: '', glAccount: undefined, areaPengguna: '', jumlah: 0 }
     setItems([...items, newItem])
     setMessage('Baris baru ditambahkan!')
     setTimeout(() => setMessage(''), 3000)
@@ -165,7 +165,7 @@ export default function ImprestFundPage() {
     setTimeout(() => setMessage(''), 3000)
   }
 
-  const validateItems = () => items.every(item => item.tanggal && item.uraian.trim() !== '' && item.glAccountId !== '' && item.jumlah > 0)
+  const validateItems = () => items.every(item => item.tanggal && item.uraian.trim() !== '' && item.glAccountId !== '' && item.areaPengguna.trim() !== '' && item.jumlah > 0)
 
   const saveDraft = async () => {
     if (!kelompokKegiatan || items.length === 0) {
@@ -181,7 +181,7 @@ export default function ImprestFundPage() {
     try {
       await createImprestFund.mutateAsync({
         kelompokKegiatan, regionalCode: selectedRegionalCode || null, imprestFundCardId: selectedInputCardId || null,
-        items: items.map(item => ({ tanggal: item.tanggal, uraian: item.uraian, glAccountId: item.glAccountId, jumlah: item.jumlah })),
+        items: items.map(item => ({ tanggal: item.tanggal, uraian: item.uraian, glAccountId: item.glAccountId, areaPengguna: item.areaPengguna, jumlah: item.jumlah })),
         status: 'draft'
       })
       setMessage('Draft berhasil disimpan!')
@@ -212,7 +212,7 @@ export default function ImprestFundPage() {
     try {
       await createImprestFund.mutateAsync({
         kelompokKegiatan, regionalCode: selectedRegionalCode, imprestFundCardId: selectedInputCardId || null,
-        items: items.map(item => ({ tanggal: item.tanggal, uraian: item.uraian, glAccountId: item.glAccountId, jumlah: item.jumlah })),
+        items: items.map(item => ({ tanggal: item.tanggal, uraian: item.uraian, glAccountId: item.glAccountId, areaPengguna: item.areaPengguna, jumlah: item.jumlah })),
         status: 'open'
       })
       setMessage('Imprest Fund berhasil disubmit dan status berubah menjadi Open!')
@@ -538,7 +538,7 @@ export default function ImprestFundPage() {
             ) : (
               <div className="space-y-4">
                 <div className="hidden md:grid grid-cols-12 gap-4 p-3 bg-gray-50 rounded-lg font-medium text-sm text-gray-700">
-                  <div className="col-span-2">Tanggal</div><div className="col-span-4">Uraian</div><div className="col-span-3">GL Account</div><div className="col-span-2">Jumlah (Rp)</div><div className="col-span-1">Aksi</div>
+                  <div className="col-span-2">Tanggal</div><div className="col-span-3">Uraian</div><div className="col-span-2">GL Account</div><div className="col-span-2">Area Pengguna</div><div className="col-span-2">Jumlah (Rp)</div><div className="col-span-1">Aksi</div>
                 </div>
                 {items.map((item) => (
                   <div key={item.id} className="grid grid-cols-1 md:grid-cols-12 gap-3 md:gap-4 p-3 border rounded-lg bg-white border-gray-200">
@@ -546,15 +546,22 @@ export default function ImprestFundPage() {
                       <Label className="md:hidden text-xs text-muted-foreground mb-1 block">Tanggal</Label>
                       <DatePicker date={item.tanggal} onSelect={(date) => date && updateItem(item.id, 'tanggal', date)} placeholder="Pilih tanggal" />
                     </div>
-                    <div className="md:col-span-4">
+                    <div className="md:col-span-3">
                       <Label className="md:hidden text-xs text-muted-foreground mb-1 block">Uraian</Label>
                       <Textarea value={item.uraian} onChange={(e) => updateItem(item.id, 'uraian', e.target.value)} placeholder="Masukkan uraian penggunaan" className="min-h-[40px] resize-none" />
                     </div>
-                    <div className="md:col-span-3">
+                    <div className="md:col-span-2">
                       <Label className="md:hidden text-xs text-muted-foreground mb-1 block">GL Account</Label>
                       <Select value={item.glAccountId} onValueChange={(value) => updateItem(item.id, 'glAccountId', value)}>
-                        <SelectTrigger><SelectValue placeholder="Pilih GL Account" /></SelectTrigger>
+                        <SelectTrigger><SelectValue placeholder="Pilih GL" /></SelectTrigger>
                         <SelectContent>{glAccounts.map((gl: GlAccount) => <SelectItem key={gl.id} value={gl.id}>{gl.code} - {gl.description}</SelectItem>)}</SelectContent>
+                      </Select>
+                    </div>
+                    <div className="md:col-span-2">
+                      <Label className="md:hidden text-xs text-muted-foreground mb-1 block">Area Pengguna</Label>
+                      <Select value={item.areaPengguna} onValueChange={(value) => updateItem(item.id, 'areaPengguna', value)}>
+                        <SelectTrigger><SelectValue placeholder="Pilih Area" /></SelectTrigger>
+                        <SelectContent>{regionals.map((r: Regional) => <SelectItem key={r.id} value={r.name}>{r.name}</SelectItem>)}</SelectContent>
                       </Select>
                     </div>
                     <div className="md:col-span-2">
@@ -583,7 +590,7 @@ export default function ImprestFundPage() {
             <Button variant="outline" onClick={saveDraft} disabled={!kelompokKegiatan || items.length === 0 || !validateItems() || createImprestFund.isPending}>
               <Save className="h-4 w-4 mr-2" />{createImprestFund.isPending ? 'Menyimpan...' : 'Simpan Draft'}
             </Button>
-            <Button onClick={submitImprest} disabled={!kelompokKegiatan || items.length === 0 || !validateItems() || createImprestFund.isPending}>
+            <Button onClick={submitImprest} disabled={!kelompokKegiatan || items.length === 0 || !validateItems() || !selectedRegionalCode || createImprestFund.isPending}>
               <CheckCircle className="h-4 w-4 mr-2" />{createImprestFund.isPending ? 'Menyimpan...' : 'Submit'}
             </Button>
           </div>
@@ -703,21 +710,23 @@ export default function ImprestFundPage() {
                       <div className="border-t">
                         <div className="grid grid-cols-12 gap-2 p-3 bg-gray-100 text-xs font-medium">
                           <div className="col-span-2">Tanggal</div>
-                          <div className="col-span-4">Uraian</div>
+                          <div className="col-span-3">Uraian</div>
                           <div className="col-span-3">GL Account</div>
-                          <div className="col-span-3 text-right">Jumlah</div>
+                          <div className="col-span-2">Area Pengguna</div>
+                          <div className="col-span-2 text-right">Jumlah</div>
                         </div>
                         {viewingImprest.items.map((item, idx) => (
                           <div key={idx} className="grid grid-cols-12 gap-2 p-3 border-t text-sm">
                             <div className="col-span-2">{format(new Date(item.tanggal), 'dd MMM yyyy', { locale: idLocale })}</div>
-                            <div className="col-span-4">{item.uraian}</div>
+                            <div className="col-span-3">{item.uraian}</div>
                             <div className="col-span-3 truncate">{item.glAccount?.code} - {item.glAccount?.description}</div>
-                            <div className="col-span-3 text-right font-medium whitespace-nowrap">Rp {item.jumlah.toLocaleString('id-ID')}</div>
+                            <div className="col-span-2">{item.areaPengguna || '-'}</div>
+                            <div className="col-span-2 text-right font-medium whitespace-nowrap">Rp {item.jumlah.toLocaleString('id-ID')}</div>
                           </div>
                         ))}
                         <div className="grid grid-cols-12 gap-2 p-3 bg-blue-50 border-t text-sm font-semibold">
-                          <div className="col-span-9 text-right">Total:</div>
-                          <div className="col-span-3 text-right text-blue-600 whitespace-nowrap">Rp {viewingImprest.totalAmount.toLocaleString('id-ID')}</div>
+                          <div className="col-span-10 text-right">Total:</div>
+                          <div className="col-span-2 text-right text-blue-600 whitespace-nowrap">Rp {viewingImprest.totalAmount.toLocaleString('id-ID')}</div>
                         </div>
                       </div>
                     </CollapsibleContent>
@@ -853,7 +862,7 @@ export default function ImprestFundPage() {
                   <div className="space-y-4">
                     <div className="flex justify-between items-center">
                       <Label className="text-base font-semibold">Detail Uraian Penggunaan</Label>
-                      <Button onClick={() => { const newItem: ImprestItem = { id: Date.now().toString(), tanggal: new Date(), uraian: '', glAccountId: '', glAccount: undefined, jumlah: 0 }; setEditingImprest({...editingImprest, items: [...editingImprest.items, newItem]}) }} className="gap-2" size="sm"><Plus className="h-4 w-4" />Tambah Uraian</Button>
+                      <Button onClick={() => { const newItem: ImprestItem = { id: Date.now().toString(), tanggal: new Date(), uraian: '', glAccountId: '', glAccount: undefined, areaPengguna: '', jumlah: 0 }; setEditingImprest({...editingImprest, items: [...editingImprest.items, newItem]}) }} className="gap-2" size="sm"><Plus className="h-4 w-4" />Tambah Uraian</Button>
                     </div>
                     {editingImprest.items.length === 0 ? (
                       <div className="text-center py-8 bg-gray-50 rounded-lg border-2 border-dashed border-gray-200">
@@ -862,17 +871,23 @@ export default function ImprestFundPage() {
                     ) : (
                       <div className="border rounded-lg overflow-hidden">
                         <div className="grid grid-cols-12 gap-4 p-3 bg-gray-100 border-b font-medium text-sm">
-                          <div className="col-span-2">Tanggal</div><div className="col-span-3">Uraian</div><div className="col-span-4">GL Account</div><div className="col-span-2">Jumlah (Rp)</div><div className="col-span-1 text-center">Aksi</div>
+                          <div className="col-span-2">Tanggal</div><div className="col-span-2">Uraian</div><div className="col-span-3">GL Account</div><div className="col-span-2">Area Pengguna</div><div className="col-span-2">Jumlah (Rp)</div><div className="col-span-1 text-center">Aksi</div>
                         </div>
                         <div className="divide-y">
                           {editingImprest.items.map((item) => (
                             <div key={item.id} className="grid grid-cols-12 gap-4 p-3 hover:bg-gray-50">
                               <div className="col-span-2"><DatePicker date={item.tanggal} onSelect={(date) => { if (date) { const updatedItems = editingImprest.items.map(i => i.id === item.id ? { ...i, tanggal: date } : i); setEditingImprest({...editingImprest, items: updatedItems}) }}} placeholder="Pilih tanggal" /></div>
-                              <div className="col-span-3"><Input value={item.uraian} onChange={(e) => { const updatedItems = editingImprest.items.map(i => i.id === item.id ? { ...i, uraian: e.target.value } : i); setEditingImprest({...editingImprest, items: updatedItems}) }} placeholder="Masukkan uraian" /></div>
-                              <div className="col-span-4">
+                              <div className="col-span-2"><Input value={item.uraian} onChange={(e) => { const updatedItems = editingImprest.items.map(i => i.id === item.id ? { ...i, uraian: e.target.value } : i); setEditingImprest({...editingImprest, items: updatedItems}) }} placeholder="Masukkan uraian" /></div>
+                              <div className="col-span-3">
                                 <Select value={item.glAccountId} onValueChange={(value) => { const selectedGl = glAccounts.find((gl: GlAccount) => gl.id === value); const updatedItems = editingImprest.items.map(i => i.id === item.id ? { ...i, glAccountId: value, glAccount: selectedGl } : i); setEditingImprest({...editingImprest, items: updatedItems}) }}>
-                                  <SelectTrigger><SelectValue placeholder="Pilih GL Account" /></SelectTrigger>
+                                  <SelectTrigger><SelectValue placeholder="Pilih GL" /></SelectTrigger>
                                   <SelectContent>{glAccounts.map((gl: GlAccount) => <SelectItem key={gl.id} value={gl.id}>{gl.code} - {gl.description}</SelectItem>)}</SelectContent>
+                                </Select>
+                              </div>
+                              <div className="col-span-2">
+                                <Select value={item.areaPengguna || ''} onValueChange={(value) => { const updatedItems = editingImprest.items.map(i => i.id === item.id ? { ...i, areaPengguna: value } : i); setEditingImprest({...editingImprest, items: updatedItems}) }}>
+                                  <SelectTrigger><SelectValue placeholder="Pilih Area" /></SelectTrigger>
+                                  <SelectContent>{regionals.map((r: Regional) => <SelectItem key={r.id} value={r.name}>{r.name}</SelectItem>)}</SelectContent>
                                 </Select>
                               </div>
                               <div className="col-span-2"><CurrencyInput value={item.jumlah} onChange={(value) => { const updatedItems = editingImprest.items.map(i => i.id === item.id ? { ...i, jumlah: value } : i); const newTotal = updatedItems.reduce((sum, i) => sum + i.jumlah, 0); setEditingImprest({...editingImprest, items: updatedItems, totalAmount: newTotal}) }} /></div>
@@ -891,7 +906,7 @@ export default function ImprestFundPage() {
                       if (!editingImprest.regionalCode) { setMessage('Alokasi anggaran regional harus dipilih untuk submit!'); setTimeout(() => setMessage(''), 3000); return }
                       const updatedImprest = {...editingImprest, status: 'open' as const}
                       try {
-                        await updateImprestFund.mutateAsync({ id: editingImprest.id, data: { kelompokKegiatan: updatedImprest.kelompokKegiatan, regionalCode: updatedImprest.regionalCode, status: 'open', items: updatedImprest.items.map(item => ({ tanggal: item.tanggal, uraian: item.uraian, glAccountId: item.glAccountId, jumlah: item.jumlah })) }})
+                        await updateImprestFund.mutateAsync({ id: editingImprest.id, data: { kelompokKegiatan: updatedImprest.kelompokKegiatan, regionalCode: updatedImprest.regionalCode, status: 'open', items: updatedImprest.items.map(item => ({ tanggal: item.tanggal, uraian: item.uraian, glAccountId: item.glAccountId, areaPengguna: item.areaPengguna, jumlah: item.jumlah })) }})
                         setMessage('Imprest Fund berhasil disubmit dan status berubah menjadi Open!')
                         setShowEditDialog(false); setEditingImprest(null)
                       } catch (error) { setMessage('Gagal submit Imprest Fund!') }
@@ -959,21 +974,23 @@ export default function ImprestFundPage() {
                           <div className="border-t">
                             <div className="grid grid-cols-12 gap-2 p-3 bg-gray-100 text-xs font-medium">
                               <div className="col-span-2">Tanggal</div>
-                              <div className="col-span-4">Uraian</div>
+                              <div className="col-span-3">Uraian</div>
                               <div className="col-span-3">GL Account</div>
-                              <div className="col-span-3 text-right">Jumlah</div>
+                              <div className="col-span-2">Area Pengguna</div>
+                              <div className="col-span-2 text-right">Jumlah</div>
                             </div>
                             {editingImprest.items.map((item, idx) => (
                               <div key={idx} className="grid grid-cols-12 gap-2 p-3 border-t text-sm">
                                 <div className="col-span-2">{format(new Date(item.tanggal), 'dd MMM yyyy', { locale: idLocale })}</div>
-                                <div className="col-span-4">{item.uraian}</div>
+                                <div className="col-span-3">{item.uraian}</div>
                                 <div className="col-span-3 truncate">{item.glAccount?.code} - {item.glAccount?.description}</div>
-                                <div className="col-span-3 text-right font-medium whitespace-nowrap">Rp {item.jumlah.toLocaleString('id-ID')}</div>
+                                <div className="col-span-2">{item.areaPengguna || '-'}</div>
+                                <div className="col-span-2 text-right font-medium whitespace-nowrap">Rp {item.jumlah.toLocaleString('id-ID')}</div>
                               </div>
                             ))}
                             <div className="grid grid-cols-12 gap-2 p-3 bg-blue-50 border-t text-sm font-semibold">
-                              <div className="col-span-9 text-right">Total:</div>
-                              <div className="col-span-3 text-right text-blue-600 whitespace-nowrap">Rp {editingImprest.totalAmount.toLocaleString('id-ID')}</div>
+                              <div className="col-span-10 text-right">Total:</div>
+                              <div className="col-span-2 text-right text-blue-600 whitespace-nowrap">Rp {editingImprest.totalAmount.toLocaleString('id-ID')}</div>
                             </div>
                           </div>
                         </CollapsibleContent>

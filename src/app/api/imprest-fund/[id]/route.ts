@@ -9,7 +9,7 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const imprestFund = await prisma.imprestFund.findUnique({
+    const imprestFund = await (prisma as any).imprestFund.findUnique({
       where: { id: params.id },
       include: {
         items: {
@@ -64,7 +64,7 @@ export async function PUT(
     } = body
 
     // Get current imprest fund to check status change
-    const currentImprest: any = await prisma.imprestFund.findUnique({
+    const currentImprest: any = await (prisma as any).imprestFund.findUnique({
       where: { id: params.id },
       include: { items: true }
     })
@@ -116,7 +116,7 @@ export async function PUT(
     // If items are provided, update them
     if (items && Array.isArray(items)) {
       // Delete existing items and create new ones
-      await prisma.imprestItem.deleteMany({
+      await (prisma as any).imprestItem.deleteMany({
         where: { imprestFundId: params.id }
       })
 
@@ -125,12 +125,13 @@ export async function PUT(
           tanggal: new Date(item.tanggal),
           uraian: item.uraian,
           glAccountId: item.glAccountId,
+          areaPengguna: item.areaPengguna || null,
           jumlah: item.jumlah
         }))
       }
     }
 
-    const imprestFund = await prisma.imprestFund.update({
+    const imprestFund = await (prisma as any).imprestFund.update({
       where: { id: params.id },
       data: updateData,
       include: {
@@ -149,19 +150,19 @@ export async function PUT(
       const currentQuarter = Math.ceil((new Date().getMonth() + 1) / 3)
 
       // Delete existing transactions if any
-      await prisma.transaction.deleteMany({
-        where: { imprestFundId: params.id } as any
+      await (prisma as any).transaction.deleteMany({
+        where: { imprestFundId: params.id }
       })
 
       // Create new transactions for each item
       for (const item of imprestFund.items) {
-        await prisma.transaction.create({
+        await (prisma as any).transaction.create({
           data: {
             glAccountId: item.glAccountId,
             quarter: currentQuarter,
             regionalCode: (imprestFund as any).regionalCode || 'HO',
             kegiatan: item.uraian,
-            regionalPengguna: (imprestFund as any).regionalCode || 'Head Office',
+            regionalPengguna: (item as any).areaPengguna || (imprestFund as any).regionalCode || 'Head Office',
             year: currentYear,
             tanggalKwitansi: item.tanggal,
             nilaiKwitansi: item.jumlah,
@@ -190,8 +191,8 @@ export async function PUT(
       // Update existing transactions with new status and finance information
       const transactionStatus = status === 'close' ? 'Close' : status === 'proses' ? 'Proses' : 'Open'
       
-      await prisma.transaction.updateMany({
-        where: { imprestFundId: params.id } as any,
+      await (prisma as any).transaction.updateMany({
+        where: { imprestFundId: params.id },
         data: {
           status: transactionStatus,
           // Sync Finance fields from Imprest Fund to Transactions
@@ -214,7 +215,7 @@ export async function PUT(
 
     // Update Imprest Fund Card saldo based on status changes
     if (imprestFund.imprestFundCardId) {
-      const card = await prisma.imprestFundCard.findUnique({
+      const card = await (prisma as any).imprestFundCard.findUnique({
         where: { id: imprestFund.imprestFundCardId }
       })
 
@@ -233,7 +234,7 @@ export async function PUT(
         
         // Update card saldo if there's a change
         if (saldoChange !== 0) {
-          await prisma.imprestFundCard.update({
+          await (prisma as any).imprestFundCard.update({
             where: { id: imprestFund.imprestFundCardId },
             data: {
               saldo: card.saldo + saldoChange
@@ -257,7 +258,7 @@ export async function DELETE(
 ) {
   try {
     // Get the imprest fund first to check status and card
-    const imprestFund = await prisma.imprestFund.findUnique({
+    const imprestFund = await (prisma as any).imprestFund.findUnique({
       where: { id: params.id },
       include: { imprestFundCard: true }
     })
@@ -272,7 +273,7 @@ export async function DELETE(
       const amountToReturn = imprestFund.totalAmount - (imprestFund.nilaiTransfer || 0)
       
       if (amountToReturn > 0) {
-        await prisma.imprestFundCard.update({
+        await (prisma as any).imprestFundCard.update({
           where: { id: imprestFund.imprestFundCardId },
           data: {
             saldo: {
@@ -284,12 +285,12 @@ export async function DELETE(
     }
 
     // Delete related transactions first (cascade delete)
-    await prisma.transaction.deleteMany({
-      where: { imprestFundId: params.id } as any
+    await (prisma as any).transaction.deleteMany({
+      where: { imprestFundId: params.id }
     })
 
     // Then delete the imprest fund (items will be deleted automatically due to cascade)
-    await prisma.imprestFund.delete({
+    await (prisma as any).imprestFund.delete({
       where: { id: params.id }
     })
 
