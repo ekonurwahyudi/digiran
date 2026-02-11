@@ -7,10 +7,11 @@ import { Label } from '@/components/ui/label'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Wallet, TrendingDown, FileText, Clock } from 'lucide-react'
 import { ChartRadial } from '@/components/ui/chart-radial'
-import { CartesianGrid, Line, LineChart, XAxis, YAxis } from 'recharts'
+import { CartesianGrid, Line, LineChart, XAxis, YAxis, Bar, BarChart, Cell, LabelList } from 'recharts'
 import { ChartContainer, ChartTooltip, type ChartConfig, ChartLegend, ChartLegendContent } from '@/components/ui/chart'
 import { DashboardSkeleton } from '@/components/loading'
 import { useDashboardBudgets, useDashboardTransactions, useDashboardGlAccounts } from '@/lib/hooks/useDashboard'
+import { useRegionals } from '@/lib/hooks/useMaster'
 
 interface GlAccount {
   id: string
@@ -52,6 +53,7 @@ interface Transaction {
   glAccount?: GlAccount
   jenisPengadaan?: string
   regionalPengguna?: string
+  regionalCode?: string
 }
 
 export default function DashboardPage() {
@@ -67,6 +69,7 @@ export default function DashboardPage() {
   const { data: glAccounts = [], isLoading: loadingGl } = useDashboardGlAccounts()
   const { data: budgets = [], isLoading: loadingBudgets } = useDashboardBudgets(year)
   const { data: rawTransactions = [], isLoading: loadingTransactions } = useDashboardTransactions(year)
+  const { data: regionals = [] } = useRegionals()
 
   // Filter transactions by year from tanggalKwitansi
   const transactions = rawTransactions.filter((t: Transaction) => {
@@ -203,6 +206,34 @@ export default function DashboardPage() {
     console.log('SPPD Data:', result)
     return result
   }
+
+  // Data untuk penggunaan anggaran per Area (Regional)
+  const getAreaUsageData = () => {
+    // Initialize all regionals with 0
+    const areaData: Record<string, number> = {}
+    regionals.forEach((r: any) => {
+      areaData[r.name] = 0
+    })
+    
+    // Sum up transactions by regionalCode
+    transactions.forEach(t => {
+      const regional = regionals.find((r: any) => r.code === t.regionalCode)
+      if (regional) {
+        areaData[regional.name] += t.nilaiTanpaPPN
+      }
+    })
+    
+    // Convert to array format for chart
+    const result = Object.entries(areaData).map(([area, total]) => ({
+      area,
+      total
+    })).sort((a, b) => b.total - a.total) // Sort by total descending
+    
+    return result
+  }
+
+  // Colors for bar chart
+  const AREA_COLORS = ['#3b82f6', '#22c55e', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16']
 
   if (isLoading) {
     return <DashboardSkeleton />
@@ -630,6 +661,66 @@ export default function DashboardPage() {
               />
             </LineChart>
           </ChartContainer>
+        </CardContent>
+      </Card>
+
+      {/* Penggunaan Anggaran per Area */}
+      <Card className="border">
+        <CardHeader className="p-4 md:p-6">
+          <CardTitle className="text-base md:text-lg">Penggunaan Anggaran Area</CardTitle>
+          <CardDescription className="text-xs md:text-sm">Total penggunaan anggaran berdasarkan alokasi regional tahun {year}</CardDescription>
+        </CardHeader>
+        <CardContent className="p-4 md:p-6 pt-0 md:pt-0">
+          {getAreaUsageData().length > 0 ? (
+            <ChartContainer config={{
+              total: { label: "Total Penggunaan", color: "#3b82f6" }
+            }} className="h-[300px] md:h-[400px] w-full">
+              <BarChart
+                data={getAreaUsageData()}
+                layout="vertical"
+                margin={{ top: 5, right: 80, left: 10, bottom: 5 }}
+              >
+                <CartesianGrid horizontal={false} strokeDasharray="3 3" />
+                <XAxis type="number" hide />
+                <YAxis 
+                  type="category" 
+                  dataKey="area" 
+                  tickLine={false} 
+                  axisLine={false}
+                  width={100}
+                  tick={{ fontSize: 12 }}
+                />
+                <ChartTooltip
+                  content={({ active, payload }: any) => {
+                    if (!active || !payload || !payload.length) return null
+                    return (
+                      <div className="rounded-lg border bg-background p-2 shadow-sm">
+                        <div className="font-medium mb-1">{payload[0].payload.area}</div>
+                        <div className="text-sm text-muted-foreground">
+                          Rp {payload[0].value.toLocaleString('id-ID')}
+                        </div>
+                      </div>
+                    )
+                  }}
+                />
+                <Bar dataKey="total" radius={[0, 4, 4, 0]}>
+                  {getAreaUsageData().map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={AREA_COLORS[index % AREA_COLORS.length]} />
+                  ))}
+                  <LabelList 
+                    dataKey="total" 
+                    position="right" 
+                    formatter={(value: any) => formatCurrency(Number(value))}
+                    style={{ fontSize: 12, fontWeight: 600 }}
+                  />
+                </Bar>
+              </BarChart>
+            </ChartContainer>
+          ) : (
+            <div className="h-[300px] flex items-center justify-center text-muted-foreground">
+              Tidak ada data penggunaan anggaran untuk tahun {year}
+            </div>
+          )}
         </CardContent>
       </Card>
 
