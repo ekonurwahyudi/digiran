@@ -25,13 +25,14 @@ import { CurrencyInput } from '@/components/ui/currency-input'
 import { cn } from '@/lib/utils'
 import { TableSkeleton } from '@/components/loading'
 import { useTransactions, useRemainingBudget, useCreateTransaction, useUpdateTransaction, useDeleteTransaction } from '@/lib/hooks/useTransaction'
-import { useGlAccounts, useRegionals, useVendors, usePicAnggaran } from '@/lib/hooks/useMaster'
+import { useGlAccounts, useRegionals, useVendors, usePicAnggaran, useKaryawan } from '@/lib/hooks/useMaster'
 import { useBudgets } from '@/lib/hooks/useBudget'
 import api from '@/lib/axios'
 
 interface GlAccount { id: string; code: string; description: string }
 interface Regional { id: string; code: string; name: string }
 interface Vendor { id: string; name: string; alamat?: string; pic?: string; phone?: string; email?: string }
+interface Karyawan { id: string; nama: string; nik: string; jabatan: string; nomorHp?: string }
 interface RemainingInfo { allocated: number; used: number; remaining: number }
 interface Budget { 
   id: string; glAccountId: string; glAccount: GlAccount; year: number
@@ -153,6 +154,7 @@ export default function TransactionPage() {
   const { data: glAccounts = [], isLoading: glLoading } = useGlAccounts()
   const { data: regionals = [], isLoading: regionalLoading } = useRegionals()
   const { data: vendors = [] } = useVendors(false)
+  const { data: karyawanList = [] } = useKaryawan()
   const { data: transactions = [], isLoading: transactionLoading } = useTransactions(year)
   const { data: picAnggaranList = [] } = usePicAnggaran(year)
   const { data: remaining } = useRemainingBudget(selectedGl, parseInt(quarter), regional, year)
@@ -165,12 +167,29 @@ export default function TransactionPage() {
   const picAnggaran = picAnggaranList.length > 0 ? picAnggaranList[0] : null
   const loading = glLoading || regionalLoading || transactionLoading
 
+  // Helper function to check if GL Account is Traveling
+  const isTravelingGl = (glId: string) => {
+    const gl = glAccounts.find((g: GlAccount) => g.id === glId)
+    if (!gl) return false
+    const desc = gl.description.toLowerCase()
+    return desc.includes('traveling') || desc.includes('travel') || desc.includes('perjalanan')
+  }
+
+  // Check if selected GL is traveling for form
+  const isSelectedGlTraveling = isTravelingGl(selectedGl)
+  const isEditGlTraveling = isTravelingGl(editGl)
+
   // Set default regional when loaded
   useEffect(() => {
     if (regionals.length > 0 && !regional) {
       setRegional(regionals[0].code)
     }
   }, [regionals, regional])
+
+  // Reset regionalPengguna when GL Account changes (switching between traveling/non-traveling)
+  useEffect(() => {
+    setRegionalPengguna('')
+  }, [selectedGl])
 
   // Status counts
   const openCount = transactions.filter((t: Transaction) => t.status === 'Open').length
@@ -713,7 +732,20 @@ export default function TransactionPage() {
                 </div>
                 <div className="space-y-2"><Label className="text-xs md:text-sm">Kegiatan</Label><Input value={kegiatan} onChange={e => setKegiatan(e.target.value)} placeholder="Deskripsi kegiatan" required /></div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
-                  <div className="space-y-2"><Label className="text-xs md:text-sm">Regional Pengguna</Label><Input value={regionalPengguna} onChange={e => setRegionalPengguna(e.target.value)} placeholder="Regional pengguna" required /></div>
+                  <div className="space-y-2">
+                    <Label className="text-xs md:text-sm">{isSelectedGlTraveling ? 'Karyawan' : 'Regional Pengguna'}</Label>
+                    {isSelectedGlTraveling ? (
+                      <Select value={regionalPengguna} onValueChange={setRegionalPengguna}>
+                        <SelectTrigger><SelectValue placeholder="Pilih Karyawan" /></SelectTrigger>
+                        <SelectContent>{karyawanList.map((k: Karyawan) => <SelectItem key={k.id} value={k.nama}>{k.nama} - {k.jabatan}</SelectItem>)}</SelectContent>
+                      </Select>
+                    ) : (
+                      <Select value={regionalPengguna} onValueChange={setRegionalPengguna}>
+                        <SelectTrigger><SelectValue placeholder="Pilih Regional" /></SelectTrigger>
+                        <SelectContent>{regionals.map((r: Regional) => <SelectItem key={r.id} value={r.name}>{r.name}</SelectItem>)}</SelectContent>
+                      </Select>
+                    )}
+                  </div>
                   <div className="space-y-2"><Label className="text-xs md:text-sm">Tanggal Kwitansi</Label><DatePicker date={tanggalKwitansi} onSelect={setTanggalKwitansi} placeholder="Pilih tanggal" /></div>
                   <div className="space-y-2"><Label className="text-xs md:text-sm">Nilai Sebelum PPN</Label><CurrencyInput value={nilaiKwitansi} onChange={setNilaiKwitansi} /></div>
                 </div>
@@ -951,7 +983,20 @@ export default function TransactionPage() {
                 <div className="grid grid-cols-3 gap-4">
                   <div className="space-y-1.5"><Label className="text-sm text-muted-foreground">Kuartal</Label><Select value={editQuarter} onValueChange={setEditQuarter}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{[1,2,3,4].map(q => <SelectItem key={q} value={q.toString()}>Q{q}</SelectItem>)}</SelectContent></Select></div>
                   <div className="space-y-1.5"><Label className="text-sm text-muted-foreground">Regional</Label><Select value={editRegional} onValueChange={setEditRegional}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{regionals.map((r: Regional) => <SelectItem key={r.id} value={r.code}>{r.name}</SelectItem>)}</SelectContent></Select></div>
-                  <div className="space-y-1.5"><Label className="text-sm text-muted-foreground">Regional Pengguna</Label><Input value={editRegionalPengguna} onChange={e => setEditRegionalPengguna(e.target.value)} /></div>
+                  <div className="space-y-1.5">
+                    <Label className="text-sm text-muted-foreground">{isEditGlTraveling ? 'Karyawan' : 'Regional Pengguna'}</Label>
+                    {isEditGlTraveling ? (
+                      <Select value={editRegionalPengguna} onValueChange={setEditRegionalPengguna}>
+                        <SelectTrigger><SelectValue placeholder="Pilih Karyawan" /></SelectTrigger>
+                        <SelectContent>{karyawanList.map((k: Karyawan) => <SelectItem key={k.id} value={k.nama}>{k.nama} - {k.jabatan}</SelectItem>)}</SelectContent>
+                      </Select>
+                    ) : (
+                      <Select value={editRegionalPengguna} onValueChange={setEditRegionalPengguna}>
+                        <SelectTrigger><SelectValue placeholder="Pilih Regional" /></SelectTrigger>
+                        <SelectContent>{regionals.map((r: Regional) => <SelectItem key={r.id} value={r.name}>{r.name}</SelectItem>)}</SelectContent>
+                      </Select>
+                    )}
+                  </div>
                 </div>
                 <div className="space-y-1.5"><Label className="text-sm text-muted-foreground">Kegiatan</Label><Input value={editKegiatan} onChange={e => setEditKegiatan(e.target.value)} /></div>
                 <div className="grid grid-cols-3 gap-4">

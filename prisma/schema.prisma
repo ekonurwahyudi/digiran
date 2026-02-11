@@ -265,3 +265,15 @@ model ImprestFundCard {
   updatedAt     DateTime      @updatedAt
   imprestFunds  ImprestFund[] // Top up records
 }
+
+
+model Karyawan {
+  id        String   @id @default(cuid())
+  nama      String
+  nik       String   @unique
+  jabatan   String
+  nomorHp   String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

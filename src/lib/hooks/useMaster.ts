@@ -190,3 +190,42 @@ export const useDeleteImprestFundCard = () => {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: imprestFundCardKeys.all }),
   })
 }
+
+// Karyawan hooks
+export const karyawanKeys = {
+  all: ['karyawan'] as const,
+}
+
+export const useKaryawan = () => {
+  return useQuery({
+    queryKey: karyawanKeys.all,
+    queryFn: async () => {
+      const data = await api.get('/karyawan')
+      return data as unknown as any[]
+    },
+  })
+}
+
+export const useCreateKaryawan = () => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (data: any) => await api.post('/karyawan', data),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: karyawanKeys.all }),
+  })
+}
+
+export const useUpdateKaryawan = () => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: any }) => await api.put(`/karyawan/${id}`, data),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: karyawanKeys.all }),
+  })
+}
+
+export const useDeleteKaryawan = () => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (id: string) => await api.delete(`/karyawan/${id}`),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: karyawanKeys.all }),
+  })
+}

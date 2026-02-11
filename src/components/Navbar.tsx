@@ -11,7 +11,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { LayoutDashboard, Wallet, BarChart3, LogOut, Database, ChevronDown, Building2, FileCode, Settings, FolderOpen, Users, UserCog, CreditCard, Menu, X } from 'lucide-react'
+import { LayoutDashboard, Wallet, BarChart3, LogOut, Database, ChevronDown, Building2, FileCode, Settings, FolderOpen, Users, UserCog, CreditCard, Menu, X, UserCheck } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 // Weather icon component using custom images
@@ -93,6 +93,7 @@ export default function Navbar() {
     { href: '/dashboard/master/gl-account', label: 'GL Account', icon: FileCode },
     { href: '/dashboard/master/regional', label: 'Regional', icon: Building2 },
     { href: '/dashboard/master/vendor', label: 'Vendor', icon: Users },
+    { href: '/dashboard/master/karyawan', label: 'Karyawan', icon: UserCheck },
     { href: '/dashboard/master/pic-anggaran', label: 'PIC Anggaran', icon: UserCog },
     { href: '/dashboard/master/imprest-fund-card', label: 'Imprest Fund Card', icon: CreditCard },
   ]
