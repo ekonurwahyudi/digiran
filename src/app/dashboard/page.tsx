@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Wallet, TrendingDown, FileText, Clock } from 'lucide-react'
 import { ChartRadial } from '@/components/ui/chart-radial'
-import { CartesianGrid, Line, LineChart, XAxis, YAxis, Bar, BarChart, Cell, LabelList } from 'recharts'
+import { CartesianGrid, Line, LineChart, XAxis, YAxis, Bar, BarChart, Cell, LabelList, PieChart, Pie } from 'recharts'
 import { ChartContainer, ChartTooltip, type ChartConfig, ChartLegend, ChartLegendContent } from '@/components/ui/chart'
 import { DashboardSkeleton } from '@/components/loading'
 import { useDashboardBudgets, useDashboardTransactions, useDashboardGlAccounts } from '@/lib/hooks/useDashboard'
@@ -708,50 +708,131 @@ export default function DashboardPage() {
         </CardHeader>
         <CardContent className="p-4 md:p-6 pt-0 md:pt-0">
           {getAreaUsageData(selectedAreaGlAccount).length > 0 ? (
-            <ChartContainer config={{
-              total: { label: "Total Penggunaan", color: "#3b82f6" }
-            }} className="h-[300px] md:h-[400px] w-full">
-              <BarChart
-                data={getAreaUsageData(selectedAreaGlAccount)}
-                layout="vertical"
-                margin={{ top: 5, right: 80, left: 10, bottom: 5 }}
-              >
-                <CartesianGrid horizontal={false} strokeDasharray="3 3" />
-                <XAxis type="number" hide />
-                <YAxis 
-                  type="category" 
-                  dataKey="area" 
-                  tickLine={false} 
-                  axisLine={false}
-                  width={100}
-                  tick={{ fontSize: 12 }}
-                />
-                <ChartTooltip
-                  content={({ active, payload }: any) => {
-                    if (!active || !payload || !payload.length) return null
-                    return (
-                      <div className="rounded-lg border bg-background p-2 shadow-sm">
-                        <div className="font-medium mb-1">{payload[0].payload.area}</div>
-                        <div className="text-sm text-muted-foreground">
-                          Rp {payload[0].value.toLocaleString('id-ID')}
-                        </div>
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+              {/* Bar Chart - 8 columns on desktop */}
+              <div className="lg:col-span-8">
+                <ChartContainer config={{
+                  total: { label: "Total Penggunaan", color: "#3b82f6" }
+                }} className="h-[300px] md:h-[350px] w-full">
+                  <BarChart
+                    data={getAreaUsageData(selectedAreaGlAccount)}
+                    layout="vertical"
+                    margin={{ top: 5, right: 80, left: 10, bottom: 5 }}
+                  >
+                    <CartesianGrid horizontal={false} strokeDasharray="3 3" />
+                    <XAxis type="number" hide />
+                    <YAxis 
+                      type="category" 
+                      dataKey="area" 
+                      tickLine={false} 
+                      axisLine={false}
+                      width={100}
+                      tick={{ fontSize: 11 }}
+                    />
+                    <ChartTooltip
+                      content={({ active, payload }: any) => {
+                        if (!active || !payload || !payload.length) return null
+                        return (
+                          <div className="rounded-lg border bg-background p-2 shadow-sm">
+                            <div className="font-medium mb-1">{payload[0].payload.area}</div>
+                            <div className="text-sm text-muted-foreground">
+                              Rp {payload[0].value.toLocaleString('id-ID')}
+                            </div>
+                          </div>
+                        )
+                      }}
+                    />
+                    <Bar dataKey="total" radius={[0, 4, 4, 0]}>
+                      {getAreaUsageData(selectedAreaGlAccount).map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={AREA_COLORS[index % AREA_COLORS.length]} />
+                      ))}
+                      <LabelList 
+                        dataKey="total" 
+                        position="right" 
+                        formatter={(value: any) => formatCurrency(Number(value))}
+                        style={{ fontSize: 11, fontWeight: 600 }}
+                      />
+                    </Bar>
+                  </BarChart>
+                </ChartContainer>
+              </div>
+              
+              {/* Pie Chart - 4 columns on desktop */}
+              <div className="lg:col-span-4">
+                <div className="h-[300px] md:h-[350px] flex flex-col">
+                  <ChartContainer config={{
+                    total: { label: "Total Penggunaan", color: "#3b82f6" }
+                  }} className="flex-1 w-full">
+                    <PieChart>
+                      <ChartTooltip
+                        content={({ active, payload }: any) => {
+                          if (!active || !payload || !payload.length) return null
+                          const total = getAreaUsageData(selectedAreaGlAccount).reduce((sum, d) => sum + d.total, 0)
+                          const percent = total > 0 ? ((payload[0].value / total) * 100).toFixed(1) : 0
+                          return (
+                            <div className="rounded-lg border bg-background p-2 shadow-sm">
+                              <div className="font-medium mb-1">{payload[0].payload.area}</div>
+                              <div className="text-sm text-muted-foreground">
+                                Rp {payload[0].value.toLocaleString('id-ID')} ({percent}%)
+                              </div>
+                            </div>
+                          )
+                        }}
+                      />
+                      <Pie
+                        data={getAreaUsageData(selectedAreaGlAccount).filter(d => d.total > 0)}
+                        dataKey="total"
+                        nameKey="area"
+                        cx="50%"
+                        cy="50%"
+                        outerRadius={100}
+                        strokeWidth={2}
+                        stroke="#fff"
+                        label={({ cx, cy, midAngle, innerRadius, outerRadius, percent }: any) => {
+                          if (percent < 0.05) return null // Hide label if less than 5%
+                          const RADIAN = Math.PI / 180
+                          const radius = innerRadius + (outerRadius - innerRadius) * 0.5
+                          const x = cx + radius * Math.cos(-midAngle * RADIAN)
+                          const y = cy + radius * Math.sin(-midAngle * RADIAN)
+                          return (
+                            <text
+                              x={x}
+                              y={y}
+                              fill="#fff"
+                              textAnchor="middle"
+                              dominantBaseline="central"
+                              fontSize={12}
+                              fontWeight={600}
+                            >
+                              {`${(percent * 100).toFixed(0)}%`}
+                            </text>
+                          )
+                        }}
+                        labelLine={false}
+                      >
+                        {getAreaUsageData(selectedAreaGlAccount).filter(d => d.total > 0).map((entry, index) => (
+                          <Cell key={`pie-cell-${index}`} fill={AREA_COLORS[index % AREA_COLORS.length]} />
+                        ))}
+                      </Pie>
+                    </PieChart>
+                  </ChartContainer>
+                  {/* Legend */}
+                  <div className="flex flex-wrap justify-center gap-2 mt-2">
+                    {getAreaUsageData(selectedAreaGlAccount).filter(d => d.total > 0).map((entry, index) => (
+                      <div key={`legend-${index}`} className="flex items-center gap-1.5 text-xs">
+                        <div 
+                          className="w-2.5 h-2.5 rounded-full" 
+                          style={{ backgroundColor: AREA_COLORS[index % AREA_COLORS.length] }}
+                        />
+                        <span className="text-muted-foreground truncate max-w-[80px]" title={entry.area}>
+                          {entry.area.length > 12 ? entry.area.substring(0, 12) + '...' : entry.area}
+                        </span>
                       </div>
-                    )
-                  }}
-                />
-                <Bar dataKey="total" radius={[0, 4, 4, 0]}>
-                  {getAreaUsageData(selectedAreaGlAccount).map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={AREA_COLORS[index % AREA_COLORS.length]} />
-                  ))}
-                  <LabelList 
-                    dataKey="total" 
-                    position="right" 
-                    formatter={(value: any) => formatCurrency(Number(value))}
-                    style={{ fontSize: 12, fontWeight: 600 }}
-                  />
-                </Bar>
-              </BarChart>
-            </ChartContainer>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
           ) : (
             <div className="h-[300px] flex items-center justify-center text-muted-foreground">
               Tidak ada data penggunaan anggaran untuk tahun {year}
