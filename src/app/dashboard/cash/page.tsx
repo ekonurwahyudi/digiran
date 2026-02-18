@@ -15,7 +15,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Plus, Trash2, Pencil, Wallet, TrendingUp, TrendingDown, Users } from 'lucide-react'
+import { Plus, Trash2, Pencil, Wallet, TrendingUp, TrendingDown, Users, History } from 'lucide-react'
 import { CurrencyInput } from '@/components/ui/currency-input'
 import { TableSkeleton } from '@/components/loading'
 import { useCash, useCreateCash, useUpdateCash, useDeleteCash, Cash } from '@/lib/hooks/useCash'
@@ -32,6 +32,9 @@ interface Karyawan {
 export default function CashPage() {
   const [message, setMessage] = useState('')
   const [activeTab, setActiveTab] = useState('all')
+  
+  // Input dialog state
+  const [showInputDialog, setShowInputDialog] = useState(false)
   
   // Form states
   const [karyawanId, setKaryawanId] = useState('')
@@ -114,6 +117,7 @@ export default function CashPage() {
       })
       setMessage('Data cash berhasil disimpan!')
       resetForm()
+      setShowInputDialog(false)
     } catch (error) {
       setMessage('Gagal menyimpan data cash!')
     }
@@ -173,9 +177,9 @@ export default function CashPage() {
 
   const columns: ColumnDef<Cash>[] = [
     { 
-      accessorKey: 'tanggal', 
-      header: 'Tanggal', 
-      cell: ({ row }) => format(new Date(row.original.tanggal), 'dd MMM yyyy', { locale: idLocale }) 
+      accessorKey: 'keterangan', 
+      header: 'Keterangan', 
+      cell: ({ row }) => row.original.keterangan || '-' 
     },
     { 
       accessorKey: 'karyawan.nama', 
@@ -201,9 +205,9 @@ export default function CashPage() {
       )
     },
     { 
-      accessorKey: 'keterangan', 
-      header: 'Keterangan', 
-      cell: ({ row }) => row.original.keterangan || '-' 
+      accessorKey: 'tanggal', 
+      header: 'Tanggal', 
+      cell: ({ row }) => format(new Date(row.original.tanggal), 'dd MMM yyyy', { locale: idLocale }) 
     },
     { 
       id: 'actions', 
@@ -227,9 +231,14 @@ export default function CashPage() {
 
   return (
     <div className="space-y-4 md:space-y-6">
-      <div>
-        <h1 className="text-xl md:text-2xl font-bold">Cash Management</h1>
-        <p className="text-muted-foreground text-xs md:text-sm">Kelola uang masuk dan keluar karyawan</p>
+      <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3">
+        <div>
+          <h1 className="text-xl md:text-2xl font-bold">Cash Management</h1>
+          <p className="text-muted-foreground text-xs md:text-sm">Kelola uang masuk dan keluar karyawan</p>
+        </div>
+        <Button onClick={() => { resetForm(); setShowInputDialog(true) }} className="gap-2 w-full sm:w-auto">
+          <Plus className="h-4 w-4" />Input Cash
+        </Button>
       </div>
 
       {message && (
@@ -246,7 +255,10 @@ export default function CashPage() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs text-muted-foreground">Total Cash</p>
+                <div className="flex items-center gap-1.5 mb-1">
+                  <Wallet className="h-3.5 w-3.5 text-muted-foreground" />
+                  <p className="text-xs text-muted-foreground">Total Cash</p>
+                </div>
                 <p className={`text-lg md:text-2xl font-bold ${totalCash >= 0 ? 'text-blue-600' : 'text-red-600'}`}>
                   Rp {totalCash.toLocaleString('id-ID')}
                 </p>
@@ -261,7 +273,10 @@ export default function CashPage() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs text-muted-foreground">Total Masuk</p>
+                <div className="flex items-center gap-1.5 mb-1">
+                  <TrendingUp className="h-3.5 w-3.5 text-muted-foreground" />
+                  <p className="text-xs text-muted-foreground">Total Masuk</p>
+                </div>
                 <p className="text-lg md:text-2xl font-bold text-green-600">Rp {totalMasuk.toLocaleString('id-ID')}</p>
               </div>
               <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
@@ -274,7 +289,10 @@ export default function CashPage() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs text-muted-foreground">Total Keluar</p>
+                <div className="flex items-center gap-1.5 mb-1">
+                  <TrendingDown className="h-3.5 w-3.5 text-muted-foreground" />
+                  <p className="text-xs text-muted-foreground">Total Keluar</p>
+                </div>
                 <p className="text-lg md:text-2xl font-bold text-red-600">Rp {totalKeluar.toLocaleString('id-ID')}</p>
               </div>
               <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
@@ -287,7 +305,10 @@ export default function CashPage() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs text-muted-foreground">Karyawan dgn Saldo</p>
+                <div className="flex items-center gap-1.5 mb-1">
+                  <Users className="h-3.5 w-3.5 text-muted-foreground" />
+                  <p className="text-xs text-muted-foreground">Karyawan dgn Saldo</p>
+                </div>
                 <p className="text-lg md:text-2xl font-bold text-purple-600">{cashPerKaryawan.length}</p>
               </div>
               <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
@@ -302,7 +323,10 @@ export default function CashPage() {
       {cashPerKaryawan.length > 0 && (
         <Card className="border">
           <CardHeader className="p-4 pb-2">
-            <CardTitle className="text-sm font-medium">Saldo Cash per Karyawan</CardTitle>
+            <CardTitle className="flex items-center gap-2 text-sm font-medium">
+              <Users className="h-4 w-4 text-muted-foreground" />
+              Saldo Cash per Karyawan
+            </CardTitle>
           </CardHeader>
           <CardContent className="p-4 pt-2">
             <div className="flex flex-wrap gap-2">
@@ -319,67 +343,13 @@ export default function CashPage() {
         </Card>
       )}
 
-      {/* Input Form */}
-      <Card className="border">
-        <CardHeader className="p-4 md:p-6">
-          <CardTitle className="flex items-center gap-2 text-base md:text-lg">
-            <Plus className="h-4 w-4 md:h-5 md:w-5" />Input Cash
-          </CardTitle>
-          <CardDescription className="text-xs md:text-sm">Tambah data uang masuk atau keluar</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4 p-4 md:p-6 pt-0">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 md:gap-4">
-            <div className="space-y-2">
-              <Label className="text-xs md:text-sm">Karyawan</Label>
-              <Select value={karyawanId} onValueChange={setKaryawanId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Pilih karyawan" />
-                </SelectTrigger>
-                <SelectContent>
-                  {karyawanList.map((k: Karyawan) => (
-                    <SelectItem key={k.id} value={k.id}>{k.nama}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label className="text-xs md:text-sm">Tanggal</Label>
-              <DatePicker date={tanggal} onSelect={(d) => d && setTanggal(d)} />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-xs md:text-sm">Tipe</Label>
-              <Select value={tipe} onValueChange={(v) => setTipe(v as 'masuk' | 'keluar')}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="masuk">Uang Masuk</SelectItem>
-                  <SelectItem value="keluar">Uang Keluar</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label className="text-xs md:text-sm">Jumlah (Rp)</Label>
-              <CurrencyInput value={jumlah} onChange={setJumlah} />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-xs md:text-sm">Keterangan</Label>
-              <Input value={keterangan} onChange={(e) => setKeterangan(e.target.value)} placeholder="Opsional" />
-            </div>
-          </div>
-          <div className="flex justify-end">
-            <Button onClick={handleSubmit} disabled={createCash.isPending}>
-              <Plus className="h-4 w-4 mr-2" />
-              {createCash.isPending ? 'Menyimpan...' : 'Simpan'}
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
       {/* History Table */}
       <Card className="border">
         <CardHeader className="p-4 md:p-6">
-          <CardTitle className="text-base md:text-lg">Riwayat Cash</CardTitle>
+          <CardTitle className="flex items-center gap-2 text-base md:text-lg">
+            <History className="h-4 w-4 md:h-5 md:w-5 text-muted-foreground" />
+            Riwayat Cash
+          </CardTitle>
           <CardDescription className="text-xs md:text-sm">Data transaksi uang masuk dan keluar</CardDescription>
         </CardHeader>
         <CardContent className="p-4 md:p-6 pt-0">
@@ -404,11 +374,75 @@ export default function CashPage() {
         </CardContent>
       </Card>
 
+      {/* Input Dialog */}
+      <Dialog open={showInputDialog} onOpenChange={setShowInputDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Plus className="h-5 w-5" />
+              Input Cash
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Karyawan</Label>
+              <Select value={karyawanId} onValueChange={setKaryawanId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Pilih karyawan" />
+                </SelectTrigger>
+                <SelectContent>
+                  {karyawanList.map((k: Karyawan) => (
+                    <SelectItem key={k.id} value={k.id}>{k.nama}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Tanggal</Label>
+              <DatePicker date={tanggal} onSelect={(d) => d && setTanggal(d)} />
+            </div>
+            <div className="space-y-2">
+              <Label>Tipe</Label>
+              <Select value={tipe} onValueChange={(v) => setTipe(v as 'masuk' | 'keluar')}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="masuk">Uang Masuk</SelectItem>
+                  <SelectItem value="keluar">Uang Keluar</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Jumlah (Rp)</Label>
+              <CurrencyInput value={jumlah} onChange={setJumlah} />
+            </div>
+            <div className="space-y-2">
+              <Label>Keterangan</Label>
+              <Textarea 
+                value={keterangan} 
+                onChange={(e) => setKeterangan(e.target.value)} 
+                placeholder="Opsional"
+              />
+            </div>
+            <div className="flex gap-2 justify-end">
+              <Button variant="outline" onClick={() => setShowInputDialog(false)}>Batal</Button>
+              <Button onClick={handleSubmit} disabled={createCash.isPending}>
+                {createCash.isPending ? 'Menyimpan...' : 'Simpan'}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Edit Dialog */}
       <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Edit Cash</DialogTitle>
+            <DialogTitle className="flex items-center gap-2">
+              <Pencil className="h-5 w-5" />
+              Edit Cash
+            </DialogTitle>
           </DialogHeader>
           {editingCash && (
             <div className="space-y-4">
