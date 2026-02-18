@@ -277,4 +277,21 @@ model Karyawan {
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  cashRecords Cash[]
+}
+
+
+model Cash {
+  id          String    @id @default(cuid())
+  karyawanId  String
+  karyawan    Karyawan  @relation(fields: [karyawanId], references: [id])
+  tanggal     DateTime
+  tipe        String    // 'masuk' atau 'keluar'
+  jumlah      Float
+  keterangan  String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([karyawanId])
+  @@index([tanggal])
 }

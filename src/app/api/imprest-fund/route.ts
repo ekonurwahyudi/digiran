@@ -13,28 +13,7 @@ export async function GET(request: NextRequest) {
     
     const imprestFunds = await (prisma as any).imprestFund.findMany({
       where,
-      select: {
-        id: true,
-        kelompokKegiatan: true,
-        regionalCode: true,
-        status: true,
-        totalAmount: true,
-        debit: true,
-        keterangan: true,
-        noTiketMydx: true,
-        tglSerahFinance: true,
-        picFinance: true,
-        noHpFinance: true,
-        tglTransferVendor: true,
-        nilaiTransfer: true,
-        taskPengajuan: true,
-        taskTransferVendor: true,
-        taskTerimaBerkas: true,
-        taskUploadMydx: true,
-        taskSerahFinance: true,
-        taskVendorDibayar: true,
-        createdAt: true,
-        updatedAt: true,
+      include: {
         imprestFundCard: {
           select: {
             id: true,
@@ -43,13 +22,7 @@ export async function GET(request: NextRequest) {
           }
         },
         items: {
-          select: {
-            id: true,
-            tanggal: true,
-            uraian: true,
-            jumlah: true,
-            glAccountId: true,
-            areaPengguna: true,
+          include: {
             glAccount: {
               select: {
                 id: true,
@@ -93,7 +66,7 @@ export async function GET(request: NextRequest) {
     })
   } catch (error) {
     console.error('Error fetching imprest funds:', error)
-    return NextResponse.json({ error: 'Failed to fetch imprest funds' }, { status: 500 })
+    return NextResponse.json({ error: 'Failed to fetch imprest funds', details: String(error) }, { status: 500 })
   }
 }
 
