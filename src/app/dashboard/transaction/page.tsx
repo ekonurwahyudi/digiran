@@ -201,7 +201,7 @@ export default function TransactionPage() {
     if (activeTab !== 'all' && t.status !== activeTab) return false
     if (filterGl && t.glAccountId !== filterGl) return false
     if (filterQuarter && t.quarter !== parseInt(filterQuarter)) return false
-    if (filterRegional && t.regionalCode !== filterRegional) return false
+    if (filterRegional && t.regionalPengguna !== filterRegional) return false
     if (filterPengadaan && t.jenisPengadaan !== filterPengadaan) return false
     if (searchQuery && !t.kegiatan.toLowerCase().includes(searchQuery.toLowerCase())) return false
     return true
@@ -655,7 +655,7 @@ export default function TransactionPage() {
     { accessorKey: 'tanggalKwitansi', header: 'Tgl Kwitansi', cell: ({ row }) => row.original.tanggalKwitansi ? format(new Date(row.original.tanggalKwitansi), 'dd MMM yy', { locale: idLocale }) : '-' },
     { accessorKey: 'glAccount.code', header: 'GL Account', cell: ({ row }) => row.original.glAccount.code },
     { accessorKey: 'quarter', header: 'Kuartal', cell: ({ row }) => `Q${row.getValue('quarter')}` },
-    { accessorKey: 'regionalCode', header: 'Regional', cell: ({ row }) => regionals.find((r: Regional) => r.code === row.original.regionalCode)?.name || row.original.regionalCode },
+    { accessorKey: 'regionalCode', header: 'Alokasi', cell: ({ row }) => regionals.find((r: Regional) => r.code === row.original.regionalCode)?.name || row.original.regionalCode },
     { accessorKey: 'kegiatan', header: 'Kegiatan' },
     { accessorKey: 'nilaiTanpaPPN', header: () => <div className="text-right">Nilai (Rp)</div>, cell: ({ row }) => <div className="text-right">{row.original.nilaiTanpaPPN.toLocaleString('id-ID')}</div> },
     { accessorKey: 'jenisPengadaan', header: 'Pengadaan', cell: ({ row }) => JENIS_PENGADAAN.find(p => p.value === row.original.jenisPengadaan)?.label || '-' },
@@ -716,9 +716,9 @@ export default function TransactionPage() {
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-xs md:text-sm">Alokasi Regional</Label>
+                    <Label className="text-xs md:text-sm">Alokasi Anggaran</Label>
                     <Select value={regional} onValueChange={setRegional}>
-                      <SelectTrigger><SelectValue placeholder="Pilih Regional" /></SelectTrigger>
+                      <SelectTrigger><SelectValue placeholder="Pilih Area" /></SelectTrigger>
                       <SelectContent>{regionals.map((r: Regional) => <SelectItem key={r.id} value={r.code}>{r.name}</SelectItem>)}</SelectContent>
                     </Select>
                   </div>
@@ -733,7 +733,7 @@ export default function TransactionPage() {
                 <div className="space-y-2"><Label className="text-xs md:text-sm">Kegiatan</Label><Input value={kegiatan} onChange={e => setKegiatan(e.target.value)} placeholder="Deskripsi kegiatan" required /></div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
                   <div className="space-y-2">
-                    <Label className="text-xs md:text-sm">{isSelectedGlTraveling ? 'Karyawan' : 'Regional Pengguna'}</Label>
+                    <Label className="text-xs md:text-sm">{isSelectedGlTraveling ? 'Karyawan' : 'Area Pengguna'}</Label>
                     {isSelectedGlTraveling ? (
                       <Select value={regionalPengguna} onValueChange={setRegionalPengguna}>
                         <SelectTrigger><SelectValue placeholder="Pilih Karyawan" /></SelectTrigger>
@@ -741,7 +741,7 @@ export default function TransactionPage() {
                       </Select>
                     ) : (
                       <Select value={regionalPengguna} onValueChange={setRegionalPengguna}>
-                        <SelectTrigger><SelectValue placeholder="Pilih Regional" /></SelectTrigger>
+                        <SelectTrigger><SelectValue placeholder="Pilih Area" /></SelectTrigger>
                         <SelectContent>{regionals.map((r: Regional) => <SelectItem key={r.id} value={r.name}>{r.name}</SelectItem>)}</SelectContent>
                       </Select>
                     )}
@@ -831,12 +831,12 @@ export default function TransactionPage() {
                           </Select>
                         </div>
                         <div className="space-y-1.5">
-                          <Label className="text-xs text-muted-foreground">Regional</Label>
+                          <Label className="text-xs text-muted-foreground">Lokasi Pengguna</Label>
                           <Select value={filterRegional || 'all'} onValueChange={v => setFilterRegional(v === 'all' ? '' : v)}>
-                            <SelectTrigger className="h-9"><SelectValue placeholder="Semua Regional" /></SelectTrigger>
+                            <SelectTrigger className="h-9"><SelectValue placeholder="Semua Lokasi" /></SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="all">Semua Regional</SelectItem>
-                              {regionals.map((r: Regional) => <SelectItem key={r.id} value={r.code}>{r.name}</SelectItem>)}
+                              <SelectItem value="all">Semua Lokasi</SelectItem>
+                              {regionals.map((r: Regional) => <SelectItem key={r.id} value={r.name}>{r.name}</SelectItem>)}
                             </SelectContent>
                           </Select>
                         </div>
@@ -890,8 +890,8 @@ export default function TransactionPage() {
                 </div>
                 <div className="grid grid-cols-3 gap-4">
                   <div className="space-y-1.5"><Label className="text-sm text-muted-foreground">Kuartal</Label><Input value={`Q${viewingTransaction.quarter}`} disabled className="bg-muted/50 font-medium" /></div>
-                  <div className="space-y-1.5"><Label className="text-sm text-muted-foreground">Regional</Label><Input value={regionals.find((r: Regional) => r.code === viewingTransaction.regionalCode)?.name || '-'} disabled className="bg-muted/50 font-medium" /></div>
-                  <div className="space-y-1.5"><Label className="text-sm text-muted-foreground">Regional Pengguna</Label><Input value={viewingTransaction.regionalPengguna} disabled className="bg-muted/50 font-medium" /></div>
+                  <div className="space-y-1.5"><Label className="text-sm text-muted-foreground">Alokasi Anggaran</Label><Input value={regionals.find((r: Regional) => r.code === viewingTransaction.regionalCode)?.name || '-'} disabled className="bg-muted/50 font-medium" /></div>
+                  <div className="space-y-1.5"><Label className="text-sm text-muted-foreground">Area Pengguna</Label><Input value={viewingTransaction.regionalPengguna} disabled className="bg-muted/50 font-medium" /></div>
                 </div>
                 <div className="space-y-1.5"><Label className="text-sm text-muted-foreground">Kegiatan</Label><Input value={viewingTransaction.kegiatan} disabled className="bg-muted/50 font-medium" /></div>
                 <div className="grid grid-cols-3 gap-4">
@@ -982,9 +982,9 @@ export default function TransactionPage() {
                 </div>
                 <div className="grid grid-cols-3 gap-4">
                   <div className="space-y-1.5"><Label className="text-sm text-muted-foreground">Kuartal</Label><Select value={editQuarter} onValueChange={setEditQuarter}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{[1,2,3,4].map(q => <SelectItem key={q} value={q.toString()}>Q{q}</SelectItem>)}</SelectContent></Select></div>
-                  <div className="space-y-1.5"><Label className="text-sm text-muted-foreground">Regional</Label><Select value={editRegional} onValueChange={setEditRegional}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{regionals.map((r: Regional) => <SelectItem key={r.id} value={r.code}>{r.name}</SelectItem>)}</SelectContent></Select></div>
+                  <div className="space-y-1.5"><Label className="text-sm text-muted-foreground">Alokasi Anggaran</Label><Select value={editRegional} onValueChange={setEditRegional}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{regionals.map((r: Regional) => <SelectItem key={r.id} value={r.code}>{r.name}</SelectItem>)}</SelectContent></Select></div>
                   <div className="space-y-1.5">
-                    <Label className="text-sm text-muted-foreground">{isEditGlTraveling ? 'Karyawan' : 'Regional Pengguna'}</Label>
+                    <Label className="text-sm text-muted-foreground">{isEditGlTraveling ? 'Karyawan' : 'Area Pengguna'}</Label>
                     {isEditGlTraveling ? (
                       <Select value={editRegionalPengguna} onValueChange={setEditRegionalPengguna}>
                         <SelectTrigger><SelectValue placeholder="Pilih Karyawan" /></SelectTrigger>
@@ -992,7 +992,7 @@ export default function TransactionPage() {
                       </Select>
                     ) : (
                       <Select value={editRegionalPengguna} onValueChange={setEditRegionalPengguna}>
-                        <SelectTrigger><SelectValue placeholder="Pilih Regional" /></SelectTrigger>
+                        <SelectTrigger><SelectValue placeholder="Pilih Area" /></SelectTrigger>
                         <SelectContent>{regionals.map((r: Regional) => <SelectItem key={r.id} value={r.name}>{r.name}</SelectItem>)}</SelectContent>
                       </Select>
                     )}

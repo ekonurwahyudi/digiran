@@ -291,7 +291,20 @@ model Cash {
   keterangan  String?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
+  files       CashFile[]
 
   @@index([karyawanId])
   @@index([tanggal])
+}
+
+model CashFile {
+  id           String   @id @default(cuid())
+  cashId       String
+  cash         Cash     @relation(fields: [cashId], references: [id], onDelete: Cascade)
+  fileName     String
+  originalName String
+  fileSize     Int
+  mimeType     String
+  filePath     String
+  uploadedAt   DateTime @default(now())
 }

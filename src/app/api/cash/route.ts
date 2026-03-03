@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { karyawanId, tanggal, tipe, jumlah, keterangan } = body
 
-    if (!karyawanId || !tanggal || !tipe || !jumlah) {
+    if (!karyawanId || !tanggal || !tipe || jumlah === undefined || jumlah === null) {
       return NextResponse.json({ error: 'Karyawan, tanggal, tipe, dan jumlah harus diisi' }, { status: 400 })
     }
 
@@ -43,12 +43,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Tipe harus masuk atau keluar' }, { status: 400 })
     }
 
+    // Ensure jumlah is a number
+    const jumlahNum = typeof jumlah === 'string' ? parseFloat(jumlah) : jumlah
+
     const cash = await (prisma as any).cash.create({
       data: {
         karyawanId,
         tanggal: new Date(tanggal),
         tipe,
-        jumlah,
+        jumlah: jumlahNum,
         keterangan: keterangan || null
       },
       include: {
@@ -64,8 +67,11 @@ export async function POST(request: NextRequest) {
     })
 
     return NextResponse.json(cash, { status: 201 })
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error creating cash record:', error)
-    return NextResponse.json({ error: 'Failed to create cash record' }, { status: 500 })
+    return NextResponse.json({ 
+      error: 'Failed to create cash record', 
+      details: error?.message || String(error) 
+    }, { status: 500 })
   }
 }

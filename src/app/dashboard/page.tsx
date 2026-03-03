@@ -5,13 +5,14 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Label } from '@/components/ui/label'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Wallet, TrendingDown, FileText, Clock } from 'lucide-react'
+import { Wallet, TrendingDown, FileText, Clock, BookOpen, Hourglass, CheckCircle, ClipboardList } from 'lucide-react'
 import { ChartRadial } from '@/components/ui/chart-radial'
 import { CartesianGrid, Line, LineChart, XAxis, YAxis, Bar, BarChart, Cell, LabelList, PieChart, Pie } from 'recharts'
 import { ChartContainer, ChartTooltip, type ChartConfig, ChartLegend, ChartLegendContent } from '@/components/ui/chart'
 import { DashboardSkeleton } from '@/components/loading'
 import { useDashboardBudgets, useDashboardTransactions, useDashboardGlAccounts } from '@/lib/hooks/useDashboard'
 import { useRegionals } from '@/lib/hooks/useMaster'
+import { useCash } from '@/lib/hooks/useCash'
 
 interface GlAccount {
   id: string
@@ -54,6 +55,8 @@ interface Transaction {
   jenisPengadaan?: string
   regionalPengguna?: string
   regionalCode?: string
+  status?: string
+  year?: number
 }
 
 export default function DashboardPage() {
@@ -71,6 +74,13 @@ export default function DashboardPage() {
   const { data: budgets = [], isLoading: loadingBudgets } = useDashboardBudgets(year)
   const { data: rawTransactions = [], isLoading: loadingTransactions } = useDashboardTransactions(year)
   const { data: regionals = [] } = useRegionals()
+  const { data: cashData = [] } = useCash()
+
+  // Calculate total cash
+  const cashRecords = Array.isArray(cashData) ? cashData : []
+  const totalCashMasuk = cashRecords.filter((c: any) => c.tipe === 'masuk').reduce((sum: number, c: any) => sum + c.jumlah, 0)
+  const totalCashKeluar = cashRecords.filter((c: any) => c.tipe === 'keluar').reduce((sum: number, c: any) => sum + c.jumlah, 0)
+  const totalCash = totalCashMasuk - totalCashKeluar
 
   // Filter transactions by year from tanggalKwitansi
   const transactions = rawTransactions.filter((t: Transaction) => {
@@ -80,10 +90,15 @@ export default function DashboardPage() {
   })
 
   const isLoading = loadingGl || loadingBudgets || loadingTransactions
-  const glAccountsCount = glAccounts.length
 
   const totalBudget = budgets.reduce((sum, b) => sum + b.totalAmount, 0)
   const totalUsed = transactions.reduce((sum: number, t: Transaction) => sum + t.nilaiTanpaPPN, 0)
+
+  // Status counts from rawTransactions (already filtered by year from API)
+  const openCount = rawTransactions.filter((t: Transaction) => t.status === 'Open').length
+  const prosesCount = rawTransactions.filter((t: Transaction) => t.status === 'Proses').length
+  const closeCount = rawTransactions.filter((t: Transaction) => t.status === 'Close').length
+  const totalPencatatan = rawTransactions.length
 
   // Helper to get quarter from tanggalKwitansi
   const getQuarterFromDate = (dateStr: string | null): number | null => {
@@ -276,21 +291,65 @@ export default function DashboardPage() {
           </Select>
         </div>
       </div>
-      
+
+      {/* Status Pencatatan Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
         <Card className="border">
           <CardContent className="p-3 md:p-5">
             <div className="flex items-start justify-between">
               <div className="space-y-1 md:space-y-2 min-w-0 flex-1">
-                <p className="text-[10px] md:text-xs font-medium text-muted-foreground uppercase tracking-wide">TOTAL GL ACCOUNT</p>
-                <p className="text-lg md:text-2xl font-bold">{glAccountsCount}</p>
+                <p className="text-[10px] md:text-xs font-medium text-muted-foreground uppercase tracking-wide">OPEN</p>
+                <p className="text-lg md:text-2xl font-bold text-blue-600">{openCount}</p>
               </div>
-              <div className="h-8 w-8 md:h-10 md:w-10 rounded-xl bg-amber-50 flex items-center justify-center flex-shrink-0">
-                <FileText className="h-4 w-4 md:h-5 md:w-5 text-amber-500" />
+              <div className="h-8 w-8 md:h-10 md:w-10 rounded-xl bg-blue-50 flex items-center justify-center flex-shrink-0">
+                <BookOpen className="h-4 w-4 md:h-5 md:w-5 text-blue-500" />
               </div>
             </div>
           </CardContent>
         </Card>
+        <Card className="border">
+          <CardContent className="p-3 md:p-5">
+            <div className="flex items-start justify-between">
+              <div className="space-y-1 md:space-y-2 min-w-0 flex-1">
+                <p className="text-[10px] md:text-xs font-medium text-muted-foreground uppercase tracking-wide">PROSES</p>
+                <p className="text-lg md:text-2xl font-bold text-yellow-600">{prosesCount}</p>
+              </div>
+              <div className="h-8 w-8 md:h-10 md:w-10 rounded-xl bg-yellow-50 flex items-center justify-center flex-shrink-0">
+                <Hourglass className="h-4 w-4 md:h-5 md:w-5 text-yellow-500" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="border">
+          <CardContent className="p-3 md:p-5">
+            <div className="flex items-start justify-between">
+              <div className="space-y-1 md:space-y-2 min-w-0 flex-1">
+                <p className="text-[10px] md:text-xs font-medium text-muted-foreground uppercase tracking-wide">SELESAI</p>
+                <p className="text-lg md:text-2xl font-bold text-green-600">{closeCount}</p>
+              </div>
+              <div className="h-8 w-8 md:h-10 md:w-10 rounded-xl bg-green-50 flex items-center justify-center flex-shrink-0">
+                <CheckCircle className="h-4 w-4 md:h-5 md:w-5 text-green-500" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="border">
+          <CardContent className="p-3 md:p-5">
+            <div className="flex items-start justify-between">
+              <div className="space-y-1 md:space-y-2 min-w-0 flex-1">
+                <p className="text-[10px] md:text-xs font-medium text-muted-foreground uppercase tracking-wide">TOTAL PENCATATAN</p>
+                <p className="text-lg md:text-2xl font-bold">{totalPencatatan}</p>
+              </div>
+              <div className="h-8 w-8 md:h-10 md:w-10 rounded-xl bg-slate-100 flex items-center justify-center flex-shrink-0">
+                <ClipboardList className="h-4 w-4 md:h-5 md:w-5 text-slate-500" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+      
+      {/* Budget Summary Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
         <Card className="border">
           <CardContent className="p-3 md:p-5">
             <div className="flex items-start justify-between">
@@ -326,6 +385,19 @@ export default function DashboardPage() {
               </div>
               <div className="h-8 w-8 md:h-10 md:w-10 rounded-xl bg-purple-50 flex items-center justify-center flex-shrink-0">
                 <Clock className="h-5 w-5 text-purple-500" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="border">
+          <CardContent className="p-3 md:p-5">
+            <div className="flex items-start justify-between">
+              <div className="space-y-1 md:space-y-2 min-w-0 flex-1">
+                <p className="text-[10px] md:text-xs font-medium text-muted-foreground uppercase tracking-wide">UANG CASH</p>
+                <p className="text-sm md:text-2xl font-bold truncate text-green-600">{totalCash.toLocaleString('id-ID')}</p>
+              </div>
+              <div className="h-8 w-8 md:h-10 md:w-10 rounded-xl bg-green-50 flex items-center justify-center flex-shrink-0">
+                <Wallet className="h-4 w-4 md:h-5 md:w-5 text-green-500" />
               </div>
             </div>
           </CardContent>
@@ -686,7 +758,7 @@ export default function DashboardPage() {
           <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3">
             <div>
               <CardTitle className="text-base md:text-lg">Penggunaan Anggaran Area</CardTitle>
-              <CardDescription className="text-xs md:text-sm">Total penggunaan anggaran berdasarkan alokasi regional tahun {year}</CardDescription>
+              <CardDescription className="text-xs md:text-sm">Total penggunaan anggaran berdasarkan alokasi tahun {year}</CardDescription>
             </div>
             <div className="flex items-center gap-2">
               <Label className="text-xs md:text-sm text-muted-foreground">GL Account:</Label>

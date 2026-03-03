@@ -99,6 +99,13 @@ export default function ImprestFundPage() {
   const [uploading, setUploading] = useState(false)
   const [previewImage, setPreviewImage] = useState<string | null>(null)
   
+  // Item modal states (for add/edit item in non-draft mode)
+  const [showItemModal, setShowItemModal] = useState(false)
+  const [editingItemIndex, setEditingItemIndex] = useState<number | null>(null)
+  const [itemForm, setItemForm] = useState<ImprestItem>({
+    id: '', tanggal: new Date(), uraian: '', glAccountId: '', glAccount: undefined, areaPengguna: '', jumlah: 0
+  })
+  
   // Search state
   const [searchQuery, setSearchQuery] = useState('')
 
@@ -200,7 +207,7 @@ export default function ImprestFundPage() {
       return
     }
     if (!selectedRegionalCode) {
-      setMessage('Alokasi anggaran regional harus dipilih!')
+      setMessage('Alokasi anggaran area harus dipilih!')
       setTimeout(() => setMessage(''), 3000)
       return
     }
@@ -276,7 +283,20 @@ export default function ImprestFundPage() {
           taskUploadMydx, taskSerahFinance, taskVendorDibayar
         }
       })
-      setMessage('Imprest Fund berhasil diupdate!')
+      
+      // Check if status changed to close and has Meeting Expenses items
+      const previousStatus = imprestFunds.find((i: ImprestFund) => i.id === editingImprest.id)?.status
+      const meetingExpenseItems = editingImprest.items.filter(item => {
+        const gl = glAccounts.find((g: GlAccount) => g.id === item.glAccountId)
+        return gl && gl.code === '51512005'
+      })
+      
+      if (previousStatus !== 'close' && finalStatus === 'close' && meetingExpenseItems.length > 0) {
+        const totalMeetingExpense = meetingExpenseItems.reduce((sum, item) => sum + item.jumlah, 0)
+        setMessage(`Imprest Fund berhasil diupdate! Uang masuk Rp ${totalMeetingExpense.toLocaleString('id-ID')} otomatis ditambahkan ke Cash Management (Meeting Expenses)`)
+      } else {
+        setMessage('Imprest Fund berhasil diupdate!')
+      }
       setShowEditDialog(false); setEditingImprest(null)
     } catch (error) {
       setMessage('Gagal update Imprest Fund!')
@@ -517,9 +537,9 @@ export default function ImprestFundPage() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label className="text-xs md:text-sm">Alokasi Anggaran Regional</Label>
+              <Label className="text-xs md:text-sm">Alokasi Anggaran</Label>
               <Select value={selectedRegionalCode} onValueChange={setSelectedRegionalCode}>
-                <SelectTrigger><SelectValue placeholder="Pilih regional" /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder="Pilih Area" /></SelectTrigger>
                 <SelectContent>{regionals.map((r: Regional) => <SelectItem key={r.id} value={r.code}>{r.name}</SelectItem>)}</SelectContent>
               </Select>
             </div>
@@ -662,7 +682,7 @@ export default function ImprestFundPage() {
 
                 {/* Alokasi Anggaran Regional */}
                 <div className="space-y-1.5">
-                  <Label className="text-sm text-muted-foreground">Alokasi Anggaran Regional</Label>
+                  <Label className="text-sm text-muted-foreground">Alokasi Anggaran</Label>
                   <Input value={regionals.find((r: Regional) => r.code === viewingImprest.regionalCode)?.name || '-'} disabled className="bg-muted/50 font-medium" />
                 </div>
 
@@ -853,9 +873,9 @@ export default function ImprestFundPage() {
                 <div className="space-y-6">
                   <div className="space-y-2"><Label>Kelompok Kegiatan</Label><Input value={editingImprest.kelompokKegiatan} onChange={(e) => setEditingImprest({...editingImprest, kelompokKegiatan: e.target.value})} /></div>
                   <div className="space-y-2">
-                    <Label>Alokasi Anggaran Regional</Label>
+                    <Label>Alokasi Anggaran</Label>
                     <Select value={editingImprest.regionalCode || ''} onValueChange={(value) => setEditingImprest({...editingImprest, regionalCode: value})}>
-                      <SelectTrigger><SelectValue placeholder="Pilih regional" /></SelectTrigger>
+                      <SelectTrigger><SelectValue placeholder="Pilih Area" /></SelectTrigger>
                       <SelectContent>{regionals.map((r: Regional) => <SelectItem key={r.id} value={r.code}>{r.name}</SelectItem>)}</SelectContent>
                     </Select>
                   </div>
@@ -903,7 +923,7 @@ export default function ImprestFundPage() {
                     <Button variant="outline" onClick={() => setShowEditDialog(false)}>Batal</Button>
                     <Button variant="outline" onClick={handleEditImprest} className="gap-2" disabled={updateImprestFund.isPending}><Save className="h-4 w-4" />{updateImprestFund.isPending ? 'Menyimpan...' : 'Simpan'}</Button>
                     <Button onClick={async () => {
-                      if (!editingImprest.regionalCode) { setMessage('Alokasi anggaran regional harus dipilih untuk submit!'); setTimeout(() => setMessage(''), 3000); return }
+                      if (!editingImprest.regionalCode) { setMessage('Alokasi anggaran harus dipilih untuk submit!'); setTimeout(() => setMessage(''), 3000); return }
                       const updatedImprest = {...editingImprest, status: 'open' as const}
                       try {
                         await updateImprestFund.mutateAsync({ id: editingImprest.id, data: { kelompokKegiatan: updatedImprest.kelompokKegiatan, regionalCode: updatedImprest.regionalCode, status: 'open', items: updatedImprest.items.map(item => ({ tanggal: item.tanggal, uraian: item.uraian, glAccountId: item.glAccountId, areaPengguna: item.areaPengguna, jumlah: item.jumlah })) }})
@@ -926,7 +946,7 @@ export default function ImprestFundPage() {
 
                     {/* Alokasi Anggaran Regional */}
                     <div className="space-y-1.5">
-                      <Label className="text-sm text-muted-foreground">Alokasi Anggaran Regional</Label>
+                      <Label className="text-sm text-muted-foreground">Alokasi Anggaran</Label>
                       <Input value={regionals.find((r: Regional) => r.code === editingImprest.regionalCode)?.name || '-'} disabled className="bg-muted/50 font-medium" />
                     </div>
 
@@ -938,7 +958,7 @@ export default function ImprestFundPage() {
                       </div>
                       <div className="space-y-1.5">
                         <Label className="text-sm text-muted-foreground">Total Kredit (Rp)</Label>
-                        <Input value={editingImprest.totalAmount.toLocaleString('id-ID')} disabled className="bg-muted/50 font-medium" />
+                        <Input value={editingImprest.items.reduce((sum, i) => sum + i.jumlah, 0).toLocaleString('id-ID')} disabled className="bg-muted/50 font-medium" />
                       </div>
                       <div className="space-y-1.5">
                         <Label className="text-sm text-muted-foreground">Debit/Top Up (Rp)</Label>
@@ -972,6 +992,15 @@ export default function ImprestFundPage() {
                         </CollapsibleTrigger>
                         <CollapsibleContent>
                           <div className="border-t">
+                            <div className="flex justify-end p-2 bg-gray-50 border-b">
+                              <Button size="sm" variant="outline" className="gap-1.5" onClick={() => {
+                                setItemForm({ id: Date.now().toString(), tanggal: new Date(), uraian: '', glAccountId: '', glAccount: undefined, areaPengguna: '', jumlah: 0 })
+                                setEditingItemIndex(null)
+                                setShowItemModal(true)
+                              }}>
+                                <Plus className="h-3.5 w-3.5" />Tambah
+                              </Button>
+                            </div>
                             <div className="grid grid-cols-12 gap-2 p-3 bg-gray-100 text-xs font-medium">
                               <div className="col-span-2">Tanggal</div>
                               <div className="col-span-3">Uraian</div>
@@ -980,12 +1009,23 @@ export default function ImprestFundPage() {
                               <div className="col-span-2 text-right">Jumlah</div>
                             </div>
                             {editingImprest.items.map((item, idx) => (
-                              <div key={idx} className="grid grid-cols-12 gap-2 p-3 border-t text-sm">
+                              <div 
+                                key={item.id || idx} 
+                                className="grid grid-cols-12 gap-2 p-3 border-t text-sm hover:bg-gray-50 cursor-pointer group"
+                                onClick={() => {
+                                  setItemForm({ ...item })
+                                  setEditingItemIndex(idx)
+                                  setShowItemModal(true)
+                                }}
+                              >
                                 <div className="col-span-2">{format(new Date(item.tanggal), 'dd MMM yyyy', { locale: idLocale })}</div>
                                 <div className="col-span-3">{item.uraian}</div>
                                 <div className="col-span-3 truncate">{item.glAccount?.code} - {item.glAccount?.description}</div>
                                 <div className="col-span-2">{item.areaPengguna || '-'}</div>
-                                <div className="col-span-2 text-right font-medium whitespace-nowrap">Rp {item.jumlah.toLocaleString('id-ID')}</div>
+                                <div className="col-span-2 text-right font-medium whitespace-nowrap flex items-center justify-end gap-2">
+                                  <span>Rp {item.jumlah.toLocaleString('id-ID')}</span>
+                                  <Pencil className="h-3.5 w-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                                </div>
                               </div>
                             ))}
                             <div className="grid grid-cols-12 gap-2 p-3 bg-blue-50 border-t text-sm font-semibold">
@@ -1092,6 +1132,121 @@ export default function ImprestFundPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Item Modal (Add/Edit) */}
+      <Dialog open={showItemModal} onOpenChange={setShowItemModal}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              {editingItemIndex !== null ? <Pencil className="h-5 w-5" /> : <Plus className="h-5 w-5" />}
+              {editingItemIndex !== null ? 'Edit Uraian' : 'Tambah Uraian'}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Tanggal</Label>
+              <DatePicker 
+                date={itemForm.tanggal} 
+                onSelect={(date) => date && setItemForm({...itemForm, tanggal: date})} 
+                placeholder="Pilih tanggal" 
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Uraian</Label>
+              <Input 
+                value={itemForm.uraian} 
+                onChange={(e) => setItemForm({...itemForm, uraian: e.target.value})} 
+                placeholder="Masukkan uraian kegiatan"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>GL Account</Label>
+              <Select 
+                value={itemForm.glAccountId} 
+                onValueChange={(value) => {
+                  const selectedGl = glAccounts.find((gl: GlAccount) => gl.id === value)
+                  setItemForm({...itemForm, glAccountId: value, glAccount: selectedGl})
+                }}
+              >
+                <SelectTrigger><SelectValue placeholder="Pilih GL Account" /></SelectTrigger>
+                <SelectContent>
+                  {glAccounts.map((gl: GlAccount) => (
+                    <SelectItem key={gl.id} value={gl.id}>{gl.code} - {gl.description}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Area Pengguna</Label>
+              <Select 
+                value={itemForm.areaPengguna || ''} 
+                onValueChange={(value) => setItemForm({...itemForm, areaPengguna: value})}
+              >
+                <SelectTrigger><SelectValue placeholder="Pilih Area Pengguna" /></SelectTrigger>
+                <SelectContent>
+                  {regionals.map((r: Regional) => (
+                    <SelectItem key={r.id} value={r.name}>{r.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Jumlah (Rp)</Label>
+              <CurrencyInput 
+                value={itemForm.jumlah} 
+                onChange={(value) => setItemForm({...itemForm, jumlah: value})} 
+              />
+            </div>
+            <div className="flex gap-2 justify-between pt-4 border-t">
+              {editingItemIndex !== null && (
+                <Button 
+                  variant="outline" 
+                  className="text-red-500 hover:text-red-700 hover:border-red-300"
+                  onClick={() => {
+                    if (editingImprest) {
+                      const updatedItems = editingImprest.items.filter((_, index) => index !== editingItemIndex)
+                      const newTotal = updatedItems.reduce((sum, i) => sum + i.jumlah, 0)
+                      setEditingImprest({...editingImprest, items: updatedItems, totalAmount: newTotal})
+                    }
+                    setShowItemModal(false)
+                    setEditingItemIndex(null)
+                  }}
+                >
+                  <Trash2 className="h-4 w-4 mr-1.5" />Hapus
+                </Button>
+              )}
+              <div className="flex gap-2 ml-auto">
+                <Button variant="outline" onClick={() => { setShowItemModal(false); setEditingItemIndex(null) }}>Batal</Button>
+                <Button onClick={() => {
+                  if (!itemForm.uraian || !itemForm.glAccountId || itemForm.jumlah <= 0) {
+                    setMessage('Uraian, GL Account, dan Jumlah harus diisi!')
+                    setTimeout(() => setMessage(''), 3000)
+                    return
+                  }
+                  if (editingImprest) {
+                    let updatedItems: ImprestItem[]
+                    if (editingItemIndex !== null) {
+                      // Edit existing item
+                      updatedItems = editingImprest.items.map((item, index) => 
+                        index === editingItemIndex ? { ...itemForm } : item
+                      )
+                    } else {
+                      // Add new item
+                      updatedItems = [...editingImprest.items, { ...itemForm, id: Date.now().toString() }]
+                    }
+                    const newTotal = updatedItems.reduce((sum, i) => sum + i.jumlah, 0)
+                    setEditingImprest({...editingImprest, items: updatedItems, totalAmount: newTotal})
+                  }
+                  setShowItemModal(false)
+                  setEditingItemIndex(null)
+                }}>
+                  {editingItemIndex !== null ? 'Simpan' : 'Tambah'}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Image Preview */}
       {previewImage && (

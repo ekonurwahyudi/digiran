@@ -66,7 +66,13 @@ export async function PUT(
     // Get current imprest fund to check status change
     const currentImprest: any = await (prisma as any).imprestFund.findUnique({
       where: { id: params.id },
-      include: { items: true }
+      include: { 
+        items: {
+          include: {
+            glAccount: true
+          }
+        } 
+      }
     })
 
     if (!currentImprest) {
@@ -188,29 +194,76 @@ export async function PUT(
         })
       }
     } else if (status !== 'draft') {
-      // Update existing transactions with new status and finance information
-      const transactionStatus = status === 'close' ? 'Close' : status === 'proses' ? 'Proses' : 'Open'
-      
-      await (prisma as any).transaction.updateMany({
-        where: { imprestFundId: params.id },
-        data: {
-          status: transactionStatus,
-          // Sync Finance fields from Imprest Fund to Transactions
-          noTiketMydx: (imprestFund as any).noTiketMydx,
-          tglSerahFinance: (imprestFund as any).tglSerahFinance,
-          picFinance: (imprestFund as any).picFinance,
-          noHpFinance: (imprestFund as any).noHpFinance,
-          tglTransferVendor: (imprestFund as any).tglTransferVendor,
-          nilaiTransfer: (imprestFund as any).nilaiTransfer,
-          // Update task fields
-          taskPengajuan: (imprestFund as any).taskPengajuan,
-          taskTransferVendor: (imprestFund as any).taskTransferVendor,
-          taskTerimaBerkas: (imprestFund as any).taskTerimaBerkas,
-          taskUploadMydx: (imprestFund as any).taskUploadMydx,
-          taskSerahFinance: (imprestFund as any).taskSerahFinance,
-          taskVendorDibayar: (imprestFund as any).taskVendorDibayar
+      // If items are updated, we need to sync transactions with items
+      if (items && Array.isArray(items)) {
+        const currentYear = new Date().getFullYear()
+        const currentQuarter = Math.ceil((new Date().getMonth() + 1) / 3)
+        
+        // Delete existing transactions and recreate them based on new items
+        await (prisma as any).transaction.deleteMany({
+          where: { imprestFundId: params.id }
+        })
+
+        // Create new transactions for each item
+        const transactionStatus = status === 'close' ? 'Close' : status === 'proses' ? 'Proses' : 'Open'
+        
+        for (const item of imprestFund.items) {
+          await (prisma as any).transaction.create({
+            data: {
+              glAccountId: item.glAccountId,
+              quarter: currentQuarter,
+              regionalCode: (imprestFund as any).regionalCode || 'HO',
+              kegiatan: item.uraian,
+              regionalPengguna: (item as any).areaPengguna || (imprestFund as any).regionalCode || 'Head Office',
+              year: currentYear,
+              tanggalKwitansi: item.tanggal,
+              nilaiKwitansi: item.jumlah,
+              nilaiTanpaPPN: item.jumlah,
+              status: transactionStatus,
+              imprestFundId: params.id,
+              jenisPengadaan: 'InpresFund',
+              // Copy Finance fields
+              noTiketMydx: (imprestFund as any).noTiketMydx,
+              tglSerahFinance: (imprestFund as any).tglSerahFinance,
+              picFinance: (imprestFund as any).picFinance,
+              noHpFinance: (imprestFund as any).noHpFinance,
+              tglTransferVendor: (imprestFund as any).tglTransferVendor,
+              nilaiTransfer: (imprestFund as any).nilaiTransfer,
+              // Copy task fields
+              taskPengajuan: (imprestFund as any).taskPengajuan,
+              taskTransferVendor: (imprestFund as any).taskTransferVendor,
+              taskTerimaBerkas: (imprestFund as any).taskTerimaBerkas,
+              taskUploadMydx: (imprestFund as any).taskUploadMydx,
+              taskSerahFinance: (imprestFund as any).taskSerahFinance,
+              taskVendorDibayar: (imprestFund as any).taskVendorDibayar
+            } as any
+          })
         }
-      })
+      } else {
+        // Only update status and finance fields if items are not changed
+        const transactionStatus = status === 'close' ? 'Close' : status === 'proses' ? 'Proses' : 'Open'
+        
+        await (prisma as any).transaction.updateMany({
+          where: { imprestFundId: params.id },
+          data: {
+            status: transactionStatus,
+            // Sync Finance fields from Imprest Fund to Transactions
+            noTiketMydx: (imprestFund as any).noTiketMydx,
+            tglSerahFinance: (imprestFund as any).tglSerahFinance,
+            picFinance: (imprestFund as any).picFinance,
+            noHpFinance: (imprestFund as any).noHpFinance,
+            tglTransferVendor: (imprestFund as any).tglTransferVendor,
+            nilaiTransfer: (imprestFund as any).nilaiTransfer,
+            // Update task fields
+            taskPengajuan: (imprestFund as any).taskPengajuan,
+            taskTransferVendor: (imprestFund as any).taskTransferVendor,
+            taskTerimaBerkas: (imprestFund as any).taskTerimaBerkas,
+            taskUploadMydx: (imprestFund as any).taskUploadMydx,
+            taskSerahFinance: (imprestFund as any).taskSerahFinance,
+            taskVendorDibayar: (imprestFund as any).taskVendorDibayar
+          }
+        })
+      }
     }
 
     // Update Imprest Fund Card saldo based on status changes
@@ -240,6 +293,46 @@ export async function PUT(
               saldo: card.saldo + saldoChange
             }
           })
+        }
+      }
+    }
+
+    // Auto-create Cash record when status changes to 'close' and GL Account is Meeting Expenses (51512005)
+    if (currentImprest.status !== 'close' && status === 'close') {
+      // Get items with GL Account code 51512005 (Meeting expenses)
+      const meetingExpenseItems = imprestFund.items.filter((item: any) => 
+        item.glAccount && item.glAccount.code === '51512005'
+      )
+
+      if (meetingExpenseItems.length > 0) {
+        // Find karyawan "Nida Azizah" as default
+        let defaultKaryawan = await (prisma as any).karyawan.findFirst({
+          where: { 
+            nama: { contains: 'Nida Azizah', mode: 'insensitive' },
+            isActive: true
+          }
+        })
+
+        // If not found, try to find any active karyawan
+        if (!defaultKaryawan) {
+          defaultKaryawan = await (prisma as any).karyawan.findFirst({
+            where: { isActive: true }
+          })
+        }
+
+        if (defaultKaryawan) {
+          // Create Cash record for each meeting expense item
+          for (const item of meetingExpenseItems) {
+            await (prisma as any).cash.create({
+              data: {
+                karyawanId: defaultKaryawan.id,
+                tanggal: new Date(),
+                tipe: 'masuk',
+                jumlah: item.jumlah,
+                keterangan: `Meeting Expenses (${item.uraian})`
+              }
+            })
+          }
         }
       }
     }

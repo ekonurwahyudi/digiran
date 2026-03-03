@@ -5,6 +5,17 @@ export const cashKeys = {
   all: ['cash'] as const,
 }
 
+export interface CashFile {
+  id: string
+  cashId: string
+  fileName: string
+  originalName: string
+  fileSize: number
+  mimeType: string
+  filePath: string
+  uploadedAt: Date
+}
+
 export interface Cash {
   id: string
   karyawanId: string
@@ -18,6 +29,7 @@ export interface Cash {
   tipe: 'masuk' | 'keluar'
   jumlah: number
   keterangan?: string
+  files?: CashFile[]
   createdAt: Date
   updatedAt: Date
 }

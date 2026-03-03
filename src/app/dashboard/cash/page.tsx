@@ -15,11 +15,12 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Plus, Trash2, Pencil, Wallet, TrendingUp, TrendingDown, Users, History } from 'lucide-react'
+import { Plus, Trash2, Pencil, Wallet, TrendingUp, TrendingDown, Users, History, FileText, Image, File, FileSpreadsheet, Presentation, Paperclip, Eye } from 'lucide-react'
 import { CurrencyInput } from '@/components/ui/currency-input'
 import { TableSkeleton } from '@/components/loading'
-import { useCash, useCreateCash, useUpdateCash, useDeleteCash, Cash } from '@/lib/hooks/useCash'
+import { useCash, useCreateCash, useUpdateCash, useDeleteCash, Cash, CashFile } from '@/lib/hooks/useCash'
 import { useKaryawan } from '@/lib/hooks/useMaster'
+import api from '@/lib/axios'
 
 interface Karyawan {
   id: string
@@ -51,8 +52,18 @@ export default function CashPage() {
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   
+  // View detail states
+  const [viewingCash, setViewingCash] = useState<Cash | null>(null)
+  const [showViewDialog, setShowViewDialog] = useState(false)
+  
   // Search state
   const [searchQuery, setSearchQuery] = useState('')
+  
+  // File upload states
+  const [pendingFiles, setPendingFiles] = useState<File[]>([])
+  const [files, setFiles] = useState<CashFile[]>([])
+  const [uploading, setUploading] = useState(false)
+  const [previewImage, setPreviewImage] = useState<string | null>(null)
 
   // TanStack Query hooks
   const { data: cashData = [], isLoading: cashLoading } = useCash()
@@ -98,6 +109,89 @@ export default function CashPage() {
     setTipe('masuk')
     setJumlah(0)
     setKeterangan('')
+    setPendingFiles([])
+  }
+
+  // File handling functions
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFiles = event.target.files
+    if (!selectedFiles) return
+    
+    const newFiles: File[] = []
+    for (const file of Array.from(selectedFiles)) {
+      if (file.size > 10 * 1024 * 1024) {
+        setMessage(`File ${file.name} terlalu besar (max 10MB)`)
+        setTimeout(() => setMessage(''), 3000)
+        continue
+      }
+      newFiles.push(file)
+    }
+    setPendingFiles(prev => [...prev, ...newFiles])
+    event.target.value = ''
+  }
+
+  const removePendingFile = (index: number) => {
+    setPendingFiles(prev => prev.filter((_, i) => i !== index))
+  }
+
+  const uploadFilesForCash = async (cashId: string, filesToUpload: File[]) => {
+    for (const file of filesToUpload) {
+      const formData = new FormData()
+      formData.append('file', file)
+      await api.post(`/cash/${cashId}/files`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      })
+    }
+  }
+
+  const loadCashFiles = async (cashId: string) => {
+    try {
+      const filesData = await api.get(`/cash/${cashId}/files`)
+      setFiles(Array.isArray(filesData) ? filesData : [])
+    } catch (error) {
+      console.error('Error loading files:', error)
+      setFiles([])
+    }
+  }
+
+  const handleDeleteFile = async (fileId: string, cashId: string) => {
+    try {
+      await api.delete(`/cash/${cashId}/files?fileId=${fileId}`)
+      setFiles(prev => prev.filter(f => f.id !== fileId))
+      setMessage('File berhasil dihapus!')
+      setTimeout(() => setMessage(''), 3000)
+    } catch (error) {
+      setMessage('Gagal menghapus file!')
+      setTimeout(() => setMessage(''), 3000)
+    }
+  }
+
+  const formatFileSize = (bytes: number): string => {
+    if (bytes >= 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(1) + ' MB'
+    else if (bytes >= 1024) return (bytes / 1024).toFixed(1) + ' KB'
+    else return bytes + ' B'
+  }
+
+  const getFileIcon = (file: { mimeType: string; originalName: string; filePath?: string }) => {
+    const mimeType = file.mimeType.toLowerCase()
+    const fileName = file.originalName.toLowerCase()
+    
+    if (mimeType.includes('image')) {
+      if (file.filePath) {
+        return (
+          <div className="w-10 h-10 rounded overflow-hidden border">
+            <img src={file.filePath} alt={file.originalName} className="w-full h-full object-cover" />
+          </div>
+        )
+      }
+      return <div className="w-10 h-10 bg-blue-100 rounded flex items-center justify-center"><Image className="h-5 w-5 text-blue-600" /></div>
+    }
+    if (mimeType.includes('pdf')) return <div className="w-10 h-10 bg-red-100 rounded flex items-center justify-center"><FileText className="h-5 w-5 text-red-600" /></div>
+    if (mimeType.includes('excel') || mimeType.includes('spreadsheet') || fileName.endsWith('.xls') || fileName.endsWith('.xlsx')) 
+      return <div className="w-10 h-10 bg-green-100 rounded flex items-center justify-center"><FileSpreadsheet className="h-5 w-5 text-green-600" /></div>
+    if (mimeType.includes('presentation') || fileName.endsWith('.ppt') || fileName.endsWith('.pptx')) 
+      return <div className="w-10 h-10 bg-orange-100 rounded flex items-center justify-center"><Presentation className="h-5 w-5 text-orange-600" /></div>
+    return <div className="w-10 h-10 bg-gray-100 rounded flex items-center justify-center"><File className="h-5 w-5 text-gray-600" /></div>
   }
 
   const handleSubmit = async () => {
@@ -108,18 +202,27 @@ export default function CashPage() {
     }
 
     try {
-      await createCash.mutateAsync({
+      setUploading(true)
+      const newCash: any = await createCash.mutateAsync({
         karyawanId,
         tanggal,
         tipe,
         jumlah,
         keterangan: keterangan || undefined
       })
+      
+      // Upload pending files
+      if (pendingFiles.length > 0 && newCash?.id) {
+        await uploadFilesForCash(newCash.id, pendingFiles)
+      }
+      
       setMessage('Data cash berhasil disimpan!')
       resetForm()
       setShowInputDialog(false)
     } catch (error) {
       setMessage('Gagal menyimpan data cash!')
+    } finally {
+      setUploading(false)
     }
     setTimeout(() => setMessage(''), 3000)
   }
@@ -214,10 +317,13 @@ export default function CashPage() {
       header: 'Aksi', 
       cell: ({ row }) => (
         <div className="flex gap-1">
-          <Button variant="outline" size="sm" onClick={() => { setEditingCash(row.original); setShowEditDialog(true) }}>
+          <Button variant="outline" size="sm" onClick={() => { setViewingCash(row.original); loadCashFiles(row.original.id); setShowViewDialog(true) }} title="Lihat Detail">
+            <Eye className="h-4 w-4" />
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => { setEditingCash(row.original); loadCashFiles(row.original.id); setShowEditDialog(true) }} title="Edit">
             <Pencil className="h-4 w-4" />
           </Button>
-          <Button variant="outline" size="sm" onClick={() => { setDeleteId(row.original.id); setShowDeleteDialog(true) }} className="text-red-500 hover:text-red-700">
+          <Button variant="outline" size="sm" onClick={() => { setDeleteId(row.original.id); setShowDeleteDialog(true) }} className="text-red-500 hover:text-red-700" title="Hapus">
             <Trash2 className="h-4 w-4" />
           </Button>
         </div>
@@ -425,10 +531,40 @@ export default function CashPage() {
                 placeholder="Opsional"
               />
             </div>
+            <div className="space-y-2">
+              <Label>Eviden/Lampiran</Label>
+              <label className="flex items-center justify-center gap-2 p-3 border-2 border-dashed rounded-lg cursor-pointer hover:bg-gray-50">
+                <input 
+                  type="file" 
+                  multiple 
+                  className="hidden" 
+                  onChange={handleFileSelect} 
+                  accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png,.gif" 
+                />
+                <Paperclip className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm text-muted-foreground">Pilih file (bisa lebih dari 1)</span>
+              </label>
+              {pendingFiles.length > 0 && (
+                <div className="space-y-2 mt-2">
+                  {pendingFiles.map((file, index) => (
+                    <div key={index} className="flex items-center gap-3 p-2 bg-gray-50 rounded-lg border">
+                      {getFileIcon({ mimeType: file.type, originalName: file.name })}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate max-w-[200px]" title={file.name}>{file.name}</p>
+                        <p className="text-xs text-muted-foreground">{formatFileSize(file.size)}</p>
+                      </div>
+                      <Button variant="ghost" size="sm" onClick={() => removePendingFile(index)} className="text-red-500 hover:text-red-700 h-8 w-8 p-0 flex-shrink-0">
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
             <div className="flex gap-2 justify-end">
               <Button variant="outline" onClick={() => setShowInputDialog(false)}>Batal</Button>
-              <Button onClick={handleSubmit} disabled={createCash.isPending}>
-                {createCash.isPending ? 'Menyimpan...' : 'Simpan'}
+              <Button onClick={handleSubmit} disabled={createCash.isPending || uploading}>
+                {createCash.isPending || uploading ? 'Menyimpan...' : 'Simpan'}
               </Button>
             </div>
           </div>
@@ -437,7 +573,7 @@ export default function CashPage() {
 
       {/* Edit Dialog */}
       <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Pencil className="h-5 w-5" />
@@ -490,10 +626,145 @@ export default function CashPage() {
                   placeholder="Opsional"
                 />
               </div>
+              <div className="space-y-2">
+                <Label>Eviden/Lampiran</Label>
+                <label className="flex items-center justify-center gap-2 p-3 border-2 border-dashed rounded-lg cursor-pointer hover:bg-gray-50">
+                  <input 
+                    type="file" 
+                    multiple 
+                    className="hidden" 
+                    onChange={async (e) => {
+                      const selectedFiles = e.target.files
+                      if (!selectedFiles || !editingCash) return
+                      setUploading(true)
+                      try {
+                        for (const file of Array.from(selectedFiles)) {
+                          if (file.size > 10 * 1024 * 1024) {
+                            setMessage(`File ${file.name} terlalu besar (max 10MB)`)
+                            continue
+                          }
+                          const formData = new FormData()
+                          formData.append('file', file)
+                          const newFile: any = await api.post(`/cash/${editingCash.id}/files`, formData, {
+                            headers: { 'Content-Type': 'multipart/form-data' }
+                          })
+                          setFiles(prev => [newFile as CashFile, ...prev])
+                        }
+                        setMessage('File berhasil diupload!')
+                      } catch (error) {
+                        setMessage('Gagal upload file!')
+                      } finally {
+                        setUploading(false)
+                        e.target.value = ''
+                      }
+                      setTimeout(() => setMessage(''), 3000)
+                    }} 
+                    accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png,.gif" 
+                    disabled={uploading}
+                  />
+                  {uploading ? (
+                    <span className="text-sm text-muted-foreground">Mengupload...</span>
+                  ) : (
+                    <>
+                      <Paperclip className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm text-muted-foreground">Upload file tambahan</span>
+                    </>
+                  )}
+                </label>
+                {files.length > 0 && (
+                  <div className="space-y-2 mt-2">
+                    {files.map((file) => (
+                      <div key={file.id} className="flex items-center gap-3 p-2 bg-gray-50 rounded-lg border">
+                        <div className="cursor-pointer flex-shrink-0" onClick={() => file.mimeType.includes('image') ? setPreviewImage(file.filePath) : window.open(file.filePath, '_blank')}>
+                          {getFileIcon(file)}
+                        </div>
+                        <div className="flex-1 min-w-0 cursor-pointer" onClick={() => file.mimeType.includes('image') ? setPreviewImage(file.filePath) : window.open(file.filePath, '_blank')}>
+                          <p className="text-sm font-medium truncate max-w-[200px]" title={file.originalName}>{file.originalName}</p>
+                          <p className="text-xs text-muted-foreground">{formatFileSize(file.fileSize)}</p>
+                        </div>
+                        <Button variant="ghost" size="sm" onClick={() => handleDeleteFile(file.id, editingCash.id)} className="text-red-500 hover:text-red-700 h-8 w-8 p-0 flex-shrink-0">
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
               <div className="flex gap-2 justify-end">
-                <Button variant="outline" onClick={() => setShowEditDialog(false)}>Batal</Button>
+                <Button variant="outline" onClick={() => { setShowEditDialog(false); setFiles([]) }}>Batal</Button>
                 <Button onClick={handleEdit} disabled={updateCash.isPending}>
                   {updateCash.isPending ? 'Menyimpan...' : 'Simpan'}
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* View Detail Dialog */}
+      <Dialog open={showViewDialog} onOpenChange={setShowViewDialog}>
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Eye className="h-5 w-5" />
+              Detail Cash
+            </DialogTitle>
+          </DialogHeader>
+          {viewingCash && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-xs text-muted-foreground">Karyawan</p>
+                  <p className="font-medium">{viewingCash.karyawan.nama}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">NIK</p>
+                  <p className="font-medium">{viewingCash.karyawan.nik}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Tanggal</p>
+                  <p className="font-medium">{format(new Date(viewingCash.tanggal), 'dd MMMM yyyy', { locale: idLocale })}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Tipe</p>
+                  <Badge className={viewingCash.tipe === 'masuk' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}>
+                    {viewingCash.tipe === 'masuk' ? 'Uang Masuk' : 'Uang Keluar'}
+                  </Badge>
+                </div>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Jumlah</p>
+                <p className={`text-xl font-bold ${viewingCash.tipe === 'masuk' ? 'text-green-600' : 'text-red-600'}`}>
+                  {viewingCash.tipe === 'masuk' ? '+' : '-'} Rp {viewingCash.jumlah.toLocaleString('id-ID')}
+                </p>
+              </div>
+              {viewingCash.keterangan && (
+                <div>
+                  <p className="text-xs text-muted-foreground">Keterangan</p>
+                  <p className="font-medium">{viewingCash.keterangan}</p>
+                </div>
+              )}
+              {files.length > 0 && (
+                <div>
+                  <p className="text-xs text-muted-foreground mb-2">Eviden/Lampiran ({files.length} file)</p>
+                  <div className="space-y-2">
+                    {files.map((file) => (
+                      <div key={file.id} className="flex items-center gap-3 p-2 bg-gray-50 rounded-lg border cursor-pointer hover:bg-gray-100" onClick={() => file.mimeType.includes('image') ? setPreviewImage(file.filePath) : window.open(file.filePath, '_blank')}>
+                        {getFileIcon(file)}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate max-w-[200px]" title={file.originalName}>{file.originalName}</p>
+                          <p className="text-xs text-muted-foreground">{formatFileSize(file.fileSize)}</p>
+                        </div>
+                        <Eye className="h-4 w-4 text-muted-foreground" />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              <div className="flex gap-2 justify-end pt-2">
+                <Button variant="outline" onClick={() => { setShowViewDialog(false); setFiles([]) }}>Tutup</Button>
+                <Button onClick={() => { setShowViewDialog(false); setEditingCash(viewingCash); setShowEditDialog(true) }}>
+                  <Pencil className="h-4 w-4 mr-2" />Edit
                 </Button>
               </div>
             </div>
@@ -516,6 +787,15 @@ export default function CashPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Image Preview */}
+      {previewImage && (
+        <Dialog open={!!previewImage} onOpenChange={() => setPreviewImage(null)}>
+          <DialogContent className="max-w-4xl">
+            <img src={previewImage} alt="Preview" className="w-full h-auto" />
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   )
 }
