@@ -12,6 +12,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { DataTable } from '@/components/ui/data-table'
 import { DatePicker } from '@/components/ui/date-picker'
+import { DateRangePicker } from '@/components/ui/date-range-picker'
+import { type DateRange } from 'react-day-picker'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
 import { Textarea } from '@/components/ui/textarea'
@@ -104,6 +106,7 @@ export default function TransactionPage() {
   const [filterQuarter, setFilterQuarter] = useState('')
   const [filterRegional, setFilterRegional] = useState('')
   const [filterPengadaan, setFilterPengadaan] = useState('')
+  const [filterDateRange, setFilterDateRange] = useState<{ from: Date | undefined; to?: Date | undefined } | undefined>()
   const [searchQuery, setSearchQuery] = useState('')
 
   // Form states
@@ -203,6 +206,17 @@ export default function TransactionPage() {
     if (filterQuarter && t.quarter !== parseInt(filterQuarter)) return false
     if (filterRegional && t.regionalPengguna !== filterRegional) return false
     if (filterPengadaan && t.jenisPengadaan !== filterPengadaan) return false
+    if (filterDateRange?.from && t.tanggalKwitansi) {
+      const txDate = new Date(t.tanggalKwitansi)
+      if (txDate < filterDateRange.from) return false
+    }
+    if (filterDateRange?.to && t.tanggalKwitansi) {
+      const txDate = new Date(t.tanggalKwitansi)
+      const endOfDay = new Date(filterDateRange.to)
+      endOfDay.setHours(23, 59, 59, 999)
+      if (txDate > endOfDay) return false
+    }
+    if ((filterDateRange?.from || filterDateRange?.to) && !t.tanggalKwitansi) return false
     if (searchQuery && !t.kegiatan.toLowerCase().includes(searchQuery.toLowerCase())) return false
     return true
   })
@@ -397,8 +411,8 @@ export default function TransactionPage() {
     const ws = workbook.addWorksheet('Transaksi')
     
     ws.columns = [
-      { width: 5 }, { width: 18 }, { width: 15 }, { width: 60 }, { width: 15 },
-      { width: 25 }, { width: 18 }, { width: 12 }, { width: 18 }, { width: 15 }, { width: 10 }
+      { width: 5 }, { width: 35 }, { width: 15 }, { width: 18 }, { width: 18 }, { width: 15 }, { width: 60 }, { width: 15 },
+      { width: 25 }, { width: 18 }, { width: 12 }, { width: 18 }, { width: 15 }, { width: 15 }, { width: 18 }, { width: 10 }
     ]
     
     ws.addRow(['Unit', ':', 'DC, DEFA OPERATION & TECHNICAL SUPPORT TIF'])
@@ -406,7 +420,7 @@ export default function TransactionPage() {
     ws.addRow(['Periode', ':', year.toString()])
     ws.addRow([])
     
-    const headerRow = ws.addRow(['No', 'Tgl Serahkan Berkas ke FC', 'Tanggal Kwitansi', 'Kegiatan', 'Regional', 'Vendor', 'Nilai Kwitansi', 'Jenis Pajak', 'Nilai Tanpa PPN', 'Nilai PPN', 'Status'])
+    const headerRow = ws.addRow(['No', 'GL Account', 'Jenis Pengadaan', 'No. Tiket MYDX', 'Tgl Serahkan Berkas ke FC', 'Tanggal Kwitansi', 'Kegiatan', 'Area Pengguna', 'Vendor', 'Nilai Kwitansi', 'Jenis Pajak', 'Nilai Tanpa PPN', 'Nilai PPN', 'Tgl Transfer Vendor', 'Nilai Transfer (Rp)', 'Status'])
     headerRow.font = { bold: true }
     headerRow.eachCell(cell => {
       cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE0E0E0' } }
@@ -417,38 +431,55 @@ export default function TransactionPage() {
     
     Object.keys(groupedByMonth).map(Number).sort((a, b) => a - b).forEach(month => {
       ws.addRow([])
-      const monthRow = ws.addRow(['', '', '', MONTHS[month]])
-      monthRow.getCell(4).font = { bold: true, size: 12 }
+      const monthRow = ws.addRow(['', '', '', '', '', '', MONTHS[month]])
+      monthRow.getCell(7).font = { bold: true, size: 12 }
       
       groupedByMonth[month].sort((a, b) => new Date(a.tglSerahFinance!).getTime() - new Date(b.tglSerahFinance!).getTime()).forEach(t => {
         const row = ws.addRow([
-          rowNum++, format(new Date(t.tglSerahFinance!), 'dd-MM-yy'),
+          rowNum++,
+          t.glAccount ? `${t.glAccount.code} - ${t.glAccount.description}` : '-',
+          JENIS_PENGADAAN.find(p => p.value === t.jenisPengadaan)?.label || '-',
+          t.noTiketMydx || '-',
+          format(new Date(t.tglSerahFinance!), 'dd-MM-yy'),
           t.tanggalKwitansi ? format(new Date(t.tanggalKwitansi), 'dd-MM-yyyy') : '-',
-          t.kegiatan, regionals.find((r: Regional) => r.code === t.regionalCode)?.name || t.regionalCode,
+          t.kegiatan, 
+          t.regionalPengguna || '-',
           t.vendor?.name || '-', t.nilaiKwitansi,
           JENIS_PAJAK.find(p => p.value === t.jenisPajak)?.label || 'Non-PPN',
-          Math.round(t.nilaiTanpaPPN), Math.round(t.nilaiPPN), t.status
+          Math.round(t.nilaiTanpaPPN), Math.round(t.nilaiPPN),
+          t.tglTransferVendor ? format(new Date(t.tglTransferVendor), 'dd-MM-yyyy') : '-',
+          t.nilaiTransfer || 0,
+          t.status
         ])
         row.eachCell(cell => { cell.border = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } } })
-        row.getCell(7).numFmt = '#,##0'; row.getCell(9).numFmt = '#,##0'; row.getCell(10).numFmt = '#,##0'
+        row.getCell(10).numFmt = '#,##0'; row.getCell(12).numFmt = '#,##0'; row.getCell(13).numFmt = '#,##0'; row.getCell(15).numFmt = '#,##0'
       })
     })
     
     if (transactionsWithoutDate.length > 0) {
       ws.addRow([])
-      const pendingRow = ws.addRow(['', '', '', 'BELUM SERAH KE FINANCE'])
-      pendingRow.getCell(4).font = { bold: true, size: 12, color: { argb: 'FFFF0000' } }
+      const pendingRow = ws.addRow(['', '', '', '', '', '', 'BELUM SERAH KE FINANCE'])
+      pendingRow.getCell(7).font = { bold: true, size: 12, color: { argb: 'FFFF0000' } }
       
       transactionsWithoutDate.forEach((t: Transaction) => {
         const row = ws.addRow([
-          rowNum++, '-', t.tanggalKwitansi ? format(new Date(t.tanggalKwitansi), 'dd-MM-yyyy') : '-',
-          t.kegiatan, regionals.find((r: Regional) => r.code === t.regionalCode)?.name || t.regionalCode,
+          rowNum++,
+          t.glAccount ? `${t.glAccount.code} - ${t.glAccount.description}` : '-',
+          JENIS_PENGADAAN.find(p => p.value === t.jenisPengadaan)?.label || '-',
+          t.noTiketMydx || '-',
+          '-',
+          t.tanggalKwitansi ? format(new Date(t.tanggalKwitansi), 'dd-MM-yyyy') : '-',
+          t.kegiatan, 
+          t.regionalPengguna || '-',
           t.vendor?.name || '-', t.nilaiKwitansi,
           JENIS_PAJAK.find(p => p.value === t.jenisPajak)?.label || 'Non-PPN',
-          Math.round(t.nilaiTanpaPPN), Math.round(t.nilaiPPN), t.status
+          Math.round(t.nilaiTanpaPPN), Math.round(t.nilaiPPN),
+          t.tglTransferVendor ? format(new Date(t.tglTransferVendor), 'dd-MM-yyyy') : '-',
+          t.nilaiTransfer || 0,
+          t.status
         ])
         row.eachCell(cell => { cell.border = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } } })
-        row.getCell(7).numFmt = '#,##0'; row.getCell(9).numFmt = '#,##0'; row.getCell(10).numFmt = '#,##0'
+        row.getCell(10).numFmt = '#,##0'; row.getCell(12).numFmt = '#,##0'; row.getCell(13).numFmt = '#,##0'; row.getCell(15).numFmt = '#,##0'
       })
     }
 
@@ -799,9 +830,9 @@ export default function TransactionPage() {
                   <PopoverTrigger asChild>
                     <Button variant="outline" size="sm" className="gap-2 h-9 flex-shrink-0">
                       <Filter className="h-4 w-4" /><span className="hidden sm:inline">Filter</span>
-                      {(filterGl || filterQuarter || filterRegional || filterPengadaan) && (
+                      {(filterGl || filterQuarter || filterRegional || filterPengadaan || filterDateRange) && (
                         <Badge variant="secondary" className="ml-1 h-5 w-5 p-0 flex items-center justify-center text-xs">
-                          {[filterGl, filterQuarter, filterRegional, filterPengadaan].filter(Boolean).length}
+                          {[filterGl, filterQuarter, filterRegional, filterPengadaan, filterDateRange].filter(Boolean).length}
                         </Badge>
                       )}
                     </Button>
@@ -850,9 +881,13 @@ export default function TransactionPage() {
                             </SelectContent>
                           </Select>
                         </div>
+                        <div className="space-y-1.5">
+                          <Label className="text-xs text-muted-foreground">Tanggal Kwitansi</Label>
+                          <DateRangePicker dateRange={filterDateRange} onSelect={setFilterDateRange} placeholder="Pilih rentang tanggal" />
+                        </div>
                       </div>
-                      {(filterGl || filterQuarter || filterRegional || filterPengadaan) && (
-                        <Button size="sm" className="w-full" onClick={() => { setFilterGl(''); setFilterQuarter(''); setFilterRegional(''); setFilterPengadaan('') }}>Reset Filter</Button>
+                      {(filterGl || filterQuarter || filterRegional || filterPengadaan || filterDateRange) && (
+                        <Button size="sm" className="w-full" onClick={() => { setFilterGl(''); setFilterQuarter(''); setFilterRegional(''); setFilterPengadaan(''); setFilterDateRange(undefined) }}>Reset Filter</Button>
                       )}
                     </div>
                   </PopoverContent>
