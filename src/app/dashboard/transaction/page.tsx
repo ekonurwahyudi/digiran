@@ -686,7 +686,7 @@ export default function TransactionPage() {
     { accessorKey: 'tanggalKwitansi', header: 'Tgl Kwitansi', cell: ({ row }) => row.original.tanggalKwitansi ? format(new Date(row.original.tanggalKwitansi), 'dd MMM yy', { locale: idLocale }) : '-' },
     { accessorKey: 'glAccount.code', header: 'GL Account', cell: ({ row }) => row.original.glAccount.code },
     { accessorKey: 'quarter', header: 'Kuartal', cell: ({ row }) => `Q${row.getValue('quarter')}` },
-    { accessorKey: 'regionalCode', header: 'Alokasi', cell: ({ row }) => regionals.find((r: Regional) => r.code === row.original.regionalCode)?.name || row.original.regionalCode },
+    { accessorKey: 'regionalPengguna', header: 'Area Pengguna', cell: ({ row }) => row.original.regionalPengguna || '-' },
     { accessorKey: 'kegiatan', header: 'Kegiatan' },
     { accessorKey: 'nilaiTanpaPPN', header: () => <div className="text-right">Nilai (Rp)</div>, cell: ({ row }) => <div className="text-right">{row.original.nilaiTanpaPPN.toLocaleString('id-ID')}</div> },
     { accessorKey: 'jenisPengadaan', header: 'Pengadaan', cell: ({ row }) => JENIS_PENGADAAN.find(p => p.value === row.original.jenisPengadaan)?.label || '-' },
