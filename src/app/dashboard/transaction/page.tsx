@@ -147,6 +147,7 @@ export default function TransactionPage() {
   const [editNilaiTransfer, setEditNilaiTransfer] = useState<number | undefined>()
   const [editTaskTransferVendor, setEditTaskTransferVendor] = useState(false)
   const [editTaskTerimaBerkas, setEditTaskTerimaBerkas] = useState(false)
+  const [editStatus, setEditStatus] = useState('Open')
   
   // File upload states
   const [files, setFiles] = useState<any[]>([])
@@ -260,6 +261,7 @@ export default function TransactionPage() {
     setEditPicFinance(t.picFinance || ''); setEditNoHpFinance(t.noHpFinance || '')
     setEditTglTransferVendor(t.tglTransferVendor ? new Date(t.tglTransferVendor) : undefined)
     setEditNilaiTransfer(t.nilaiTransfer); setEditTaskTransferVendor(t.taskTransferVendor); setEditTaskTerimaBerkas(t.taskTerimaBerkas)
+    setEditStatus(t.status)
     loadTransactionFiles(t.id)
     setShowEditDialog(true)
   }
@@ -371,6 +373,7 @@ export default function TransactionPage() {
           jenisPengadaan: editJenisPengadaan, vendorId: editVendorId || null, noTiketMydx: editNoTiketMydx, tglSerahFinance: editTglSerahFinance?.toISOString(),
           picFinance: editPicFinance, noHpFinance: editNoHpFinance, tglTransferVendor: editTglTransferVendor?.toISOString(),
           nilaiTransfer: editNilaiTransfer, taskTransferVendor: editTaskTransferVendor, taskTerimaBerkas: editTaskTerimaBerkas,
+          manualStatus: editStatus,
         }
       })
       setShowEditDialog(false); setEditingTransaction(null)
@@ -1065,7 +1068,19 @@ export default function TransactionPage() {
                 </div>
               </div>
               <div className="col-span-1 px-5 py-6 bg-muted/30">
-                <div className="flex items-center justify-between mb-6 pb-4 border-b"><span className="text-sm font-semibold">Status</span><StatusBadge status={editingTransaction.status} /></div>
+                <div className="flex items-center justify-between mb-6 pb-4 border-b">
+                  <span className="text-sm font-semibold">Status</span>
+                  <Select value={editStatus} onValueChange={setEditStatus}>
+                    <SelectTrigger className="w-[120px] h-8">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Open">Open</SelectItem>
+                      <SelectItem value="Proses">Proses</SelectItem>
+                      <SelectItem value="Close">Close</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
                 <div className="space-y-4">
                   <p className="text-sm font-semibold">Task Checklist</p>
                   <div className="space-y-3">

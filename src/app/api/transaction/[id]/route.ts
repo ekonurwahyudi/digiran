@@ -88,6 +88,9 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   if (allFieldsFilled && allTasksCompleted) {
     // All done → Close
     status = 'Close'
+  } else if (data.manualStatus) {
+    // User manually set status → respect it, but auto-upgrade to Close if all done
+    status = data.manualStatus
   } else if (currentTransaction?.status === 'Close' || currentTransaction?.status === 'Proses') {
     // Already in Proses/Close — keep it unless tasks were unchecked
     if (anyTaskChecked) {

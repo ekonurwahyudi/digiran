@@ -266,7 +266,8 @@ export default function ImprestFundPage() {
     let finalStatus = editingImprest.status
     if (editingImprest.status !== 'draft') {
       const isComplete = editingImprest.taskTransferVendor && editingImprest.taskTerimaBerkas && taskUploadMydx && taskSerahFinance && taskVendorDibayar
-      finalStatus = isComplete ? 'close' : 'proses'
+      if (isComplete) finalStatus = 'close'
+      // else keep whatever status user selected in dropdown
     }
 
     try {
@@ -1062,7 +1063,16 @@ export default function ImprestFundPage() {
                     {/* Status */}
                     <div className="flex items-center justify-between mb-6 pb-4 border-b">
                       <span className="text-sm font-semibold">Status</span>
-                      <StatusBadge status={editingImprest.status} />
+                      <Select value={editingImprest.status} onValueChange={(v) => setEditingImprest({...editingImprest, status: v as any})}>
+                        <SelectTrigger className="w-[120px] h-8">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="open">Open</SelectItem>
+                          <SelectItem value="proses">Proses</SelectItem>
+                          <SelectItem value="close">Close</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
 
                     {/* Task Checklist */}

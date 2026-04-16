@@ -124,8 +124,11 @@ export async function PUT(
     let computedStatus: string
     if (status === 'draft') {
       computedStatus = 'draft'
-    } else if (status === 'close' || allTasksDone) {
+    } else if (allTasksDone) {
       computedStatus = 'close'
+    } else if (status && ['open', 'proses', 'close'].includes(status)) {
+      // User explicitly set status via dropdown → respect it
+      computedStatus = status
     } else if (currentImprest.status === 'close' || currentImprest.status === 'proses') {
       // Already in proses/close — keep unless all tasks unchecked
       computedStatus = anyTaskChecked ? currentImprest.status : 'open'
