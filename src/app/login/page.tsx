@@ -64,7 +64,7 @@ export default function LoginPage() {
               <Input
                 id="email"
                 type="email"
-                placeholder="admin@digiran.com"
+                placeholder="Masukkan Email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -99,9 +99,6 @@ export default function LoginPage() {
               {loading ? 'Memproses...' : 'Login'}
             </Button>
           </form>
-          <p className="text-xs text-muted-foreground mt-4 text-center">
-            Default: admin@digiran.com / admin123
-          </p>
         </CardContent>
       </Card>
     </div>

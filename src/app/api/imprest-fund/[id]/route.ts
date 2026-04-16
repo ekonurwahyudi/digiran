@@ -94,12 +94,53 @@ export async function PUT(
     const autoTaskSerahFinance = !!finalTglSerahFinance
     const autoTaskVendorDibayar = !!finalTglTransferVendor
 
+    // Determine imprest fund status based on tasks
+    const prevTaskTransferVendor = currentImprest.taskTransferVendor
+    const prevTaskTerimaBerkas = currentImprest.taskTerimaBerkas
+    const prevTaskUploadMydx = currentImprest.taskUploadMydx
+    const prevTaskSerahFinance = currentImprest.taskSerahFinance
+    const prevTaskVendorDibayar = currentImprest.taskVendorDibayar
+
+    const newTaskTransferVendor = taskTransferVendor !== undefined ? taskTransferVendor : prevTaskTransferVendor
+    const newTaskTerimaBerkas = taskTerimaBerkas !== undefined ? taskTerimaBerkas : prevTaskTerimaBerkas
+
+    // A task newly became true
+    const taskBecameChecked =
+      (!prevTaskTransferVendor && newTaskTransferVendor) ||
+      (!prevTaskTerimaBerkas && newTaskTerimaBerkas) ||
+      (!prevTaskUploadMydx && autoTaskUploadMydx) ||
+      (!prevTaskSerahFinance && autoTaskSerahFinance) ||
+      (!prevTaskVendorDibayar && autoTaskVendorDibayar)
+
+    const anyTaskChecked =
+      newTaskTransferVendor || newTaskTerimaBerkas ||
+      autoTaskUploadMydx || autoTaskSerahFinance || autoTaskVendorDibayar ||
+      (taskPengajuan !== undefined ? taskPengajuan : currentImprest.taskPengajuan)
+
+    const allTasksDone =
+      newTaskTransferVendor && newTaskTerimaBerkas &&
+      autoTaskUploadMydx && autoTaskSerahFinance && autoTaskVendorDibayar
+
+    let computedStatus: string
+    if (status === 'draft') {
+      computedStatus = 'draft'
+    } else if (status === 'close' || allTasksDone) {
+      computedStatus = 'close'
+    } else if (currentImprest.status === 'close' || currentImprest.status === 'proses') {
+      // Already in proses/close — keep unless all tasks unchecked
+      computedStatus = anyTaskChecked ? currentImprest.status : 'open'
+    } else if (taskBecameChecked) {
+      computedStatus = 'proses'
+    } else {
+      computedStatus = currentImprest.status === 'draft' ? 'draft' : 'open'
+    }
+
     // Build update data object
     const updateData: any = {
       kelompokKegiatan: kelompokKegiatan || currentImprest.kelompokKegiatan,
       regionalCode: regionalCode !== undefined ? regionalCode : currentImprest.regionalCode,
       imprestFundCardId: imprestFundCardId !== undefined ? imprestFundCardId : currentImprest.imprestFundCardId,
-      status: status || currentImprest.status,
+      status: computedStatus,
       totalAmount,
       keterangan: keterangan !== undefined ? keterangan : currentImprest.keterangan,
       debit: debit !== undefined ? debit : currentImprest.debit,
@@ -240,9 +281,31 @@ export async function PUT(
           })
         }
       } else {
-        // Only update status and finance fields if items are not changed
-        const transactionStatus = status === 'close' ? 'Close' : status === 'proses' ? 'Proses' : 'Open'
-        
+        // Only update finance fields and tasks — status stays as-is unless tasks changed
+        const anyTaskChecked = 
+          (imprestFund as any).taskTransferVendor ||
+          (imprestFund as any).taskTerimaBerkas ||
+          (imprestFund as any).taskUploadMydx ||
+          (imprestFund as any).taskSerahFinance ||
+          (imprestFund as any).taskVendorDibayar ||
+          (imprestFund as any).taskPengajuan
+
+        const allTasksDone =
+          (imprestFund as any).taskTransferVendor &&
+          (imprestFund as any).taskTerimaBerkas &&
+          (imprestFund as any).taskUploadMydx &&
+          (imprestFund as any).taskSerahFinance &&
+          (imprestFund as any).taskVendorDibayar
+
+        let transactionStatus: string
+        if (status === 'close' || allTasksDone) {
+          transactionStatus = 'Close'
+        } else if (anyTaskChecked) {
+          transactionStatus = 'Proses'
+        } else {
+          transactionStatus = 'Open'
+        }
+
         await (prisma as any).transaction.updateMany({
           where: { imprestFundId: params.id },
           data: {

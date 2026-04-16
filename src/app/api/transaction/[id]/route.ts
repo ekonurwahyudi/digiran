@@ -30,13 +30,33 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   const taskSerahFinance = !!data.tglSerahFinance
   const taskVendorDibayar = !!data.tglTransferVendor
 
-  // Determine status automatically based on fields and tasks
-  // Close: semua field dan task terisi (kecuali keterangan)
-  // Proses: ada perubahan/update dari Open
-  // Open: baru dibuat
-  
-  let status = 'Proses' // Default saat edit adalah Proses
-  
+  // Get current transaction to preserve status if no task changes
+  const currentTransaction = await prisma.transaction.findUnique({
+    where: { id: params.id },
+    select: { 
+      status: true, 
+      taskPengajuan: true,
+      taskTransferVendor: true,
+      taskTerimaBerkas: true,
+      taskUploadMydx: true,
+      taskSerahFinance: true,
+      taskVendorDibayar: true,
+    }
+  })
+
+  // Check if any task actually changed to true (was false before, now true)
+  const taskBecameChecked = 
+    (!currentTransaction?.taskTransferVendor && taskTransferVendor) ||
+    (!currentTransaction?.taskTerimaBerkas && taskTerimaBerkas) ||
+    (!currentTransaction?.taskUploadMydx && taskUploadMydx) ||
+    (!currentTransaction?.taskSerahFinance && taskSerahFinance) ||
+    (!currentTransaction?.taskVendorDibayar && taskVendorDibayar)
+
+  // Any task is currently checked (including existing ones)
+  const anyTaskChecked = 
+    taskTransferVendor || taskTerimaBerkas || taskUploadMydx || taskSerahFinance || taskVendorDibayar ||
+    (currentTransaction?.taskPengajuan ?? false)
+
   // Check if all required fields are filled for Close status
   const allFieldsFilled = 
     data.glAccountId &&
@@ -64,8 +84,23 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     taskSerahFinance &&
     taskVendorDibayar
 
+  let status: string
   if (allFieldsFilled && allTasksCompleted) {
+    // All done → Close
     status = 'Close'
+  } else if (currentTransaction?.status === 'Close' || currentTransaction?.status === 'Proses') {
+    // Already in Proses/Close — keep it unless tasks were unchecked
+    if (anyTaskChecked) {
+      status = currentTransaction.status
+    } else {
+      status = 'Open'
+    }
+  } else if (taskBecameChecked) {
+    // A task was newly checked → move to Proses
+    status = 'Proses'
+  } else {
+    // No task change → stay Open
+    status = 'Open'
   }
 
   const transaction = await prisma.transaction.update({
