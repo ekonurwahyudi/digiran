@@ -28,10 +28,6 @@ npm run db:seed
 npm run dev
 ```
 
-## Login Default
-- Email: admin@digiran.com
-- Password: admin123
-
 ## Fitur
 - Input anggaran tahunan per GL Account
 - Pembagian otomatis ke 4 kuartal
