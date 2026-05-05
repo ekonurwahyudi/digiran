@@ -67,6 +67,7 @@ interface ImprestFund {
   createdAt: Date; updatedAt: Date; transactions?: Transaction[]
 }
 
+
 export default function ImprestFundPage() {
   const [message, setMessage] = useState('')
   const [autoSaving, setAutoSaving] = useState(false)
@@ -155,7 +156,7 @@ export default function ImprestFundPage() {
 
   const availableYears = useMemo(() => {
     const years = imprestFunds.map((imprest: ImprestFund) => new Date(imprest.createdAt).getFullYear())
-    const distinctYears = [...new Set(years)].filter(y => !isNaN(y))
+    const distinctYears = Array.from(new Set(years)).filter(y => !isNaN(y))
     if (distinctYears.length === 0) return [new Date().getFullYear()]
     return distinctYears.sort((a, b) => b - a)
   }, [imprestFunds])
