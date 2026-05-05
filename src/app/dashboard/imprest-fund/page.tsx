@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { ColumnDef } from '@tanstack/react-table'
 import { format } from 'date-fns'
 import { id as idLocale } from 'date-fns/locale'
@@ -16,14 +16,20 @@ import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Plus, Trash2, CheckCircle, Eye, Save, FileText, Calendar, CreditCard, Pencil, ChevronDown, ChevronRight, BookOpen, Hourglass, File, Image, FileSpreadsheet, Presentation } from 'lucide-react'
+import { Plus, Trash2, CheckCircle, Eye, Save, FileText, Calendar, CreditCard, Pencil, ChevronDown, ChevronRight, BookOpen, Hourglass, File, Image, FileSpreadsheet, Presentation, Filter } from 'lucide-react'
 import { CurrencyInput } from '@/components/ui/currency-input'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { TableSkeleton } from '@/components/loading'
 import { cn } from '@/lib/utils'
 import { useImprestFunds, useImprestFundCards, useCreateImprestFund, useUpdateImprestFund, useDeleteImprestFund, useTopUpImprestFund } from '@/lib/hooks/useImprestFund'
 import { useGlAccounts, useRegionals, useVendors } from '@/lib/hooks/useMaster'
 import api from '@/lib/axios'
+
+const quarterOptions = ['Q1', 'Q2', 'Q3', 'Q4']
+const monthOptions = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember']
+const quarterMonthRanges: Record<string, [number, number]> = { 'Q1': [0, 2], 'Q2': [3, 5], 'Q3': [6, 8], 'Q4': [9, 11] }
+const monthIndexMap: Record<string, number> = { 'Januari': 0, 'Februari': 1, 'Maret': 2, 'April': 3, 'Mei': 4, 'Juni': 5, 'Juli': 6, 'Agustus': 7, 'September': 8, 'Oktober': 9, 'November': 10, 'Desember': 11 }
 
 function StatusBadge({ status }: { status: string }) {
   const statusLower = status.toLowerCase()
@@ -48,7 +54,7 @@ interface ImprestItem { id: string; tanggal: Date; uraian: string; glAccountId: 
 interface ImprestFundCard { id: string; nomorKartu: string; user: string; saldo: number; pic: string; isActive: boolean }
 interface Vendor { id: string; name: string; alamat?: string; pic?: string; phone?: string; email?: string }
 interface Transaction { id: string; glAccountId: string; glAccount: GlAccount; quarter: number; regionalCode: string; kegiatan: string; regionalPengguna: string; year: number; status: string; imprestFundId?: string }
-interface Regional { id: string; code: string; name: string }
+interface Regional { id: string; code: string; name: string; isActive: boolean }
 
 interface ImprestFund {
   id: string; kelompokKegiatan: string; regionalCode?: string; items: ImprestItem[]
@@ -74,6 +80,14 @@ export default function ImprestFundPage() {
   
   // Regional allocation states
   const [selectedRegionalCode, setSelectedRegionalCode] = useState('')
+  
+  // Regional filter states
+  const [selectedRegionalCodes, setSelectedRegionalCodes] = useState<string[]>([])
+  
+  // Period filter states
+  const [filterMode, setFilterMode] = useState<'quartal' | 'bulan'>('quartal')
+  const [selectedPeriod, setSelectedPeriod] = useState<string>('')
+  const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear())
   
   // Top Up states
   const [showTopUpDialog, setShowTopUpDialog] = useState(false)
@@ -131,6 +145,72 @@ export default function ImprestFundPage() {
       setSelectedInputCardId(imprestFundCards[0].id)
     }
   }, [imprestFundCards, selectedInputCardId])
+
+  // Memoized active regionals (Task 3.1) - must be declared before useEffect that uses it
+  const activeRegionals = useMemo(() => {
+    return regionals
+      .filter((r: Regional) => r.isActive)
+      .sort((a: Regional, b: Regional) => a.name.localeCompare(b.name))
+  }, [regionals])
+
+  const availableYears = useMemo(() => {
+    const years = imprestFunds.map((imprest: ImprestFund) => new Date(imprest.createdAt).getFullYear())
+    const distinctYears = [...new Set(years)].filter(y => !isNaN(y))
+    if (distinctYears.length === 0) return [new Date().getFullYear()]
+    return distinctYears.sort((a, b) => b - a)
+  }, [imprestFunds])
+
+  // Clean up selected codes if regional becomes inactive (Task 5.1)
+  useEffect(() => {
+    const activeCodes = activeRegionals.map((r: Regional) => r.code)
+    setSelectedRegionalCodes(prev =>
+      prev.filter(code => activeCodes.includes(code))
+    )
+  }, [activeRegionals])
+
+  // Regional filter handlers
+  const handleRegionalToggle = (regionalCode: string, checked: boolean | 'indeterminate') => {
+    if (checked === true) {
+      setSelectedRegionalCodes(prev => [...prev, regionalCode])
+    } else {
+      setSelectedRegionalCodes(prev => prev.filter(code => code !== regionalCode))
+    }
+  }
+
+  const handleSelectAll = () => {
+    const allActiveCodes = activeRegionals.map((r: Regional) => r.code)
+    setSelectedRegionalCodes(allActiveCodes)
+  }
+
+  const handleClearAll = () => {
+    setSelectedRegionalCodes([])
+  }
+
+  const handleFilterModeChange = (newMode: string) => {
+    setFilterMode(newMode as 'quartal' | 'bulan')
+    setSelectedPeriod('')
+  }
+
+  const handleResetPeriod = () => {
+    setSelectedPeriod('')
+  }
+
+  const filterByPeriod = (imprest: ImprestFund): boolean => {
+    const createdAt = new Date(imprest.createdAt)
+    if (isNaN(createdAt.getTime())) return false
+    if (createdAt.getFullYear() !== selectedYear) return false
+    if (!selectedPeriod) return true
+    if (filterMode === 'quartal') {
+      const range = quarterMonthRanges[selectedPeriod]
+      if (!range) return true
+      const month = createdAt.getMonth()
+      return month >= range[0] && month <= range[1]
+    } else {
+      const targetMonth = monthIndexMap[selectedPeriod]
+      if (targetMonth === undefined) return true
+      return createdAt.getMonth() === targetMonth
+    }
+  }
 
   const addItem = () => {
     const newItem: ImprestItem = { id: Date.now().toString(), tanggal: new Date(), uraian: '', glAccountId: '', glAccount: undefined, areaPengguna: '', jumlah: 0 }
@@ -431,11 +511,54 @@ export default function ImprestFundPage() {
 
   const totalAmount = items.reduce((sum, item) => sum + item.jumlah, 0)
 
-  const filteredImprestFunds = imprestFunds.filter((imprest: ImprestFund) => {
-    if (activeTab !== 'all' && imprest.status !== activeTab) return false
-    if (searchQuery && !imprest.kelompokKegiatan.toLowerCase().includes(searchQuery.toLowerCase())) return false
-    return true
-  })
+  // Memoized filtered imprest funds with regional filter (Task 3.2)
+  const filteredImprestFunds = useMemo(() => {
+    let filtered = imprestFunds
+
+    // Apply regional filter
+    if (selectedRegionalCodes.length > 0) {
+      filtered = filtered.filter((imprest: ImprestFund) =>
+        imprest.regionalCode && selectedRegionalCodes.includes(imprest.regionalCode)
+      )
+    }
+
+    // Apply period filter (includes year + optional period)
+    filtered = filtered.filter(filterByPeriod)
+
+    // Apply tab filter (existing logic)
+    if (activeTab !== 'all') {
+      filtered = filtered.filter((imprest: ImprestFund) => imprest.status === activeTab)
+    }
+
+    // Apply search filter (existing logic)
+    if (searchQuery) {
+      filtered = filtered.filter((imprest: ImprestFund) =>
+        imprest.kelompokKegiatan.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    }
+
+    return filtered
+  }, [imprestFunds, selectedRegionalCodes, selectedYear, filterMode, selectedPeriod, activeTab, searchQuery])
+
+  // Memoized belum refund total with regional filter (Task 4.1)
+  const belumRefundTotal = useMemo(() => {
+    let fundsToCalculate = imprestFunds
+
+    // Apply regional filter if active
+    if (selectedRegionalCodes.length > 0) {
+      fundsToCalculate = fundsToCalculate.filter((i: ImprestFund) =>
+        i.regionalCode && selectedRegionalCodes.includes(i.regionalCode)
+      )
+    }
+
+    // Apply period filter (includes year + optional period)
+    fundsToCalculate = fundsToCalculate.filter(filterByPeriod)
+
+    // Calculate total for open and proses status
+    return fundsToCalculate
+      .filter((i: ImprestFund) => i.status === 'open' || i.status === 'proses')
+      .reduce((sum: number, i: ImprestFund) => sum + i.totalAmount, 0)
+  }, [imprestFunds, selectedRegionalCodes, selectedYear, filterMode, selectedPeriod])
 
   const draftCount = imprestFunds.filter((t: ImprestFund) => t.status === 'draft').length
   const openCount = imprestFunds.filter((t: ImprestFund) => t.status === 'open').length
@@ -473,9 +596,126 @@ export default function ImprestFundPage() {
           <h1 className="text-xl md:text-2xl font-bold">Imprest Fund</h1>
           <p className="text-muted-foreground text-xs md:text-sm">Kelola dana imprest dan pencatatan penggunaan</p>
         </div>
-        <Button onClick={() => setShowTopUpDialog(true)} className="gap-2 w-full sm:w-auto" variant="default" size="sm">
-          <Plus className="h-4 w-4" />Top Up
-        </Button>
+        <div className="flex items-center gap-2 flex-wrap">
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="sm" className="gap-2">
+                <Filter className="h-4 w-4" />
+                Filter Regional
+                {selectedRegionalCodes.length > 0 && (
+                  <Badge className="ml-1 h-5 px-1.5 text-xs">{selectedRegionalCodes.length}</Badge>
+                )}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-80">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h4 className="font-semibold text-sm">Filter Regional</h4>
+                  {selectedRegionalCodes.length > 0 && (
+                    <Badge variant="secondary" className="text-xs">{selectedRegionalCodes.length} dipilih</Badge>
+                  )}
+                </div>
+                {activeRegionals.length === 0 ? (
+                  <div className="text-center py-4 text-sm text-muted-foreground">
+                    Tidak ada regional tersedia
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {activeRegionals.map((regional: Regional) => (
+                      <div key={regional.id} className="flex items-center gap-2">
+                        <Checkbox
+                          id={`regional-${regional.code}`}
+                          checked={selectedRegionalCodes.includes(regional.code)}
+                          onCheckedChange={(checked) => handleRegionalToggle(regional.code, checked)}
+                          aria-label={`Filter by ${regional.name}`}
+                        />
+                        <Label className="cursor-pointer text-sm" htmlFor={`regional-${regional.code}`}>
+                          {regional.name}
+                        </Label>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <div className="flex gap-2 pt-2 border-t">
+                  <Button variant="outline" size="sm" className="flex-1" onClick={handleSelectAll} disabled={selectedRegionalCodes.length === activeRegionals.length}>
+                    Pilih Semua
+                  </Button>
+                  <Button variant="outline" size="sm" className="flex-1" onClick={handleClearAll} disabled={selectedRegionalCodes.length === 0}>
+                    Hapus Semua
+                  </Button>
+                </div>
+              </div>
+            </PopoverContent>
+          </Popover>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="sm" className="gap-2">
+                <Calendar className="h-4 w-4" />
+                {selectedPeriod ? `${selectedPeriod} ${selectedYear}` : `${selectedYear}`}
+                {selectedPeriod && (
+                  <Badge className="ml-1 h-5 px-1.5 text-xs">1</Badge>
+                )}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-72">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h4 className="font-semibold text-sm">Filter Periode</h4>
+                  {selectedPeriod && (
+                    <Badge variant="secondary" className="text-xs">{selectedPeriod} {selectedYear}</Badge>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs">Tahun</Label>
+                  <Select value={selectedYear.toString()} onValueChange={(val) => setSelectedYear(Number(val))}>
+                    <SelectTrigger aria-label="Pilih tahun">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableYears.map((year: number) => (
+                        <SelectItem key={year} value={year.toString()}>{year}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs">Mode Filter</Label>
+                  <Select value={filterMode} onValueChange={handleFilterModeChange}>
+                    <SelectTrigger aria-label="Pilih mode filter">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="quartal">Quartal</SelectItem>
+                      <SelectItem value="bulan">Bulan</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs">Pilih Periode</Label>
+                  <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
+                    <SelectTrigger aria-label="Pilih periode">
+                      <SelectValue placeholder="Semua Periode" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {filterMode === 'quartal'
+                        ? quarterOptions.map(q => <SelectItem key={q} value={q}>{q}</SelectItem>)
+                        : monthOptions.map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)
+                      }
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="pt-2 border-t">
+                  <Button variant="outline" size="sm" className="w-full" onClick={handleResetPeriod} disabled={!selectedPeriod}>
+                    Reset Periode
+                  </Button>
+                </div>
+              </div>
+            </PopoverContent>
+          </Popover>
+          <Button onClick={() => setShowTopUpDialog(true)} className="gap-2" variant="default" size="sm">
+            <Plus className="h-4 w-4" />Top Up
+          </Button>
+        </div>
       </div>
 
       {message && (
@@ -514,7 +754,7 @@ export default function ImprestFundPage() {
         <Card className="border">
           <CardContent className="p-4 md:pt-6">
             <div className="flex items-center justify-between">
-              <div><p className="text-xs md:text-sm text-muted-foreground">Belum Refund</p><p className="text-lg md:text-2xl font-bold text-orange-600">Rp {imprestFunds.filter((i: ImprestFund) => i.status === 'open' || i.status === 'proses').reduce((sum: number, i: ImprestFund) => sum + i.totalAmount, 0).toLocaleString('id-ID')}</p></div>
+              <div><p className="text-xs md:text-sm text-muted-foreground">Belum Refund</p><p className="text-lg md:text-2xl font-bold text-orange-600">Rp {belumRefundTotal.toLocaleString('id-ID')}</p></div>
               <div className="w-10 h-10 md:w-12 md:h-12 bg-orange-100 rounded-full flex items-center justify-center"><Hourglass className="h-5 w-5 md:h-6 md:w-6 text-orange-600" /></div>
             </div>
           </CardContent>
