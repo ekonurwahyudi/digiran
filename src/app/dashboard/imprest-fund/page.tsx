@@ -548,7 +548,7 @@ export default function ImprestFundPage() {
           Print
         </button>
         <div class="header">
-          <h1>Pertanggungan Imprest Fund Unit DEFA</h1>
+          <h1>Rekap Pertanggungan Unit DEFA ${imprest.kelompokKegiatan}</h1>
           <p>Dicetak pada: ${format(new Date(), 'dd MMMM yyyy HH:mm', { locale: idLocale })}</p>
         </div>
         <table>
