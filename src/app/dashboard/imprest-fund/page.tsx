@@ -16,7 +16,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Plus, Trash2, CheckCircle, Eye, Save, FileText, Calendar, CreditCard, Pencil, ChevronDown, ChevronRight, BookOpen, Hourglass, File, Image, FileSpreadsheet, Presentation, Filter } from 'lucide-react'
+import { Plus, Trash2, CheckCircle, Eye, Save, FileText, Calendar, CreditCard, Pencil, ChevronDown, ChevronRight, BookOpen, Hourglass, File, Image, FileSpreadsheet, Presentation, Filter, Printer } from 'lucide-react'
 import { CurrencyInput } from '@/components/ui/currency-input'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
@@ -510,6 +510,86 @@ export default function ImprestFundPage() {
     return <div className="w-10 h-10 bg-gray-100 rounded flex items-center justify-center"><File className="h-5 w-5 text-gray-600" /></div>
   }
 
+  const handlePrintUraian = (imprest: ImprestFund) => {
+    const printWindow = window.open('', '_blank')
+    if (!printWindow) return
+
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Detail Uraian - ${imprest.kelompokKegiatan}</title>
+        <style>
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          body { font-family: Arial, sans-serif; padding: 40px; color: #333; }
+          .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #333; padding-bottom: 15px; }
+          .header h1 { font-size: 18px; margin-bottom: 5px; }
+          .header p { font-size: 12px; color: #666; }
+          table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 12px; }
+          th { background-color: #f3f4f6; border: 1px solid #d1d5db; padding: 8px 10px; text-align: left; font-weight: 600; }
+          td { border: 1px solid #d1d5db; padding: 8px 10px; }
+          .text-right { text-align: right; }
+          .total-row { background-color: #eff6ff; font-weight: bold; }
+          .total-row td { border-top: 2px solid #3b82f6; }
+          .print-btn { position: fixed; top: 20px; right: 20px; padding: 10px 20px; background: #3b82f6; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; display: flex; align-items: center; gap: 6px; }
+          .print-btn:hover { background: #2563eb; }
+          @media print { .print-btn { display: none; } }
+          .signature-section { margin-top: 40px; padding-left: 20px; }
+          .signature-section .print-date { font-size: 13px; margin-bottom: 8px; }
+          .signature-section .title { font-size: 14px; font-weight: bold; margin-bottom: 0; }
+          .signature-section .signature-space { height: 80px; }
+          .signature-section .name { font-size: 14px; font-weight: bold; margin-bottom: 2px; }
+          .signature-section .nik { font-size: 13px; font-weight: bold; }
+        </style>
+      </head>
+      <body>
+        <button class="print-btn" onclick="window.print()">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/></svg>
+          Print
+        </button>
+        <div class="header">
+          <h1>Pertanggungan Imprest Fund Unit DEFA</h1>
+          <p>Dicetak pada: ${format(new Date(), 'dd MMMM yyyy HH:mm', { locale: idLocale })}</p>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 40px">No</th>
+              <th style="width: 110px">Tanggal</th>
+              <th>Uraian</th>
+              <th class="text-right" style="width: 140px">Jumlah (Rp)</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${imprest.items.map((item, idx) => `
+              <tr>
+                <td>${idx + 1}</td>
+                <td>${format(new Date(item.tanggal), 'dd MMM yyyy', { locale: idLocale })}</td>
+                <td>${item.uraian}</td>
+                <td class="text-right">${item.jumlah.toLocaleString('id-ID')}</td>
+              </tr>
+            `).join('')}
+            <tr class="total-row">
+              <td colspan="3" class="text-right">Total:</td>
+              <td class="text-right">Rp ${imprest.totalAmount.toLocaleString('id-ID')}</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="signature-section">
+          <p class="print-date">Jakarta, ${format(new Date(), 'dd MMMM yyyy', { locale: idLocale })}</p>
+          <p class="title">Manager DEFA Tech Support 1</p>
+          <div class="signature-space"></div>
+          <p class="name">Yudhi Suryanto</p>
+          <p class="nik">NIK 870024</p>
+        </div>
+      </body>
+      </html>
+    `
+
+    printWindow.document.write(htmlContent)
+    printWindow.document.close()
+  }
+
   const totalAmount = items.reduce((sum, item) => sum + item.jumlah, 0)
 
   // Memoized filtered imprest funds with regional filter (Task 3.2)
@@ -875,7 +955,74 @@ export default function ImprestFundPage() {
                 <TabsTrigger value="proses">Proses ({prosesCount})</TabsTrigger>
                 <TabsTrigger value="close">Close ({closeCount})</TabsTrigger>
               </TabsList>
-              <Input placeholder="Cari kelompok kegiatan..." className="w-[250px] h-9" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
+              <div className="flex items-center gap-2">
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" size="sm" className="gap-2 h-9">
+                      <Calendar className="h-4 w-4" />
+                      {selectedPeriod ? `${selectedPeriod} ${selectedYear}` : `${selectedYear}`}
+                      {selectedPeriod && (
+                        <Badge className="ml-1 h-5 px-1.5 text-xs">1</Badge>
+                      )}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-72">
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <h4 className="font-semibold text-sm">Filter Periode</h4>
+                        {selectedPeriod && (
+                          <Badge variant="secondary" className="text-xs">{selectedPeriod} {selectedYear}</Badge>
+                        )}
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-xs">Tahun</Label>
+                        <Select value={selectedYear.toString()} onValueChange={(val) => setSelectedYear(Number(val))}>
+                          <SelectTrigger aria-label="Pilih tahun">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {availableYears.map((year: number) => (
+                              <SelectItem key={year} value={year.toString()}>{year}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-xs">Mode Filter</Label>
+                        <Select value={filterMode} onValueChange={handleFilterModeChange}>
+                          <SelectTrigger aria-label="Pilih mode filter">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="quartal">Quartal</SelectItem>
+                            <SelectItem value="bulan">Bulan</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-xs">Pilih Periode</Label>
+                        <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
+                          <SelectTrigger aria-label="Pilih periode">
+                            <SelectValue placeholder="Semua Periode" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {filterMode === 'quartal'
+                              ? quarterOptions.map(q => <SelectItem key={q} value={q}>{q}</SelectItem>)
+                              : monthOptions.map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)
+                            }
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="pt-2 border-t">
+                        <Button variant="outline" size="sm" className="w-full" onClick={handleResetPeriod} disabled={!selectedPeriod}>
+                          Reset Periode
+                        </Button>
+                      </div>
+                    </div>
+                  </PopoverContent>
+                </Popover>
+                <Input placeholder="Cari kelompok kegiatan..." className="w-[250px] h-9" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
+              </div>
             </div>
             <TabsContent value={activeTab}><DataTable columns={historyColumns} data={filteredImprestFunds} /></TabsContent>
           </Tabs>
@@ -959,15 +1106,20 @@ export default function ImprestFundPage() {
                 {/* Detail Uraian - Collapsible with Card Shadow */}
                 <Collapsible open={isViewUraianOpen} onOpenChange={setIsViewUraianOpen}>
                   <div className="rounded-lg border bg-card shadow-sm hover:shadow-md transition-shadow">
-                    <CollapsibleTrigger asChild>
-                      <Button variant="ghost" className="w-full justify-between p-4 h-auto hover:bg-muted/50 rounded-lg">
-                        <div className="flex items-center gap-2">
-                          <FileText className="h-4 w-4 text-muted-foreground" />
-                          <span className="text-sm font-semibold">Detail Uraian Penggunaan</span>
-                        </div>
-                        {isViewUraianOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                    <div className="flex items-center">
+                      <CollapsibleTrigger asChild>
+                        <Button variant="ghost" className="flex-1 justify-between p-4 h-auto hover:bg-muted/50 rounded-l-lg">
+                          <div className="flex items-center gap-2">
+                            <FileText className="h-4 w-4 text-muted-foreground" />
+                            <span className="text-sm font-semibold">Detail Uraian Penggunaan</span>
+                          </div>
+                          {isViewUraianOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                        </Button>
+                      </CollapsibleTrigger>
+                      <Button variant="outline" size="sm" className="mr-3 gap-1.5" onClick={() => handlePrintUraian(viewingImprest)}>
+                        <Printer className="h-3.5 w-3.5" />Cetak
                       </Button>
-                    </CollapsibleTrigger>
+                    </div>
                     <CollapsibleContent>
                       <div className="border-t">
                         <div className="grid grid-cols-12 gap-2 p-3 bg-gray-100 text-xs font-medium">
