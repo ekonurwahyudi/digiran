@@ -381,7 +381,7 @@ export default function BudgetPage() {
   }
 
   const quarterColumns: ColumnDef<Budget>[] = [
-    { accessorKey: 'glAccount.code', header: 'GL Account', cell: ({ row }) => `${row.original.glAccount.code} - ${row.original.glAccount.description}` },
+    { id: 'glAccount.code', accessorFn: (row) => `${row.glAccount.code} - ${row.glAccount.description}`, filterFn: 'includesString', header: 'GL Account', cell: ({ row }) => `${row.original.glAccount.code} - ${row.original.glAccount.description}` },
     { accessorKey: 'rkap', header: () => <div className="text-right">RKAP (Rp)</div>, cell: ({ row }) => <div className="text-right">{(row.original.rkap || 0).toLocaleString('id-ID')}</div> },
     { accessorKey: 'releasePercent', header: () => <div className="text-right">Release</div>, cell: ({ row }) => <div className="text-right">{row.original.releasePercent || 100}%</div> },
     { accessorKey: 'totalAmount', header: () => <div className="text-right">Release (Rp)</div>, cell: ({ row }) => <div className="text-right">{(row.getValue('totalAmount') as number).toLocaleString('id-ID')}</div> },
@@ -399,7 +399,7 @@ export default function BudgetPage() {
   ]
 
   const monthColumns: ColumnDef<Budget>[] = [
-    { accessorKey: 'glAccount.code', header: 'GL Account', cell: ({ row }) => <div className="min-w-[150px]">{row.original.glAccount.code} - {row.original.glAccount.description}</div> },
+    { id: 'glAccount.code', accessorFn: (row) => `${row.glAccount.code} - ${row.glAccount.description}`, filterFn: 'includesString', header: 'GL Account', cell: ({ row }) => <div className="min-w-[150px]">{row.original.glAccount.code} - {row.original.glAccount.description}</div> },
     { accessorKey: 'totalAmount', header: () => <div className="text-right">Total (Rp)</div>, cell: ({ row }) => <div className="text-right">{(row.getValue('totalAmount') as number).toLocaleString('id-ID')}</div> },
     { accessorKey: 'janAmount', header: () => <div className="text-right">Jan</div>, cell: ({ row }) => <div className="text-right">{(row.original.janAmount || 0).toLocaleString('id-ID')}</div> },
     { accessorKey: 'febAmount', header: () => <div className="text-right">Feb</div>, cell: ({ row }) => <div className="text-right">{(row.original.febAmount || 0).toLocaleString('id-ID')}</div> },
@@ -558,7 +558,7 @@ export default function BudgetPage() {
             </div>
           </div>
         </CardHeader>
-        <CardContent><DataTable columns={columns} data={budgets} searchKey="glAccount.code" searchPlaceholder="Cari GL Account..." /></CardContent>
+        <CardContent><DataTable columns={columns} data={budgets} searchKey="glAccount.code" searchPlaceholder="Cari kode atau nama GL Account..." /></CardContent>
       </Card>
 
       {/* Allocation Modal */}
