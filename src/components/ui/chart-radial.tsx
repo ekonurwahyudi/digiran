@@ -23,18 +23,19 @@ interface ChartRadialProps {
   quarter: number
   percentage: number
   anggaran: number
+  incoming?: number
   rra: number
   terpakai: number
   sisa: number
 }
 
-export function ChartRadial({ quarter, percentage, anggaran, rra, terpakai, sisa }: ChartRadialProps) {
+export function ChartRadial({ quarter, percentage, anggaran, incoming, rra, terpakai, sisa }: ChartRadialProps) {
   const safeRra = Math.max(rra, 0)
   const safeTerpakai = Math.max(terpakai, 0)
   const safeSisa = Math.max(sisa, 0)
   const hasData = safeRra + safeTerpakai + safeSisa > 0
   const chartData = [
-    { name: "RRA", key: "rra", value: safeRra, fill: "hsl(38, 92%, 50%)" },
+    { name: "RRA Keluar", key: "rra", value: safeRra, fill: "hsl(38, 92%, 50%)" },
     { name: "Terpakai", key: "terpakai", value: safeTerpakai, fill: "hsl(0, 72%, 51%)" },
     { name: "Sisa", key: "sisa", value: safeSisa, fill: "hsl(215, 16%, 82%)" },
   ]
@@ -45,7 +46,7 @@ export function ChartRadial({ quarter, percentage, anggaran, rra, terpakai, sisa
     : [{ name: "Belum ada anggaran", key: "kosong", value: 1, fill: "hsl(215, 16%, 82%)" }]
 
   const chartConfig = {
-    rra: { label: "RRA", color: "hsl(38, 92%, 50%)" },
+    rra: { label: "RRA Keluar", color: "hsl(38, 92%, 50%)" },
     terpakai: { label: "Terpakai", color: "hsl(0, 72%, 51%)" },
     sisa: { label: "Sisa", color: "hsl(215, 16%, 82%)" },
     kosong: { label: "Belum ada anggaran", color: "hsl(215, 16%, 82%)" },
@@ -134,8 +135,12 @@ export function ChartRadial({ quarter, percentage, anggaran, rra, terpakai, sisa
             <span className="text-muted-foreground shrink-0">Anggaran</span>
             <span className="text-blue-600 font-medium truncate">{anggaran.toLocaleString('id-ID')}</span>
           </div>
+          {incoming !== undefined && <div className="flex justify-between text-[12px] md:text-sm gap-1">
+            <span className="text-muted-foreground shrink-0">RRA Masuk</span>
+            <span className="text-blue-600 font-medium truncate">{incoming.toLocaleString('id-ID')}</span>
+          </div>}
           <div className="flex justify-between text-[12px] md:text-sm gap-1">
-            <span className="text-muted-foreground shrink-0">RRA</span>
+            <span className="text-muted-foreground shrink-0">RRA Keluar</span>
             <span className="text-amber-600 font-medium truncate">{rra.toLocaleString('id-ID')}</span>
           </div>
           <div className="flex justify-between text-[12px] md:text-sm gap-1">

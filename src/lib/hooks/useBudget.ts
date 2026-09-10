@@ -38,6 +38,7 @@ export const useCreateBudget = () => {
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: budgetKeys.byYear(variables.year as number) })
+      queryClient.invalidateQueries({ queryKey: ['dashboard', 'budgets'] })
     },
   })
 }
@@ -52,6 +53,7 @@ export const useUpdateBudget = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: budgetKeys.all })
+      queryClient.invalidateQueries({ queryKey: ['dashboard', 'budgets'] })
     },
   })
 }
@@ -66,6 +68,7 @@ export const useDeleteBudget = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: budgetKeys.all })
+      queryClient.invalidateQueries({ queryKey: ['dashboard', 'budgets'] })
     },
   })
 }
@@ -80,6 +83,7 @@ export const useSaveAllocations = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: budgetKeys.all })
+      queryClient.invalidateQueries({ queryKey: ['dashboard', 'budgets'] })
     },
   })
 }
@@ -99,6 +103,7 @@ export const useImportBudget = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: budgetKeys.all })
+      queryClient.invalidateQueries({ queryKey: ['dashboard', 'budgets'] })
     },
   })
 }

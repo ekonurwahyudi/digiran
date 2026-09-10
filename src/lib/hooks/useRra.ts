@@ -26,6 +26,7 @@ export const useCreateRra = () => {
       queryClient.invalidateQueries({ queryKey: rraKeys.all })
       queryClient.invalidateQueries({ queryKey: budgetKeys.byYear(year) })
       queryClient.invalidateQueries({ queryKey: budgetKeys.all })
+      queryClient.invalidateQueries({ queryKey: ['dashboard', 'budgets'] })
     },
   })
 }
@@ -39,6 +40,7 @@ export const useUpdateRra = () => {
       queryClient.invalidateQueries({ queryKey: rraKeys.all })
       queryClient.invalidateQueries({ queryKey: budgetKeys.byYear(year) })
       queryClient.invalidateQueries({ queryKey: budgetKeys.all })
+      queryClient.invalidateQueries({ queryKey: ['dashboard', 'budgets'] })
     },
   })
 }
@@ -51,6 +53,7 @@ export const useDeleteRra = () => {
       queryClient.invalidateQueries({ queryKey: rraKeys.all })
       queryClient.invalidateQueries({ queryKey: budgetKeys.byYear(variables.year) })
       queryClient.invalidateQueries({ queryKey: budgetKeys.all })
+      queryClient.invalidateQueries({ queryKey: ['dashboard', 'budgets'] })
     },
   })
 }

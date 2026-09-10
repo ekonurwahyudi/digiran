@@ -13,6 +13,7 @@ import { DashboardSkeleton } from '@/components/loading'
 import { useDashboardBudgets, useDashboardTransactions, useDashboardGlAccounts } from '@/lib/hooks/useDashboard'
 import { useRegionals } from '@/lib/hooks/useMaster'
 import { useCash } from '@/lib/hooks/useCash'
+import { baseQuarterBudget, baseMonthlyBudget, periodBudget, scopedRraTotals } from '@/lib/dashboard-budget'
 
 interface GlAccount {
   id: string
@@ -103,23 +104,11 @@ export default function DashboardPage() {
     const txYear = new Date(t.tanggalKwitansi).getFullYear()
     return txYear === year
   })
-
   const isLoading = loadingGl || loadingBudgets || loadingTransactions
 
-  const getEffectiveQuarterBudget = (budget: Budget, quarter: number) => {
-    const qKey = `q${quarter}Amount` as 'q1Amount' | 'q2Amount' | 'q3Amount' | 'q4Amount'
-    return Number(budget[qKey] || 0) + getQuarterRraTotals(budget, quarter).incoming
-  }
-
-  const getQuarterRraTotals = (budget: Budget, quarter: number) => {
-    return (budget.rraLines || [])
-      .filter(line => Math.ceil((line.rraLog?.month || 1) / 3) === quarter)
-      .reduce((totals, line) => {
-        if (line.side === 'PENERIMA') totals.incoming += Number(line.amount || 0)
-        if (line.side === 'DONOR') totals.outgoing += Number(line.amount || 0)
-        return totals
-      }, { incoming: 0, outgoing: 0 })
-  }
+  const getBaseQuarterBudget = baseQuarterBudget
+  const getQuarterRraTotals = (budget: Budget, quarter: number) =>
+    scopedRraTotals(budget.rraLines || [], undefined, [quarter * 3 - 2, quarter * 3 - 1, quarter * 3], true)
 
   const isHoLine = (line?: Pick<RraLine, 'regionalCode' | 'regionalName' | 'costCenter'> | null) => {
     const marker = `${line?.regionalCode || ''} ${line?.regionalName || ''} ${line?.costCenter || ''}`.toUpperCase()
@@ -133,31 +122,22 @@ export default function DashboardPage() {
     ), 0)
   }
 
-  const getRraLineMonth = (line: RraLine) => Number(line.rraLog?.month || 1) - 1
 
-  const getRraAbsorptionByMonth = (budget: Budget, month: number) => {
-    return (budget.rraLines || [])
-      .filter(line => getRraLineMonth(line) === month)
-      .filter(line => line.side === 'DONOR')
-      .reduce((sum, line) => sum + Number(line.amount || 0), 0)
+  const getRraAbsorptionByMonth = (budget: Budget, month: number) =>
+    scopedRraTotals(budget.rraLines || [], undefined, [month + 1], true).outgoing
+  const getRraAdditionByMonth = (budget: Budget, month: number) =>
+    scopedRraTotals(budget.rraLines || [], undefined, [month + 1], true).incoming
+
+  const getBaseTotalBudget = (budget: Budget) => {
+    return [1, 2, 3, 4].reduce((sum, quarter) => sum + getBaseQuarterBudget(budget, quarter), 0)
   }
 
-  const getRraAdditionByMonth = (budget: Budget, month: number) => {
-    return (budget.rraLines || [])
-      .filter(line => getRraLineMonth(line) === month)
-      .filter(line => line.side === 'PENERIMA')
-      .reduce((sum, line) => sum + Number(line.amount || 0), 0)
-  }
-
-  const getEffectiveTotalBudget = (budget: Budget) => {
-    return [1, 2, 3, 4].reduce((sum, quarter) => sum + getEffectiveQuarterBudget(budget, quarter), 0)
-  }
-
-  const totalBudget = budgets.reduce((sum, b) => sum + getEffectiveTotalBudget(b), 0)
+  const totalBudget = budgets.reduce((sum, b) => sum + getBaseTotalBudget(b), 0)
   const totalRraAbsorption = budgets.reduce((sum, b) => sum + getRraAbsorption(b), 0)
   const totalUsed = transactions.reduce((sum: number, t: Transaction) => sum + t.nilaiTanpaPPN, 0)
-  const totalConsumed = totalRraAbsorption + totalUsed
-  const totalOutlook = totalBudget > 0 ? (totalConsumed / totalBudget) * 100 : 0
+  const totalIncoming = budgets.reduce((sum, b) => sum + [1, 2, 3, 4].reduce((subtotal, q) => subtotal + getQuarterRraTotals(b, q).incoming, 0), 0)
+  const totalSummary = periodBudget(totalBudget, totalIncoming, totalRraAbsorption, totalUsed)
+  const totalOutlook = totalSummary.outlook
 
   // Status counts from rawTransactions (already filtered by year from API)
   const openCount = rawTransactions.filter((t: Transaction) => t.status === 'Open').length
@@ -174,33 +154,26 @@ export default function DashboardPage() {
   }
 
   const getQuarterData = (quarter: number) => {
-    const qBudget = budgets.reduce((sum, b) => sum + getEffectiveQuarterBudget(b, quarter), 0)
+    const qBudget = budgets.reduce((sum, b) => sum + getBaseQuarterBudget(b, quarter), 0)
     const qTransactionUsed = transactions
       .filter(t => getQuarterFromDate(t.tanggalKwitansi) === quarter)
       .reduce((sum, t) => sum + t.nilaiTanpaPPN, 0)
     const qRra = budgets.reduce((sum, b) => sum + getRraAbsorption(b, quarter), 0)
-    return { budget: qBudget, rra: qRra, used: qTransactionUsed, remaining: qBudget - qRra - qTransactionUsed }
+    return periodBudget(qBudget, budgets.reduce((sum, b) => sum + getQuarterRraTotals(b, quarter).incoming, 0), qRra, qTransactionUsed)
   }
 
   const getBudgetByQuarter = (budget: Budget, quarter: number) => {
-    const qBudget = getEffectiveQuarterBudget(budget, quarter)
+    const qBudget = getBaseQuarterBudget(budget, quarter)
     const qTransactionUsed = transactions
       .filter(t => t.glAccountId === budget.glAccountId && getQuarterFromDate(t.tanggalKwitansi) === quarter)
       .reduce((sum, t) => sum + t.nilaiTanpaPPN, 0)
     const qRra = getRraAbsorption(budget, quarter)
-    return { budget: qBudget, rra: qRra, used: qTransactionUsed, remaining: qBudget - qRra - qTransactionUsed }
+    return periodBudget(qBudget, getQuarterRraTotals(budget, quarter).incoming, qRra, qTransactionUsed)
   }
 
   const getBudgetByMonth = (budget: Budget, month: number) => {
-    // Get monthly budget from database field
-    const monthKeys = ['janAmount', 'febAmount', 'marAmount', 'aprAmount', 'mayAmount', 'junAmount', 'julAmount', 'augAmount', 'sepAmount', 'octAmount', 'novAmount', 'decAmount'] as const
-    const monthlyBudget = budget[monthKeys[month]] || 0
-    
-    // If no monthly budget set, fallback to quarter divided by 3
-    const quarter = Math.ceil((month + 1) / 3)
-    const baseBudget = monthlyBudget > 0 ? monthlyBudget : Number(budget[`q${quarter}Amount` as 'q1Amount' | 'q2Amount' | 'q3Amount' | 'q4Amount'] || 0) / 3
-    const effectiveBudget = baseBudget + getRraAdditionByMonth(budget, month)
-    
+    const baseBudget = baseMonthlyBudget(budget, month)
+
     // Hitung penggunaan per bulan - use tanggalKwitansi to determine the month
     const monthUsed = transactions
       .filter(t => {
@@ -212,7 +185,7 @@ export default function DashboardPage() {
       .reduce((sum, t) => sum + t.nilaiTanpaPPN, 0)
     const rraUsed = getRraAbsorptionByMonth(budget, month)
     
-    return { budget: effectiveBudget, rra: rraUsed, used: monthUsed, remaining: effectiveBudget - monthUsed - rraUsed }
+    return periodBudget(baseBudget, getRraAdditionByMonth(budget, month), rraUsed, monthUsed)
   }
 
   // Data untuk monitoring chart
@@ -261,7 +234,7 @@ export default function DashboardPage() {
       color: "#22c55e",
     },
     totalRra: {
-      label: "RRA",
+      label: "RRA Keluar",
       color: "#f59e0b",
     },
   } satisfies ChartConfig
@@ -459,6 +432,7 @@ export default function DashboardPage() {
               <div className="space-y-1 md:space-y-2 min-w-0 flex-1">
                 <p className="text-[10px] md:text-xs font-medium text-muted-foreground uppercase tracking-wide">TOTAL ANGGARAN</p>
                 <p className="text-sm md:text-2xl font-bold truncate">{totalBudget.toLocaleString('id-ID')}</p>
+                <p className="text-xs text-muted-foreground">RRA masuk: Rp {totalIncoming.toLocaleString('id-ID')}</p>
               </div>
               <div className="h-8 w-8 md:h-10 md:w-10 rounded-xl bg-green-50 flex items-center justify-center flex-shrink-0">
                 <Wallet className="h-4 w-4 md:h-5 md:w-5 text-green-500" />
@@ -469,7 +443,7 @@ export default function DashboardPage() {
         <Card className="border">
           <CardContent className="p-3 md:p-5">
             <div className="space-y-1 md:space-y-2">
-              <p className="text-[10px] md:text-xs font-medium text-muted-foreground uppercase tracking-wide">TOTAL RRA</p>
+              <p className="text-[10px] md:text-xs font-medium text-muted-foreground uppercase tracking-wide">TOTAL RRA KELUAR</p>
               <p className="text-sm md:text-2xl font-bold truncate text-amber-600">{totalRraAbsorption.toLocaleString('id-ID')}</p>
             </div>
           </CardContent>
@@ -492,7 +466,7 @@ export default function DashboardPage() {
             <div className="flex items-start justify-between">
               <div className="space-y-1 md:space-y-2 min-w-0 flex-1">
                 <p className="text-[10px] md:text-xs font-medium text-muted-foreground uppercase tracking-wide">SISA ANGGARAN</p>
-                <p className="text-sm md:text-2xl font-bold truncate">{(totalBudget - totalConsumed).toLocaleString('id-ID')}</p>
+                <p className="text-sm md:text-2xl font-bold truncate">{totalSummary.remaining.toLocaleString('id-ID')}</p>
               </div>
               <div className="h-8 w-8 md:h-10 md:w-10 rounded-xl bg-purple-50 flex items-center justify-center flex-shrink-0">
                 <Clock className="h-5 w-5 text-purple-500" />
@@ -527,13 +501,14 @@ export default function DashboardPage() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
         {[1, 2, 3, 4].map((q) => {
           const data = getQuarterData(q)
-          const penyerapan = data.budget > 0 ? ((data.rra + data.used) / data.budget) * 100 : 0
+          const penyerapan = data.outlook
           return (
             <ChartRadial
               key={q}
               quarter={q}
               percentage={penyerapan}
               anggaran={data.budget}
+              incoming={data.incoming}
               rra={data.rra}
               terpakai={data.used}
               sisa={data.remaining}
@@ -548,6 +523,7 @@ export default function DashboardPage() {
             <div>
               <CardTitle className="text-base md:text-lg">Ringkasan Anggaran per GL Account</CardTitle>
               <CardDescription className="text-xs md:text-sm">Detail penggunaan anggaran per {periodType === 'quarter' ? 'kuartal' : 'bulan'} tahun {year}</CardDescription>
+              <p className="text-xs text-muted-foreground">Anggaran adalah alokasi dasar. Sisa = anggaran + RRA masuk - RRA keluar - terpakai. Outlook = (RRA keluar + terpakai) / (anggaran + RRA masuk).</p>
             </div>
             <div className="flex items-center gap-2">
               <Label className="text-xs md:text-sm text-muted-foreground">Filter:</Label>
@@ -589,7 +565,8 @@ export default function DashboardPage() {
                         <TableHead>GL Account</TableHead>
                         <TableHead>Deskripsi</TableHead>
                         <TableHead className="text-right">Anggaran Q{q} (Rp)</TableHead>
-                        <TableHead className="text-right">RRA (Rp)</TableHead>
+                        <TableHead className="text-right">RRA Masuk (Rp)</TableHead>
+                        <TableHead className="text-right">RRA Keluar (Rp)</TableHead>
                         <TableHead className="text-right">Terpakai (Rp)</TableHead>
                         <TableHead className="text-right">Sisa (Rp)</TableHead>
                         <TableHead className="text-center">Outlook</TableHead>
@@ -598,16 +575,17 @@ export default function DashboardPage() {
                     <TableBody>
                       {[...budgets]
                         .sort((a, b) => {
-                          return getEffectiveQuarterBudget(b, q) - getEffectiveQuarterBudget(a, q)
+                          return getBaseQuarterBudget(b, q) - getBaseQuarterBudget(a, q)
                         })
                         .map((budget) => {
                           const data = getBudgetByQuarter(budget, q)
-                          const outlook = data.budget > 0 ? ((data.rra + data.used) / data.budget) * 100 : 0
+                          const outlook = data.outlook
                           return (
                             <TableRow key={budget.id}>
                               <TableCell className="font-medium">{budget.glAccount.code}</TableCell>
                               <TableCell>{budget.glAccount.description}</TableCell>
                               <TableCell className="text-right">{data.budget.toLocaleString('id-ID')}</TableCell>
+                              <TableCell className="text-right text-blue-600">{data.incoming.toLocaleString('id-ID')}</TableCell>
                               <TableCell className="text-right text-amber-600">{data.rra.toLocaleString('id-ID')}</TableCell>
                               <TableCell className="text-right text-red-600">{data.used.toLocaleString('id-ID')}</TableCell>
                               <TableCell className={`text-right font-semibold ${data.remaining >= 0 ? 'text-green-600' : 'text-red-600'}`}>
@@ -667,7 +645,8 @@ export default function DashboardPage() {
                           <TableHead>GL Account</TableHead>
                           <TableHead>Deskripsi</TableHead>
                           <TableHead className="text-right">Anggaran {monthNames[monthIndex]} (Rp)</TableHead>
-                          <TableHead className="text-right">RRA (Rp)</TableHead>
+                          <TableHead className="text-right">RRA Masuk (Rp)</TableHead>
+                        <TableHead className="text-right">RRA Keluar (Rp)</TableHead>
                           <TableHead className="text-right">Terpakai (Rp)</TableHead>
                           <TableHead className="text-right">Sisa (Rp)</TableHead>
                           <TableHead className="text-center">Outlook</TableHead>
@@ -680,13 +659,14 @@ export default function DashboardPage() {
                           })
                           .map((budget) => {
                             const data = getBudgetByMonth(budget, monthIndex)
-                            const outlook = data.budget > 0 ? ((data.rra + data.used) / data.budget) * 100 : 0
+                            const outlook = data.outlook
                             return (
                               <TableRow key={budget.id}>
                                 <TableCell className="font-medium">{budget.glAccount.code}</TableCell>
                                 <TableCell>{budget.glAccount.description}</TableCell>
                                 <TableCell className="text-right">{data.budget.toLocaleString('id-ID')}</TableCell>
-                                <TableCell className="text-right text-amber-600">{data.rra.toLocaleString('id-ID')}</TableCell>
+                                <TableCell className="text-right text-blue-600">{data.incoming.toLocaleString('id-ID')}</TableCell>
+                              <TableCell className="text-right text-amber-600">{data.rra.toLocaleString('id-ID')}</TableCell>
                                 <TableCell className="text-right text-red-600">{data.used.toLocaleString('id-ID')}</TableCell>
                                 <TableCell className={`text-right font-semibold ${data.remaining >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                                   {data.remaining.toLocaleString('id-ID')}
@@ -809,7 +789,7 @@ export default function DashboardPage() {
                           : `(Rp. ${formatCurrency(item.value)})`
                         const displayName = isJumlah
                           ? 'Jumlah Pencatatan'
-                          : item.dataKey === 'totalRra' ? 'RRA' : 'Pencatatan Terpakai'
+                          : item.dataKey === 'totalRra' ? 'RRA Keluar' : 'Pencatatan Terpakai'
                         
                         return (
                           <div key={index} className="flex items-center gap-2 text-sm">
