@@ -687,6 +687,12 @@ export default function TransactionPage() {
 
   const columns: ColumnDef<Transaction>[] = [
     { accessorKey: 'tanggalKwitansi', header: 'Tgl Kwitansi', cell: ({ row }) => row.original.tanggalKwitansi ? format(new Date(row.original.tanggalKwitansi), 'dd MMM yy', { locale: idLocale }) : '-' },
+    { accessorKey: 'tanggalEntry', header: 'Bulan Input', cell: ({ row }) => {
+      const tanggalEntry = row.original.tanggalEntry ? new Date(row.original.tanggalEntry) : null
+      return tanggalEntry && !Number.isNaN(tanggalEntry.getTime())
+        ? format(tanggalEntry, 'MMMM yyyy', { locale: idLocale })
+        : '-'
+    } },
     { accessorKey: 'glAccount.code', header: 'GL Account', cell: ({ row }) => row.original.glAccount.code },
     { accessorKey: 'quarter', header: 'Kuartal', cell: ({ row }) => `Q${row.getValue('quarter')}` },
     { accessorKey: 'regionalPengguna', header: 'Area Pengguna', cell: ({ row }) => row.original.regionalPengguna || '-' },
