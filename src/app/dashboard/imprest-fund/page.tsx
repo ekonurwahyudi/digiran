@@ -577,7 +577,7 @@ export default function ImprestFundPage() {
         </table>
         <div class="signature-section">
           <p class="print-date">Jakarta, ${format(new Date(), 'dd MMMM yyyy', { locale: idLocale })}</p>
-          <p class="title">Manager DEFA Tech Support 1</p>
+          <p class="title">Manager Facility Infrastructure</p>
           <div class="signature-space"></div>
           <p class="name">Yudhi Suryanto</p>
           <p class="nik">NIK 870024</p>
